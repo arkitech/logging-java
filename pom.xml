@@ -6,6 +6,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>logback-amqp-appender</module>
+		<module>logback-amqp-consumer</module>
 	</modules>
 	<dependencies>
 		<dependency>

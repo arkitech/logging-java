@@ -40,11 +40,29 @@ public final class AmqpConsumer
 				}
 				this.sleep ();
 			}
-			synchronized (this) {
-				if (!this.declare ())
-					continue loop;
-				if (!this.register ())
-					continue loop;
+			while (true) {
+				synchronized (this) {
+					if (this.shouldStopLoop ())
+						break loop;
+					if (this.shouldReconnect ())
+						continue loop;
+					if (this.declare ())
+						break;
+				}
+				this.sleep ();
+				continue loop;
+			}
+			while (true) {
+				synchronized (this) {
+					if (this.shouldStopLoop ())
+						break loop;
+					if (this.shouldReconnect ())
+						continue loop;
+					if (this.register ())
+						break;
+				}
+				this.sleep ();
+				continue loop;
 			}
 			while (true) {
 				synchronized (this) {

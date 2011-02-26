@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+	
+	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+	
+	<amqpConsumerAgent>
+		<host>127.0.0.1</host>
+		<port>5672</port>
+		<virtualHost>/</virtualHost>
+		<username>guest</username>
+		<password>guest</password>
+		<exchange>logback</exchange>
+		<queue>logback.agent</queue>
+	</amqpConsumerAgent>
+	
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>[%-8mdc{application}] [%-8mdc{component}] [%-8mdc{node}] [%8relative] [%d{HH:mm:ss.SSS}] [%-5level] [%logger{48}] %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<root level="trace">
+		<appender-ref ref="console" />
+	</root>
+	
+</configuration>

@@ -44,7 +44,7 @@ public final class AmqpAppender
 		return (this.buffer.isEmpty ());
 	}
 	
-	public final boolean isStarted ()
+	public final boolean isRunning ()
 	{
 		final AmqpPublisher publisher = this.publisher;
 		return (((publisher != null) && publisher.isStarted ()) || super.isStarted ());
@@ -114,22 +114,22 @@ public final class AmqpAppender
 			throw (new IllegalStateException ("amqp appender is already started"));
 		if (this.publisher != null)
 			throw (new IllegalStateException ("amqp appender has passed its life-cycle"));
-		super.start ();
 		this.exchangeLayout.start ();
 		this.routingKeyLayout.start ();
 		this.publisher =
 				new AmqpPublisher (this.host, this.port, this.virtualHost, this.username, this.password, this, this.buffer);
 		this.publisher.start ();
+		super.start ();
 	}
 	
 	public final void stop ()
 	{
 		if (!this.isStarted ())
 			throw (new IllegalStateException ("amqp appender is not started"));
-		super.stop ();
 		this.exchangeLayout.stop ();
 		this.routingKeyLayout.stop ();
 		this.publisher.stop ();
+		super.stop ();
 	}
 	
 	protected final void append (final ILoggingEvent event)
@@ -165,7 +165,6 @@ public final class AmqpAppender
 	private String username;
 	private String virtualHost;
 	
-	public static final String defaultExchangeKeyPattern = AmqpConsumerAgent.defaultExchange;
-	public static final String defaultRoutingKeyPattern =
-			"%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}";
+	public static final String defaultExchangeKeyPattern = "logback";
+	public static final String defaultRoutingKeyPattern = "%level.%logger";
 }

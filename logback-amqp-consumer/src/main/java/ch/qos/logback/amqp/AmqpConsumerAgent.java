@@ -2,9 +2,6 @@
 package ch.qos.logback.amqp;
 
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +11,6 @@ import ch.qos.logback.amqp.tools.Serializer;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.spi.ContextAwareBase;
 import ch.qos.logback.core.spi.LifeCycle;
 import org.slf4j.LoggerFactory;
@@ -37,41 +33,7 @@ public final class AmqpConsumerAgent
 		this.shutdownHook = null;
 		this.shouldStop = true;
 		this.consumer = null;
-	}
-	
-	public final String getExchange ()
-	{
-		return (this.exchange);
-	}
-	
-	public final String getHost ()
-	{
-		return (this.host);
-	}
-	
-	public final String getPassword ()
-	{
-		return (this.password);
-	}
-	
-	public final Integer getPort ()
-	{
-		return (this.port);
-	}
-	
-	public final String getQueue ()
-	{
-		return (this.queue);
-	}
-	
-	public final String getUsername ()
-	{
-		return (this.username);
-	}
-	
-	public final String getVirtualHost ()
-	{
-		return (this.virtualHost);
+		this.isStarted = false;
 	}
 	
 	public final void handleException (final String message, final Throwable exception)
@@ -87,6 +49,13 @@ public final class AmqpConsumerAgent
 	}
 	
 	public final boolean isStarted ()
+	{
+		synchronized (this) {
+			return (this.isStarted);
+		}
+	}
+	
+	public final boolean isRunning ()
 	{
 		synchronized (this) {
 			return (((this.thread != null) && this.thread.isAlive ()) || ((this.consumer != null) && this.consumer
@@ -168,7 +137,6 @@ public final class AmqpConsumerAgent
 	
 	public final void start ()
 	{
-		LoggerFactory.getLogger (AmqpConsumerAgent.class).debug ("starting");
 		synchronized (this) {
 			if (this.thread != null)
 				throw (new IllegalStateException ("amqp consumer agent is already started"));
@@ -186,9 +154,9 @@ public final class AmqpConsumerAgent
 				public final void run ()
 				{
 					AmqpConsumerAgent.this.shutdownHook = null;
-					if (AmqpConsumerAgent.this.isStarted ()) {
+					if (AmqpConsumerAgent.this.isRunning ()) {
 						AmqpConsumerAgent.this.stop ();
-						while (AmqpConsumerAgent.this.isStarted ())
+						while (AmqpConsumerAgent.this.isRunning ())
 							try {
 								Thread.sleep (AmqpConsumerAgent.waitTimeout);
 							} catch (final InterruptedException exception) {
@@ -205,23 +173,23 @@ public final class AmqpConsumerAgent
 							this.host, this.port, this.virtualHost, this.username, this.password,
 							new String[] {this.exchange}, this.queue, this, this.buffer);
 			this.consumer.start ();
+			this.isStarted = true;
 		}
 	}
 	
 	public final void stop ()
 	{
-		LoggerFactory.getLogger (AmqpConsumerAgent.class).debug ("stopping");
 		synchronized (this) {
 			if (this.thread == null)
 				throw (new IllegalStateException ("amqp consumer agent is not started"));
 			this.shouldStop = true;
 			this.consumer.stop ();
+			this.isStarted = false;
 		}
 	}
 	
 	private final void loop ()
 	{
-		LoggerFactory.getLogger (AmqpConsumerAgent.class).debug ("looping");
 		while (true) {
 			if (this.shouldStop)
 				break;
@@ -259,113 +227,9 @@ public final class AmqpConsumerAgent
 	private Thread thread;
 	private String username;
 	private String virtualHost;
-	
-	public static final void main (final String[] arguments)
-			throws Throwable
-	{
-		if (arguments.length != 0)
-			throw (new IllegalArgumentException (
-					"amqp consumer agent takes no arguments; use logback configuration files; aborting!"));
-		
-		final List<AmqpConsumerAgent> agents = Collections.synchronizedList (new LinkedList<AmqpConsumerAgent> ());
-		AmqpConsumerAgent.agents = agents;
-		
-		LoggerFactory.getILoggerFactory ();
-		
-		if (agents.isEmpty ())
-			throw (new IllegalArgumentException ("no amqp consumer agents defined; aborting!"));
-		
-		for (final AmqpConsumerAgent agent : agents)
-			agent.start ();
-		
-		while (true) {
-			for (final AmqpConsumerAgent agent : agents)
-				if (!agent.isStarted ())
-					agents.remove (agent);
-			if (agents.isEmpty ())
-				break;
-			try {
-				Thread.sleep (AmqpConsumerAgent.waitTimeout);
-			} catch (final InterruptedException exception) {
-				break;
-			}
-		}
-		
-		System.exit (1);
-	}
+	private boolean isStarted;
 	
 	public static final String defaultExchange = "logback";
 	public static final String defaultQueue = "logback.agent";
 	public static final int waitTimeout = 1000;
-	static List<AmqpConsumerAgent> agents = null;
-	
-	public static final class FakeAppender
-			extends UnsynchronizedAppenderBase<ILoggingEvent>
-	{
-		public final void setExchange (final String exchange)
-		{
-			this.exchange = exchange;
-		}
-		
-		public final void setHost (final String host)
-		{
-			this.host = host;
-		}
-		
-		public final void setPassword (final String password)
-		{
-			this.password = password;
-		}
-		
-		public final void setPort (final Integer port)
-		{
-			this.port = port;
-		}
-		
-		public final void setQueue (final String queue)
-		{
-			this.queue = queue;
-		}
-		
-		public final void setUsername (final String username)
-		{
-			this.username = username;
-		}
-		
-		public final void setVirtualHost (final String virtualHost)
-		{
-			this.virtualHost = virtualHost;
-		}
-		
-		public final void start ()
-		{
-			super.start ();
-			if (this.agent == null) {
-				this.agent = new AmqpConsumerAgent ();
-				this.agent.setContext (this.context);
-				this.agent.setHost (this.host);
-				this.agent.setPort (this.port);
-				this.agent.setVirtualHost (this.virtualHost);
-				this.agent.setUsername (this.username);
-				this.agent.setPassword (this.password);
-				this.agent.setExchange (this.exchange);
-				this.agent.setQueue (this.queue);
-				final List<AmqpConsumerAgent> agents = AmqpConsumerAgent.agents;
-				if (agents != null)
-					agents.add (this.agent);
-			}
-		}
-		
-		protected final void append (final ILoggingEvent eventObject)
-		{}
-		
-		private AmqpConsumerAgent agent;
-		private String exchange;
-		private String host;
-		private String password;
-		private Integer port;
-		private String queue;
-		private String username;
-		private String virtualHost;
-	}
 }
