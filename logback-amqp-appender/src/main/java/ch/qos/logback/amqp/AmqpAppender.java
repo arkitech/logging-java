@@ -2,18 +2,18 @@
 package ch.qos.logback.amqp;
 
 
-import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
 import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
+import ch.qos.logback.amqp.tools.DefaultMutator;
+import ch.qos.logback.amqp.tools.Mutator;
+import ch.qos.logback.amqp.tools.PubLoggingEventVO;
 import ch.qos.logback.amqp.tools.Serializer;
 import ch.qos.logback.classic.PatternLayout;
-import ch.qos.logback.classic.net.LoggingEventPreSerializationTransformer;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import ch.qos.logback.core.spi.PreSerializationTransformer;
 
 
 public final class AmqpAppender
@@ -22,14 +22,19 @@ public final class AmqpAppender
 	public AmqpAppender ()
 	{
 		super ();
-		this.preserializer = new LoggingEventPreSerializationTransformer ();
 		this.serializer = new DefaultBinarySerializer ();
 		this.buffer = new LinkedBlockingDeque<AmqpMessage> ();
 		this.exchangeLayout = new PatternLayout ();
 		this.routingKeyLayout = new PatternLayout ();
 		this.exchangeLayout.setPattern (AmqpAppender.defaultExchangeKeyPattern);
 		this.routingKeyLayout.setPattern (AmqpAppender.defaultRoutingKeyPattern);
+		this.mutator = new DefaultMutator ();
 		this.publisher = null;
+	}
+	
+	public final Mutator getMutator ()
+	{
+		return (this.mutator);
 	}
 	
 	public final boolean isDrained ()
@@ -64,6 +69,13 @@ public final class AmqpAppender
 		if (this.isStarted ())
 			throw (new IllegalStateException ("amqp appender is already started"));
 		this.host = host;
+	}
+	
+	public final void setMutator (final Mutator mutator)
+	{
+		if (this.isStarted ())
+			throw (new IllegalStateException ("amqp appender is already started"));
+		this.mutator = mutator;
 	}
 	
 	public final void setPassword (final String password)
@@ -127,19 +139,19 @@ public final class AmqpAppender
 		super.stop ();
 	}
 	
-	protected final void append (final ILoggingEvent event)
+	protected final void append (final ILoggingEvent originalEvent)
 	{
+		final PubLoggingEventVO event = this.prepare (originalEvent);
 		byte[] data;
 		try {
-			final Serializable object = this.preserializer.transform (event);
-			data = this.serializer.serialize (object);
+			data = this.serializer.serialize (event);
 		} catch (final Throwable exception) {
 			data = null;
 			this.addError ("amqp appender encountered an error while serializing the event; ignoring!", exception);
 		}
 		if (data != null) {
-			final String exchange = this.exchangeLayout.doLayout (event);
-			final String routingKey = this.routingKeyLayout.doLayout (event);
+			final String exchange = this.exchangeLayout.doLayout (originalEvent);
+			final String routingKey = this.routingKeyLayout.doLayout (originalEvent);
 			final AmqpMessage message =
 					new AmqpMessage (
 							exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (),
@@ -148,12 +160,20 @@ public final class AmqpAppender
 		}
 	}
 	
+	private final PubLoggingEventVO prepare (final ILoggingEvent originalEvent)
+	{
+		final PubLoggingEventVO newEvent = PubLoggingEventVO.build (originalEvent);
+		if (this.mutator != null)
+			this.mutator.mutate (newEvent);
+		return (newEvent);
+	}
+	
 	private final LinkedBlockingDeque<AmqpMessage> buffer;
 	private final PatternLayout exchangeLayout;
 	private String host;
+	private Mutator mutator;
 	private String password;
 	private Integer port;
-	private final PreSerializationTransformer<ILoggingEvent> preserializer;
 	private AmqpPublisher publisher;
 	private final PatternLayout routingKeyLayout;
 	private final Serializer serializer;

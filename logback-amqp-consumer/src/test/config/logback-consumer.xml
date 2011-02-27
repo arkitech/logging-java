@@ -16,7 +16,7 @@
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>[%-8mdc{application}] [%-8mdc{component}] [%-8mdc{node}] [%8relative] [%d{HH:mm:ss.SSS}] [%-5level] [%logger{48}] %msg%n</pattern>
+			<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{HH:mm:ss.SSS}] [%level] [%logger] %msg%n</pattern>
 		</encoder>
 	</appender>
 	
