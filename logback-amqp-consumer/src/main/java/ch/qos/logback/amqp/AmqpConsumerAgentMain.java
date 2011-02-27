@@ -54,10 +54,10 @@ public final class AmqpConsumerAgentMain
 			agent.start ();
 		
 		while (true) {
+			boolean stillRunning = false;
 			for (final AmqpConsumerAgent agent : agents)
-				if (!agent.isRunning ())
-					agents.remove (agent);
-			if (agents.isEmpty ())
+				stillRunning |= agent.isRunning ();
+			if (!stillRunning)
 				break;
 			try {
 				Thread.sleep (AmqpConsumerAgent.waitTimeout);
