@@ -234,6 +234,6 @@ public final class AmqpConsumerAgent
 	private String virtualHost;
 	
 	public static final String defaultExchange = "logback";
-	public static final String defaultQueue = "logback.agent";
+	public static final String defaultQueue = "";
 	public static final int waitTimeout = 1000;
 }

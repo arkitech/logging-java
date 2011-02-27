@@ -4,13 +4,11 @@ package ch.qos.logback.amqp.tests;
 
 import java.util.UUID;
 
-import ch.qos.logback.amqp.tools.DefaultMutator;
-
-import org.slf4j.MDC;
-
 import ch.qos.logback.amqp.AmqpAppender;
+import ch.qos.logback.amqp.tools.DefaultMutator;
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import org.junit.Assert;
 import org.junit.Test;

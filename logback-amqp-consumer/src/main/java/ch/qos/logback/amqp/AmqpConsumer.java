@@ -24,6 +24,7 @@ public final class AmqpConsumer
 		super (host, port, virtualHost, username, password, callbacks);
 		this.exchanges = exchanges;
 		this.queue = queue;
+		this.queue1 = null;
 		this.sink = sink;
 	}
 	
@@ -34,9 +35,7 @@ public final class AmqpConsumer
 				synchronized (this) {
 					if (this.shouldStopLoop ())
 						break loop;
-					if (!this.shouldReconnect ())
-						break;
-					if (this.connect ())
+					if (this.reconnect ())
 						break;
 				}
 				this.sleep ();
@@ -111,27 +110,38 @@ public final class AmqpConsumer
 			}
 		}
 		{
-			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer declaring the queue `%s`", this.queue);
+			final String queue;
+			final boolean unique;
+			if ((this.queue == null) || this.queue.isEmpty ()) {
+				if (this.queue1 != null)
+					queue = this.queue1;
+				else
+					queue = "";
+				unique = true;
+			} else {
+				queue = this.queue;
+				unique = false;
+			}
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer declaring the queue `%s`", queue);
 			try {
-				channel.queueDeclare (this.queue, true, false, false, null);
+				this.queue1 = channel.queueDeclare (queue, true, unique, unique, null).getQueue ();
 			} catch (final Throwable exception) {
-				this.callbacks
-						.handleException (
-								exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!",
-								this.queue);
+				this.queue1 = null;
+				this.callbacks.handleException (
+						exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!", queue);
 				return (false);
 			}
 		}
 		for (final String exchange : this.exchanges) {
 			this.callbacks.handleLogEvent (
-					Level.INFO, null, "amqp consumer binding the queue `%s` to exchange `%s`", this.queue, exchange);
+					Level.INFO, null, "amqp consumer binding the queue `%s` to exchange `%s`", this.queue1, exchange);
 			try {
-				channel.queueBind (this.queue, exchange, "#", null);
+				channel.queueBind (this.queue1, exchange, "#", null);
 			} catch (final Throwable exception) {
 				this.callbacks.handleException (
 						exception,
 						"amqp consumer encountered an error while binding the queue `%s` to exchange `%s`; aborting!",
-						this.queue, exchange);
+						this.queue1, exchange);
 				return (false);
 			}
 		}
@@ -143,7 +153,7 @@ public final class AmqpConsumer
 		this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer registering the consumer");
 		final Channel channel = this.getChannel ();
 		try {
-			channel.basicConsume (this.queue, true, this.queue, true, true, null, new ConsumerCallback ());
+			channel.basicConsume (this.queue1, true, this.queue1, true, true, null, new ConsumerCallback ());
 			return (true);
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (
@@ -154,6 +164,7 @@ public final class AmqpConsumer
 	
 	private final String[] exchanges;
 	private final String queue;
+	private String queue1;
 	private final LinkedBlockingQueue<AmqpMessage> sink;
 	
 	private final class ConsumerCallback

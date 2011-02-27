@@ -11,7 +11,7 @@
 		<username>guest</username>
 		<password>guest</password>
 		<exchange>logback</exchange>
-		<queue>logback.agent</queue>
+		<queue></queue>
 	</amqpConsumerAgent>
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">

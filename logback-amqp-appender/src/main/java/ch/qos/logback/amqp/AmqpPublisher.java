@@ -29,8 +29,6 @@ public final class AmqpPublisher
 				synchronized (this) {
 					if (this.shouldStopLoop ())
 						break loop;
-					if (!this.shouldReconnect ())
-						break;
 					if (this.reconnect ())
 						break;
 				}
