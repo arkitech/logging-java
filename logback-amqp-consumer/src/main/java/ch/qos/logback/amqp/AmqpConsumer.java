@@ -113,20 +113,17 @@ public final class AmqpConsumer
 			final String queue;
 			final boolean unique;
 			if ((this.queue == null) || this.queue.isEmpty ()) {
-				if (this.queue1 != null)
-					queue = this.queue1;
-				else
-					queue = "";
+				queue = "";
 				unique = true;
 			} else {
 				queue = this.queue;
 				unique = false;
 			}
 			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer declaring the queue `%s`", queue);
+			this.queue1 = null;
 			try {
 				this.queue1 = channel.queueDeclare (queue, true, unique, unique, null).getQueue ();
 			} catch (final Throwable exception) {
-				this.queue1 = null;
 				this.callbacks.handleException (
 						exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!", queue);
 				return (false);
