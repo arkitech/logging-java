@@ -4,7 +4,8 @@ package ch.qos.logback.amqp;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-import ch.qos.logback.amqp.tools.ExceptionHandler;
+import ch.qos.logback.amqp.tools.Callbacks;
+import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
@@ -17,10 +18,10 @@ public final class AmqpConsumer
 {
 	public AmqpConsumer (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String[] exchanges, final String queue, final ExceptionHandler exceptionHandler,
+			final String[] exchanges, final String queue, final Callbacks callbacks,
 			final LinkedBlockingQueue<AmqpMessage> sink)
 	{
-		super (host, port, virtualHost, username, password, exceptionHandler);
+		super (host, port, virtualHost, username, password, callbacks);
 		this.exchanges = exchanges;
 		this.queue = queue;
 		this.sink = sink;
@@ -64,6 +65,7 @@ public final class AmqpConsumer
 				this.sleep ();
 				continue loop;
 			}
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer showeling inbound messages");
 			while (true) {
 				synchronized (this) {
 					if (this.shouldStopLoop ())
@@ -89,52 +91,63 @@ public final class AmqpConsumer
 		try {
 			this.sink.put (message);
 		} catch (final InterruptedException exception) {
-			this.exceptionHandler.handleException (
-					"amqp consumer encountered an error while enqueueing the message; ignoring!", exception);
+			this.callbacks.handleException (
+					exception, "amqp consumer encountered an error while enqueueing the message; ignoring!");
 		}
 	}
 	
 	private final boolean declare ()
 	{
 		final Channel channel = this.getChannel ();
-		for (final String exchange : this.exchanges)
+		for (final String exchange : this.exchanges) {
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer declaring the exchange `%s`", exchange);
 			try {
 				channel.exchangeDeclare (exchange, "topic", true, false, null);
 			} catch (final Throwable exception) {
-				this.exceptionHandler.handleException (
-						String.format (
-								"amqp consumer encountered an error while declaring the exchange `%s`; aborting!", exchange),
-						exception);
+				this.callbacks.handleException (
+						exception, "amqp consumer encountered an error while declaring the exchange `%s`; aborting!",
+						exchange);
 				return (false);
 			}
-		try {
-			channel.queueDeclare (this.queue, true, false, false, null);
-		} catch (final Throwable exception) {
-			this.exceptionHandler.handleException (String.format (
-					"amqp consumer encountered an error while declaring the queue `%s`; aborting!", this.queue), exception);
-			return (false);
 		}
-		for (final String exchange : this.exchanges)
+		{
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer declaring the queue `%s`", this.queue);
+			try {
+				channel.queueDeclare (this.queue, true, false, false, null);
+			} catch (final Throwable exception) {
+				this.callbacks
+						.handleException (
+								exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!",
+								this.queue);
+				return (false);
+			}
+		}
+		for (final String exchange : this.exchanges) {
+			this.callbacks.handleLogEvent (
+					Level.INFO, null, "amqp consumer binding the queue `%s` to exchange `%s`", this.queue, exchange);
 			try {
 				channel.queueBind (this.queue, exchange, "#", null);
 			} catch (final Throwable exception) {
-				this.exceptionHandler.handleException (String.format (
+				this.callbacks.handleException (
+						exception,
 						"amqp consumer encountered an error while binding the queue `%s` to exchange `%s`; aborting!",
-						this.queue, exchange), exception);
+						this.queue, exchange);
 				return (false);
 			}
+		}
 		return (true);
 	}
 	
 	private final boolean register ()
 	{
+		this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer registering the consumer");
 		final Channel channel = this.getChannel ();
 		try {
 			channel.basicConsume (this.queue, true, this.queue, true, true, null, new ConsumerCallback ());
 			return (true);
 		} catch (final Throwable exception) {
-			this.exceptionHandler.handleException (
-					"amqp consumer encountered an error while registering consummer; aborting!", exception);
+			this.callbacks.handleException (
+					exception, "amqp consumer encountered an error while registering the consummer; aborting!");
 			return (false);
 		}
 	}

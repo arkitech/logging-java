@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
-import ch.qos.logback.amqp.tools.ExceptionHandler;
+import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
 import ch.qos.logback.amqp.tools.Serializer;
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.net.LoggingEventPreSerializationTransformer;
@@ -18,8 +18,6 @@ import ch.qos.logback.core.spi.PreSerializationTransformer;
 
 public final class AmqpAppender
 		extends UnsynchronizedAppenderBase<ILoggingEvent>
-		implements
-			ExceptionHandler
 {
 	public AmqpAppender ()
 	{
@@ -34,11 +32,6 @@ public final class AmqpAppender
 		this.publisher = null;
 	}
 	
-	public final void handleException (final String message, final Throwable exception)
-	{
-		this.addError (message, exception);
-	}
-	
 	public final boolean isDrained ()
 	{
 		return (this.buffer.isEmpty ());
@@ -47,7 +40,7 @@ public final class AmqpAppender
 	public final boolean isRunning ()
 	{
 		final AmqpPublisher publisher = this.publisher;
-		return (((publisher != null) && publisher.isStarted ()) || super.isStarted ());
+		return (((publisher != null) && publisher.isRunning ()) || super.isStarted ());
 	}
 	
 	public final void setContext (final Context context)
@@ -57,6 +50,13 @@ public final class AmqpAppender
 		super.setContext (context);
 		this.exchangeLayout.setContext (context);
 		this.routingKeyLayout.setContext (context);
+	}
+	
+	public final void setExchangePattern (final String pattern)
+	{
+		if (this.isStarted ())
+			throw (new IllegalStateException ("amqp appender is already started"));
+		this.exchangeLayout.setPattern (pattern);
 	}
 	
 	public final void setHost (final String host)
@@ -87,13 +87,6 @@ public final class AmqpAppender
 		this.routingKeyLayout.setPattern (pattern);
 	}
 	
-	public final void setExchangePattern (final String pattern)
-	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
-		this.exchangeLayout.setPattern (pattern);
-	}
-	
 	public final void setUsername (final String username)
 	{
 		if (this.isStarted ())
@@ -117,7 +110,9 @@ public final class AmqpAppender
 		this.exchangeLayout.start ();
 		this.routingKeyLayout.start ();
 		this.publisher =
-				new AmqpPublisher (this.host, this.port, this.virtualHost, this.username, this.password, this, this.buffer);
+				new AmqpPublisher (
+						this.host, this.port, this.virtualHost, this.username, this.password,
+						new DefaultContextAwareCallbacks (this), this.buffer);
 		this.publisher.start ();
 		super.start ();
 	}

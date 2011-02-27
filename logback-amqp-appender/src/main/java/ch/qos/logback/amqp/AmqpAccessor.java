@@ -2,7 +2,8 @@
 package ch.qos.logback.amqp;
 
 
-import ch.qos.logback.amqp.tools.ExceptionHandler;
+import ch.qos.logback.amqp.tools.Callbacks;
+import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -14,7 +15,7 @@ public abstract class AmqpAccessor
 {
 	protected AmqpAccessor (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final ExceptionHandler exceptionHandler)
+			final Callbacks callbacks)
 	{
 		super ();
 		this.host = ((host != null) && !host.isEmpty ()) ? host : "127.0.0.1";
@@ -22,7 +23,7 @@ public abstract class AmqpAccessor
 		this.virtualHost = ((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : "/";
 		this.username = ((username != null) && !username.isEmpty ()) ? username : "guest";
 		this.password = ((password != null) && !password.isEmpty ()) ? password : "guest";
-		this.exceptionHandler = exceptionHandler;
+		this.callbacks = callbacks;
 		this.thread = null;
 		this.shutdownHook = null;
 		this.shouldStopLoop = true;
@@ -38,7 +39,7 @@ public abstract class AmqpAccessor
 		}
 	}
 	
-	public final boolean isStarted ()
+	public final boolean isRunning ()
 	{
 		synchronized (this) {
 			return ((this.thread != null) && (this.thread.isAlive ()));
@@ -50,12 +51,15 @@ public abstract class AmqpAccessor
 		synchronized (this) {
 			if (this.thread != null)
 				throw (new IllegalStateException ("amqp accessor is already started"));
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor starting");
 			this.thread = new Thread (new Runnable () {
 				public final void run ()
 				{
+					AmqpAccessor.this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor started");
 					AmqpAccessor.this.loop ();
 					if (AmqpAccessor.this.shutdownHook != null)
 						Runtime.getRuntime ().removeShutdownHook (AmqpAccessor.this.shutdownHook);
+					AmqpAccessor.this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor stopped");
 				}
 			});
 			this.thread.setName (String.format ("%s@%x", this.getClass ().getName (), System.identityHashCode (this)));
@@ -64,9 +68,10 @@ public abstract class AmqpAccessor
 				public final void run ()
 				{
 					AmqpAccessor.this.shutdownHook = null;
-					if (AmqpAccessor.this.isStarted ()) {
-						AmqpAccessor.this.stop ();
-						while (AmqpAccessor.this.isStarted ())
+					if (AmqpAccessor.this.isRunning ()) {
+						if (!AmqpAccessor.this.shouldStopLoop)
+							AmqpAccessor.this.stop ();
+						while (AmqpAccessor.this.isRunning ())
 							try {
 								Thread.sleep (AmqpAccessor.waitTimeout);
 							} catch (final InterruptedException exception) {
@@ -86,6 +91,7 @@ public abstract class AmqpAccessor
 		synchronized (this) {
 			if (this.thread == null)
 				throw (new IllegalStateException ("amqp accessor is not started"));
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor stopping");
 			this.shouldStopLoop = true;
 		}
 	}
@@ -95,6 +101,9 @@ public abstract class AmqpAccessor
 		synchronized (this) {
 			if (this.connection != null)
 				throw (new IllegalStateException ("amqp accessor is already connected"));
+			this.callbacks.handleLogEvent (
+					Level.INFO, null, "amqp accessor connecting to `%s@%s:%s:%s`", this.username, this.host, this.port,
+					this.virtualHost);
 			this.shouldReconnect = true;
 			final ConnectionFactory connectionFactory = new ConnectionFactory ();
 			connectionFactory.setHost (this.host);
@@ -106,16 +115,15 @@ public abstract class AmqpAccessor
 				this.connection = connectionFactory.newConnection ();
 			} catch (final Throwable exception) {
 				this.connection = null;
-				this.exceptionHandler.handleException (
-						"amqp accessor encountered an error while connecting; aborting!", exception);
+				this.callbacks.handleException (exception, "amqp accessor encountered an error while connecting; aborting!");
 			}
 			if (this.connection != null)
 				try {
 					this.channel = this.connection.createChannel ();
 				} catch (final Throwable exception) {
 					this.channel = null;
-					this.exceptionHandler.handleException (
-							"amqp accessor encountered an error while opening a channel; aborting!", exception);
+					this.callbacks.handleException (
+							exception, "amqp accessor encountered an error while opening the channel; aborting!");
 				}
 			if ((this.connection == null) || (this.channel == null)) {
 				if (this.connection != null)
@@ -126,12 +134,15 @@ public abstract class AmqpAccessor
 					public void shutdownCompleted (final ShutdownSignalException exception)
 					{
 						AmqpAccessor.this.shouldReconnect = true;
-						if (!exception.isInitiatedByApplication ())
-							AmqpAccessor.this.exceptionHandler.handleException (
-									"amqp consumer encountered an shutdown error; ignoring!", exception);
+						if (!exception.isInitiatedByApplication ()) {
+							AmqpAccessor.this.callbacks.handleException (
+									exception, "amqp consumer encountered an shutdown error; ignoring!");
+							AmqpAccessor.this.disconnect ();
+						}
 					}
 				});
 				this.shouldReconnect = false;
+				this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor connected");
 			}
 			return (this.connection != null);
 		}
@@ -141,6 +152,7 @@ public abstract class AmqpAccessor
 	{
 		if (this.connection == null)
 			throw (new IllegalStateException ("amqp accessor is not connected"));
+		this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor disconnecting");
 		this.shouldReconnect = true;
 		try {
 			try {
@@ -150,8 +162,7 @@ public abstract class AmqpAccessor
 				this.connection.close ();
 			}
 		} catch (final Throwable exception) {
-			this.exceptionHandler.handleException (
-					"amqp accessor encountered an error while disconnecting; ignoring!", exception);
+			this.callbacks.handleException (exception, "amqp accessor encountered an error while disconnecting; ignoring!");
 		} finally {
 			this.connection = null;
 			this.channel = null;
@@ -191,7 +202,7 @@ public abstract class AmqpAccessor
 		} catch (final InterruptedException exception) {}
 	}
 	
-	protected final ExceptionHandler exceptionHandler;
+	protected final Callbacks callbacks;
 	protected final String host;
 	protected final String password;
 	protected final int port;

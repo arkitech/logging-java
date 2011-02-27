@@ -33,7 +33,8 @@ public final class AmqpConsumerTests
 				collectedMessages.add (event.getMessage ());
 			}
 		};
-		collectorAppender.setName (String.format ("%s@%x", collectorAppender.getClass ().getName (), System.identityHashCode (collectorAppender)));
+		collectorAppender.setName (String.format (
+				"%s@%x", collectorAppender.getClass ().getName (), System.identityHashCode (collectorAppender)));
 		collectorAppender.setContext (testLogger.getLoggerContext ());
 		collectorAppender.start ();
 		
@@ -57,7 +58,7 @@ public final class AmqpConsumerTests
 		
 		realLogger.debug ("joining amqp consumer agent");
 		for (int tries = 0; tries < AmqpConsumerTests.timeoutTries; tries++) {
-			if (!agent.isStarted ())
+			if (!agent.isRunning ())
 				break;
 			Thread.sleep (AmqpConsumerTests.timeout);
 		}

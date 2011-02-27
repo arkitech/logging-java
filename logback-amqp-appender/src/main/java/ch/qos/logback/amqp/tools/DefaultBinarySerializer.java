@@ -22,6 +22,16 @@ public final class DefaultBinarySerializer
 		return (object);
 	}
 	
+	public final String getContentEncoding ()
+	{
+		return (this.contentEncoding);
+	}
+	
+	public final String getContentType ()
+	{
+		return (this.contentType);
+	}
+	
 	public final byte[] serialize (final Serializable object)
 			throws Throwable
 	{
@@ -32,17 +42,7 @@ public final class DefaultBinarySerializer
 		return (stream.toByteArray ());
 	}
 	
-	public final String getContentType ()
-	{
-		return (this.contentType);
-	}
-	
-	public final String getContentEncoding ()
-	{
-		return (this.contentEncoding);
-	}
-	
-	public final int defaultBufferSize = 2048;
-	public final String contentType = "application/x-java-serialized-object";
 	public final String contentEncoding = "binary";
+	public final String contentType = "application/x-java-serialized-object";
+	public final int defaultBufferSize = 2048;
 }

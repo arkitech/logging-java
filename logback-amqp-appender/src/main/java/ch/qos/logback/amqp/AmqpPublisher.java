@@ -5,7 +5,8 @@ package ch.qos.logback.amqp;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import ch.qos.logback.amqp.tools.ExceptionHandler;
+import ch.qos.logback.amqp.tools.Callbacks;
+import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 
@@ -15,9 +16,9 @@ public final class AmqpPublisher
 {
 	public AmqpPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final ExceptionHandler exceptionHandler, final LinkedBlockingDeque<AmqpMessage> source)
+			final Callbacks callbacks, final LinkedBlockingDeque<AmqpMessage> source)
 	{
-		super (host, port, virtualHost, username, password, exceptionHandler);
+		super (host, port, virtualHost, username, password, callbacks);
 		this.source = source;
 	}
 	
@@ -35,6 +36,7 @@ public final class AmqpPublisher
 				}
 				this.sleep ();
 			}
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp publisher showeling outbound messages");
 			while (true) {
 				synchronized (this) {
 					if (this.shouldStopLoop ())
@@ -71,8 +73,8 @@ public final class AmqpPublisher
 			channel.basicPublish (message.exchange, message.routingKey, false, false, properties, message.content);
 			return (true);
 		} catch (final Throwable exception) {
-			this.exceptionHandler.handleException (
-					"amqp publisher encountered an error while publishing the message; requeueing!", exception);
+			this.callbacks.handleException (
+					exception, "amqp publisher encountered an error while publishing the message; requeueing!");
 			return (false);
 		}
 	}
