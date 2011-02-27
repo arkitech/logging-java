@@ -55,9 +55,12 @@ public class DefaultMutator
 		else
 			event.mdcPropertyMap = new HashMap<String, String> (event.mdcPropertyMap);
 		event.mdcPropertyMap.put (DefaultMutator.sequenceKey, Long.toString (sequence));
-		event.mdcPropertyMap.put (DefaultMutator.applicationKey, this.application != null ? this.application : "unknown");
-		event.mdcPropertyMap.put (DefaultMutator.componentKey, this.component != null ? this.component : "unknown");
-		event.mdcPropertyMap.put (DefaultMutator.nodeKey, this.node != null ? this.node : "unknown");
+		if (!event.mdcPropertyMap.containsKey (DefaultMutator.applicationKey))
+			event.mdcPropertyMap.put (DefaultMutator.applicationKey, this.application != null ? this.application : "unknown");
+		if (!event.mdcPropertyMap.containsKey (DefaultMutator.componentKey))
+			event.mdcPropertyMap.put (DefaultMutator.componentKey, this.component != null ? this.component : "unknown");
+		if (!event.mdcPropertyMap.containsKey (DefaultMutator.nodeKey))
+			event.mdcPropertyMap.put (DefaultMutator.nodeKey, this.node != null ? this.node : "unknown");
 	}
 	
 	public void setApplication (final String application)

@@ -4,6 +4,10 @@ package ch.qos.logback.amqp.tests;
 
 import java.util.UUID;
 
+import ch.qos.logback.amqp.tools.DefaultMutator;
+
+import org.slf4j.MDC;
+
 import ch.qos.logback.amqp.AmqpAppender;
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +36,11 @@ public final class AmqpAppenderTests
 		testLogger.setAdditive (false);
 		
 		realLogger.debug ("logging generated messages");
-		for (int index = 0; index < AmqpAppenderTests.messageCount; index++)
+		for (int index = 0; index < AmqpAppenderTests.messageCount; index++) {
+			MDC.put (DefaultMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
+			MDC.put (DefaultMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
 			testLogger.error (UUID.randomUUID ().toString ());
+		}
 		
 		realLogger.debug ("waiting for message draining (i.e. until their all sent)");
 		for (int tries = 0; tries < AmqpAppenderTests.timeoutTries; tries++) {
