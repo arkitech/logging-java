@@ -237,7 +237,7 @@ public class AmqpConsumerAgent
 			this.consumer =
 					new AmqpConsumer (
 							this.host, this.port, this.virtualHost, this.username, this.password,
-							new String[] {this.exchange}, this.queue, this.callbacks, this.buffer);
+							this.exchange, this.queue, this.routingKey, this.callbacks, this.buffer);
 			this.consumer.start ();
 			this.isStarted = true;
 			this.postStart ();

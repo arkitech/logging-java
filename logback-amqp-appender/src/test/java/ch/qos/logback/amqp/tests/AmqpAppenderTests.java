@@ -37,7 +37,11 @@ public final class AmqpAppenderTests
 		for (int index = 0; index < AmqpAppenderTests.messageCount; index++) {
 			MDC.put (DefaultMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
 			MDC.put (DefaultMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
-			testLogger.error (UUID.randomUUID ().toString ());
+			final String message = UUID.randomUUID ().toString ();
+			if (index % 4 != 0)
+				testLogger.error (message);
+			else
+				testLogger.error (message, new Throwable (message));
 		}
 		
 		realLogger.debug ("waiting for message draining (i.e. until their all sent)");
