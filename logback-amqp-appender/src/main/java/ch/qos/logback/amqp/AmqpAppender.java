@@ -180,6 +180,6 @@ public final class AmqpAppender
 	private String username;
 	private String virtualHost;
 	
-	public static final String defaultExchangeKeyPattern = "logback";
-	public static final String defaultRoutingKeyPattern = "%level.%logger";
+	public static final String defaultExchangeKeyPattern = "logback%nopex";
+	public static final String defaultRoutingKeyPattern = "%level%nopex";
 }
