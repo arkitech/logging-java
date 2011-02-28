@@ -6,7 +6,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.core.spi.ContextAware;
 
 
-public final class DefaultContextAwareCallbacks
+public class DefaultContextAwareCallbacks
 		implements
 			Callbacks
 {
@@ -16,13 +16,12 @@ public final class DefaultContextAwareCallbacks
 		this.delegate = delegate;
 	}
 	
-	public final void handleException (
-			final Throwable exception, final String messageFormat, final Object ... messageArguments)
+	public void handleException (final Throwable exception, final String messageFormat, final Object ... messageArguments)
 	{
 		this.handleLogEvent (Level.ERROR, exception, messageFormat, messageArguments);
 	}
 	
-	public final void handleLogEvent (
+	public void handleLogEvent (
 			final Level level, final Throwable exception, final String messageFormat, final Object ... messageArguments)
 	{
 		final String message = String.format (messageFormat, messageArguments);
@@ -54,5 +53,5 @@ public final class DefaultContextAwareCallbacks
 		}
 	}
 	
-	private final ContextAware delegate;
+	protected ContextAware delegate;
 }

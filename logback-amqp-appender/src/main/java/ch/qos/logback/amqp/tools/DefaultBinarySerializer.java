@@ -9,11 +9,11 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 
-public final class DefaultBinarySerializer
+public class DefaultBinarySerializer
 		implements
 			Serializer
 {
-	public final Serializable deserialize (final byte[] data)
+	public Serializable deserialize (final byte[] data)
 			throws Throwable
 	{
 		final ByteArrayInputStream stream = new ByteArrayInputStream (data);
@@ -22,17 +22,22 @@ public final class DefaultBinarySerializer
 		return (object);
 	}
 	
-	public final String getContentEncoding ()
+	public String getContentEncoding ()
 	{
 		return (this.contentEncoding);
 	}
 	
-	public final String getContentType ()
+	public String getContentType ()
 	{
 		return (this.contentType);
 	}
 	
-	public final byte[] serialize (final Serializable object)
+	public int getDefaultBufferSize ()
+	{
+		return (this.defaultBufferSize);
+	}
+	
+	public byte[] serialize (final Serializable object)
 			throws Throwable
 	{
 		final ByteArrayOutputStream stream = new ByteArrayOutputStream (this.defaultBufferSize);
@@ -42,7 +47,22 @@ public final class DefaultBinarySerializer
 		return (stream.toByteArray ());
 	}
 	
-	public final String contentEncoding = "binary";
-	public final String contentType = "application/x-java-serialized-object";
-	public final int defaultBufferSize = 2048;
+	public void setContentEncoding (final String contentEncoding)
+	{
+		this.contentEncoding = contentEncoding;
+	}
+	
+	public void setContentType (final String contentType)
+	{
+		this.contentType = contentType;
+	}
+	
+	public void setDefaultBufferSize (final int defaultBufferSize)
+	{
+		this.defaultBufferSize = defaultBufferSize;
+	}
+	
+	protected String contentEncoding = "binary";
+	protected String contentType = "application/x-java-serialized-object";
+	protected int defaultBufferSize = 2048;
 }

@@ -16,25 +16,65 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 
 
-public final class AmqpAppender
+public class AmqpAppender
 		extends UnsynchronizedAppenderBase<ILoggingEvent>
 {
 	public AmqpAppender ()
 	{
 		super ();
-		this.serializer = new DefaultBinarySerializer ();
 		this.buffer = new LinkedBlockingDeque<AmqpMessage> ();
 		this.exchangeLayout = new PatternLayout ();
 		this.routingKeyLayout = new PatternLayout ();
 		this.exchangeLayout.setPattern (AmqpAppender.defaultExchangeKeyPattern);
 		this.routingKeyLayout.setPattern (AmqpAppender.defaultRoutingKeyPattern);
 		this.mutator = new DefaultMutator ();
+		this.serializer = new DefaultBinarySerializer ();
 		this.publisher = null;
+	}
+	
+	public final String getExchangePattern ()
+	{
+		return (this.exchangeLayout.getPattern ());
+	}
+	
+	public final String getHost ()
+	{
+		return (this.host);
 	}
 	
 	public final Mutator getMutator ()
 	{
 		return (this.mutator);
+	}
+	
+	public final String getPassword ()
+	{
+		return (this.password);
+	}
+	
+	public final Integer getPort ()
+	{
+		return (this.port);
+	}
+	
+	public final String getRoutingKeyPattern ()
+	{
+		return (this.routingKeyLayout.getPattern ());
+	}
+	
+	public final Serializer getSerializer ()
+	{
+		return (this.serializer);
+	}
+	
+	public final String getUsername ()
+	{
+		return (this.username);
+	}
+	
+	public final String getVirtualHost ()
+	{
+		return (this.virtualHost);
 	}
 	
 	public final boolean isDrained ()
@@ -99,6 +139,13 @@ public final class AmqpAppender
 		this.routingKeyLayout.setPattern (pattern);
 	}
 	
+	public final void setSerializer (final Serializer serializer)
+	{
+		if (this.isStarted ())
+			throw (new IllegalStateException ("amqp appender is already started"));
+		this.serializer = serializer;
+	}
+	
 	public final void setUsername (final String username)
 	{
 		if (this.isStarted ())
@@ -127,6 +174,7 @@ public final class AmqpAppender
 						new DefaultContextAwareCallbacks (this), this.buffer);
 		this.publisher.start ();
 		super.start ();
+		this.started ();
 	}
 	
 	public final void stop ()
@@ -137,6 +185,7 @@ public final class AmqpAppender
 		this.routingKeyLayout.stop ();
 		this.publisher.stop ();
 		super.stop ();
+		this.stopped ();
 	}
 	
 	protected final void append (final ILoggingEvent originalEvent)
@@ -160,6 +209,12 @@ public final class AmqpAppender
 		}
 	}
 	
+	protected void started ()
+	{}
+	
+	protected void stopped ()
+	{}
+	
 	private final PubLoggingEventVO prepare (final ILoggingEvent originalEvent)
 	{
 		final PubLoggingEventVO newEvent = PubLoggingEventVO.build (originalEvent);
@@ -176,7 +231,7 @@ public final class AmqpAppender
 	private Integer port;
 	private AmqpPublisher publisher;
 	private final PatternLayout routingKeyLayout;
-	private final Serializer serializer;
+	private Serializer serializer;
 	private String username;
 	private String virtualHost;
 	

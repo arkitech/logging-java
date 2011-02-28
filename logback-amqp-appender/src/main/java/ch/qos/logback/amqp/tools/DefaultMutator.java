@@ -81,7 +81,7 @@ public class DefaultMutator
 	protected String application;
 	protected String component;
 	protected String node;
-	private long sequence;
+	protected long sequence;
 	
 	public static final String applicationKey = "application";
 	public static final String componentKey = "component";
