@@ -10,13 +10,8 @@
 		<virtualHost>/</virtualHost>
 		<username>guest</username>
 		<password>guest</password>
-		<exchangePattern>logback</exchangePattern>
-		<routingKeyPattern>%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}</routingKeyPattern>
-		<mutator class="ch.qos.logback.amqp.tools.DefaultMutator">
-			<application>unknown</application>
-			<component>unknown</component>
-			<!-- <node>node</node> -->
-		</mutator>
+		<exchangePattern>logback%nopex</exchangePattern>
+		<routingKeyPattern>%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
 	</appender>
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
