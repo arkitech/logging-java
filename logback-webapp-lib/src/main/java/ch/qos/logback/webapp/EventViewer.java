@@ -46,7 +46,7 @@ public class EventViewer
 			throw (new ServletException (String.format (
 					"logback event viewer `%s` parameter is not set; aborting!", EventViewer.appenderParameterName)));
 		final String eventPattern = configuration.getInitParameter (EventViewer.eventPatternParameterName);
-		final String cssResourceName = configuration.getInitParameter (EventViewer.cssResourceParameterName);
+		final String htmlHeadResourceName = configuration.getInitParameter (EventViewer.htmlHeadResourceParameterName);
 		
 		this.rootLogger = (Logger) LoggerFactory.getLogger (org.slf4j.Logger.ROOT_LOGGER_NAME);
 		final LoggerContext context = this.rootLogger.getLoggerContext ();
@@ -61,19 +61,19 @@ public class EventViewer
 					"logback event viewer `%s` parameter value `%s` is wrong (appender has wrong class `%s`)",
 					EventViewer.appenderParameterName, appenderName, appender.getClass ().getName ())));
 		
-		final InputStream cssStream;
-		if (cssResourceName != null) {
-			cssStream = EventViewer.class.getClassLoader ().getResourceAsStream (cssResourceName);
-			if (cssStream == null)
+		final InputStream htmlHeadStream;
+		if (htmlHeadResourceName != null) {
+			htmlHeadStream = EventViewer.class.getClassLoader ().getResourceAsStream (htmlHeadResourceName);
+			if (htmlHeadStream == null)
 				throw (new ServletException (String.format (
 						"logback event viewer `%s` parameter value `%s` is wrong (no resource of such name found)",
-						EventViewer.cssResourceParameterName, cssResourceName)));
+						EventViewer.htmlHeadResourceParameterName, htmlHeadResourceName)));
 		} else
-			cssStream = EventViewer.class.getClassLoader ().getResourceAsStream (EventViewer.defaultCssResource);
-		final StringBuffer css;
-		if (cssStream != null) {
-			css = new StringBuffer ();
-			final BufferedReader cssReader = new BufferedReader (new InputStreamReader (cssStream));
+			htmlHeadStream = EventViewer.class.getClassLoader ().getResourceAsStream (EventViewer.defaultHtmlHeadResource);
+		final StringBuffer htmlHead;
+		if (htmlHeadStream != null) {
+			htmlHead = new StringBuffer ();
+			final BufferedReader cssReader = new BufferedReader (new InputStreamReader (htmlHeadStream));
 			final char[] buffer = new char[1024];
 			while (true) {
 				final int read;
@@ -84,7 +84,7 @@ public class EventViewer
 				}
 				if ((read == 0) || (read == -1))
 					break;
-				css.insert (css.length (), buffer, 0, read);
+				htmlHead.insert (htmlHead.length (), buffer, 0, read);
 			}
 			try {
 				cssReader.close ();
@@ -92,7 +92,7 @@ public class EventViewer
 				throw (new ServletException (exception));
 			}
 		} else
-			css = null;
+			htmlHead = null;
 		
 		super.init ();
 		
@@ -102,11 +102,11 @@ public class EventViewer
 		this.layout.setContext (context);
 		if (eventPattern != null)
 			this.layout.setPattern (eventPattern);
-		if (css != null) {
+		if (htmlHead != null) {
 			this.layout.setCssBuilder (new CssBuilder () {
 				public void addCss (final StringBuilder sink)
 				{
-					sink.append (css);
+					sink.append (htmlHead);
 				}
 			});
 		}
@@ -151,8 +151,8 @@ public class EventViewer
 	private Logger rootLogger;
 	
 	public static final String appenderParameterName = "appender";
-	public static final String cssResourceParameterName = "css-resource";
-	public static final String defaultCssResource = "logback-event-viewer.css";
+	public static final String htmlHeadResourceParameterName = "html-head-resource";
+	public static final String defaultHtmlHeadResource = "logback-event-viewer.html-head";
 	public static final String eventPatternParameterName = "event-pattern";
 	private static final long serialVersionUID = 1L;
 }
