@@ -4,6 +4,8 @@ package ch.qos.logback.amqp;
 
 import java.util.concurrent.LinkedBlockingDeque;
 
+import ch.qos.logback.amqp.tools.Callbacks;
+
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
 import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
 import ch.qos.logback.amqp.tools.DefaultMutator;
@@ -22,6 +24,7 @@ public class AmqpAppender
 	public AmqpAppender ()
 	{
 		super ();
+		this.callbacks = new DefaultContextAwareCallbacks (this);
 		this.buffer = new LinkedBlockingDeque<AmqpMessage> ();
 		this.exchangeLayout = new PatternLayout ();
 		this.routingKeyLayout = new PatternLayout ();
@@ -166,26 +169,28 @@ public class AmqpAppender
 			throw (new IllegalStateException ("amqp appender is already started"));
 		if (this.publisher != null)
 			throw (new IllegalStateException ("amqp appender has passed its life-cycle"));
+		this.preStart ();
 		this.exchangeLayout.start ();
 		this.routingKeyLayout.start ();
 		this.publisher =
 				new AmqpPublisher (
 						this.host, this.port, this.virtualHost, this.username, this.password,
-						new DefaultContextAwareCallbacks (this), this.buffer);
+						this.callbacks, this.buffer);
 		this.publisher.start ();
 		super.start ();
-		this.started ();
+		this.postStart ();
 	}
 	
 	public final void stop ()
 	{
 		if (!this.isStarted ())
 			throw (new IllegalStateException ("amqp appender is not started"));
+		this.preStop ();
 		this.exchangeLayout.stop ();
 		this.routingKeyLayout.stop ();
 		this.publisher.stop ();
 		super.stop ();
-		this.stopped ();
+		this.postStop ();
 	}
 	
 	protected final void append (final ILoggingEvent originalEvent)
@@ -209,10 +214,16 @@ public class AmqpAppender
 		}
 	}
 	
-	protected void started ()
+	protected void preStart ()
 	{}
 	
-	protected void stopped ()
+	protected void postStart ()
+	{}
+	
+	protected void postStop ()
+	{}
+	
+	protected void preStop ()
 	{}
 	
 	private final PubLoggingEventVO prepare (final ILoggingEvent originalEvent)
@@ -234,6 +245,7 @@ public class AmqpAppender
 	private Serializer serializer;
 	private String username;
 	private String virtualHost;
+	protected final Callbacks callbacks;
 	
 	public static final String defaultExchangeKeyPattern = "logback%nopex";
 	public static final String defaultRoutingKeyPattern = "%level%nopex";

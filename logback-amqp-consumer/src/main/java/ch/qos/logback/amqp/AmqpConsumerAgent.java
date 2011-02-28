@@ -18,7 +18,7 @@ import ch.qos.logback.core.spi.LifeCycle;
 import org.slf4j.LoggerFactory;
 
 
-public final class AmqpConsumerAgent
+public class AmqpConsumerAgent
 		extends ContextAwareBase
 		implements
 			LifeCycle
@@ -26,16 +26,62 @@ public final class AmqpConsumerAgent
 	public AmqpConsumerAgent ()
 	{
 		super ();
-		this.serializer = new DefaultBinarySerializer ();
+		this.callbacks = new DefaultContextAwareCallbacks (this);
 		this.buffer = new LinkedBlockingQueue<AmqpMessage> ();
 		this.exchange = AmqpConsumerAgent.defaultExchange;
 		this.queue = AmqpConsumerAgent.defaultQueue;
-		this.callbacks = new DefaultContextAwareCallbacks (this);
+		this.routingKey = AmqpConsumerAgent.defaultRoutingKey;
+		this.serializer = new DefaultBinarySerializer ();
 		this.thread = null;
 		this.shutdownHook = null;
 		this.shouldStop = true;
 		this.consumer = null;
 		this.isStarted = false;
+	}
+	
+	public final String getExchange ()
+	{
+		return (this.exchange);
+	}
+	
+	public final String getHost ()
+	{
+		return (this.host);
+	}
+	
+	public final String getPassword ()
+	{
+		return (this.password);
+	}
+	
+	public final Integer getPort ()
+	{
+		return (this.port);
+	}
+	
+	public final String getQueue ()
+	{
+		return (this.queue);
+	}
+	
+	public final String getRoutingKey ()
+	{
+		return (this.routingKey);
+	}
+	
+	public final Serializer getSerializer ()
+	{
+		return (this.serializer);
+	}
+	
+	public final String getUsername ()
+	{
+		return (this.username);
+	}
+	
+	public final String getVirtualHost ()
+	{
+		return (this.virtualHost);
 	}
 	
 	public final boolean isDrained ()
@@ -114,6 +160,24 @@ public final class AmqpConsumerAgent
 		}
 	}
 	
+	public final void setRoutingKey (final String routingKey)
+	{
+		synchronized (this) {
+			if (this.thread != null)
+				throw (new IllegalStateException ("amqp consumer agent is already started"));
+			this.routingKey = routingKey;
+		}
+	}
+	
+	public final void setSerializer (final Serializer serializer)
+	{
+		synchronized (this) {
+			if (this.thread != null)
+				throw (new IllegalStateException ("amqp consumer agent is already started"));
+			this.serializer = serializer;
+		}
+	}
+	
 	public final void setUsername (final String username)
 	{
 		synchronized (this) {
@@ -138,6 +202,7 @@ public final class AmqpConsumerAgent
 			if (this.thread != null)
 				throw (new IllegalStateException ("amqp consumer agent is already started"));
 			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer agent starting");
+			this.preStart ();
 			this.thread = new Thread (new Runnable () {
 				public final void run ()
 				{
@@ -175,6 +240,7 @@ public final class AmqpConsumerAgent
 							new String[] {this.exchange}, this.queue, this.callbacks, this.buffer);
 			this.consumer.start ();
 			this.isStarted = true;
+			this.postStart ();
 		}
 	}
 	
@@ -184,10 +250,30 @@ public final class AmqpConsumerAgent
 			if (this.thread == null)
 				throw (new IllegalStateException ("amqp consumer agent is not started"));
 			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer agent stopping");
+			this.preStop ();
 			this.shouldStop = true;
 			this.consumer.stop ();
 			this.isStarted = false;
+			this.postStop ();
 		}
+	}
+	
+	protected void postStart ()
+	{}
+	
+	protected void postStop ()
+	{}
+	
+	protected void preStart ()
+	{}
+	
+	protected void preStop ()
+	{}
+	
+	protected void process (final ILoggingEvent event)
+	{
+		final Logger logger = (Logger) LoggerFactory.getLogger (event.getLoggerName ());
+		logger.callAppenders (event);
 	}
 	
 	private final void loop ()
@@ -212,13 +298,17 @@ public final class AmqpConsumerAgent
 						"amqp consumer agent encountered an error while deserializing the message; ignoring!", exception);
 				continue;
 			}
-			final Logger logger = (Logger) LoggerFactory.getLogger (event.getLoggerName ());
-			logger.callAppenders (event);
+			try {
+				this.process (event);
+			} catch (final Throwable exception) {
+				this.addError (
+						"amqp consumer agent encountered an error while processing the logging event; ignoring!", exception);
+			}
 		}
 	}
 	
+	protected final Callbacks callbacks;
 	private final LinkedBlockingQueue<AmqpMessage> buffer;
-	private final Callbacks callbacks;
 	private AmqpConsumer consumer;
 	private String exchange;
 	private String host;
@@ -226,7 +316,8 @@ public final class AmqpConsumerAgent
 	private String password;
 	private Integer port;
 	private String queue;
-	private final Serializer serializer;
+	private String routingKey;
+	private Serializer serializer;
 	private boolean shouldStop;
 	private Thread shutdownHook;
 	private Thread thread;
@@ -235,5 +326,6 @@ public final class AmqpConsumerAgent
 	
 	public static final String defaultExchange = "logback";
 	public static final String defaultQueue = "";
+	public static final String defaultRoutingKey = "#";
 	public static final int waitTimeout = 1000;
 }
