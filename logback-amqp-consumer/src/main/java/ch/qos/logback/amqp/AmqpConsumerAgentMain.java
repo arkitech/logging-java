@@ -72,10 +72,16 @@ public final class AmqpConsumerAgentMain
 	public static final class AgentAction
 			extends Action
 	{
-		public AgentAction (final List<AmqpConsumerAgent> agents)
+		public AgentAction ()
+		{
+			this (null, true);
+		}
+		
+		public AgentAction (final List<AmqpConsumerAgent> agents, final boolean autoStart)
 		{
 			super ();
 			this.agents = agents;
+			this.autoStart = autoStart;
 			this.agent = null;
 		}
 		
@@ -94,11 +100,15 @@ public final class AmqpConsumerAgentMain
 				throw (new IllegalStateException ());
 			if (ic.popObject () != this.agent)
 				throw (new IllegalStateException ());
-			this.agents.add (this.agent);
+			if (this.autoStart)
+				this.agent.start ();
+			if (this.agents != null)
+				this.agents.add (this.agent);
 			this.agent = null;
 		}
 		
 		private AmqpConsumerAgent agent;
+		private final boolean autoStart;
 		private final List<AmqpConsumerAgent> agents;
 	}
 	
@@ -108,7 +118,7 @@ public final class AmqpConsumerAgentMain
 		public Configurator (final List<AmqpConsumerAgent> agents)
 		{
 			super ();
-			this.agentAction = new AgentAction (agents);
+			this.agentAction = new AgentAction (agents, false);
 			this.agentAction.setContext (this.getContext ());
 		}
 		

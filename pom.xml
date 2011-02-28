@@ -8,8 +8,19 @@
 	<modules>
 		<module>logback-amqp-appender</module>
 		<module>logback-amqp-consumer</module>
+		<module>logback-webapp</module>
 	</modules>
 	<dependencies>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>0.9.28</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>0.9.28</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

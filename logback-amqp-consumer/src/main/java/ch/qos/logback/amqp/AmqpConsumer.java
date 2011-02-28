@@ -22,9 +22,9 @@ public final class AmqpConsumer
 			final LinkedBlockingQueue<AmqpMessage> sink)
 	{
 		super (host, port, virtualHost, username, password, callbacks);
-		this.exchange = exchange;
-		this.queue = queue;
-		this.routingKey = routingKey;
+		this.exchange = (exchange != null) ? exchange : "logback";
+		this.queue = (queue != null) ? queue : "";
+		this.routingKey = (routingKey != null) ? routingKey : "#";
 		this.queue1 = null;
 		this.sink = sink;
 	}
