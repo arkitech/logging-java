@@ -13,6 +13,23 @@
 		<exchange>logback</exchange>
 		<queue></queue>
 		<routingKey>#</routingKey>
+		<!--
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					final String applicationFilter = (String) System.getProperty ("amqp.consumer.agent.application_filter");
+					if ((applicationFilter == null) || applicationFilter.isEmpty ())
+						return (true);
+					final String applicationValue = (mdc != null) ? (String) mdc.get("application") : null;
+					if ((applicationValue == null) || applicationValue.isEmpty ())
+						return (true);
+					return (applicationFilter.equals (applicationValue));
+				</expression>
+			</evaluator>
+			<onMismatch>DENY</onMismatch>
+			<onMatch>NEUTRAL</onMatch>
+		</filter>
+		-->
 	</amqpConsumerAgent>
 	
 	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">

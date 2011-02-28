@@ -5,6 +5,8 @@ package ch.qos.logback.amqp;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import ch.qos.logback.core.spi.FilterReply;
+
 import ch.qos.logback.amqp.tools.Callbacks;
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
 import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
@@ -13,6 +15,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
+import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.ContextAwareBase;
 import ch.qos.logback.core.spi.LifeCycle;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,7 @@ public class AmqpConsumerAgent
 		this.queue = AmqpConsumerAgent.defaultQueue;
 		this.routingKey = AmqpConsumerAgent.defaultRoutingKey;
 		this.serializer = new DefaultBinarySerializer ();
+		this.filter = null;
 		this.thread = null;
 		this.shutdownHook = null;
 		this.shouldStop = true;
@@ -42,6 +46,11 @@ public class AmqpConsumerAgent
 	public final String getExchange ()
 	{
 		return (this.exchange);
+	}
+	
+	public final Filter<ILoggingEvent> getFilter ()
+	{
+		return (this.filter);
 	}
 	
 	public final String getHost ()
@@ -121,6 +130,15 @@ public class AmqpConsumerAgent
 			if (this.thread != null)
 				throw (new IllegalStateException ("amqp consumer agent is already started"));
 			this.exchange = exchange;
+		}
+	}
+	
+	public final void setFilter (final Filter<ILoggingEvent> filter)
+	{
+		synchronized (this) {
+			if (this.thread != null)
+				throw (new IllegalStateException ("amqp appender is already started"));
+			this.filter = filter;
 		}
 	}
 	
@@ -236,8 +254,8 @@ public class AmqpConsumerAgent
 			this.thread.start ();
 			this.consumer =
 					new AmqpConsumer (
-							this.host, this.port, this.virtualHost, this.username, this.password,
-							this.exchange, this.queue, this.routingKey, this.callbacks, this.buffer);
+							this.host, this.port, this.virtualHost, this.username, this.password, this.exchange, this.queue,
+							this.routingKey, this.callbacks, this.buffer);
 			this.consumer.start ();
 			this.isStarted = true;
 			this.postStart ();
@@ -299,6 +317,9 @@ public class AmqpConsumerAgent
 				continue;
 			}
 			try {
+				if (this.filter != null)
+					if (this.filter.decide (event) == FilterReply.DENY)
+						continue;
 				this.process (event);
 			} catch (final Throwable exception) {
 				this.addError (
@@ -311,6 +332,7 @@ public class AmqpConsumerAgent
 	private final LinkedBlockingQueue<AmqpMessage> buffer;
 	private AmqpConsumer consumer;
 	private String exchange;
+	private Filter<ILoggingEvent> filter;
 	private String host;
 	private boolean isStarted;
 	private String password;
