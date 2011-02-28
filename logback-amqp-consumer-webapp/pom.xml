@@ -6,7 +6,7 @@
 		<artifactId>logback-amqp-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logback-webapp</artifactId>
+	<artifactId>logback-amqp-consumer-webapp</artifactId>
 	<packaging>war</packaging>
 	<dependencies>
 		<dependency>
@@ -15,10 +15,9 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
-			<version>2.5</version>
-			<scope>provided</scope>
+			<groupId>ch.qos.logback.amqp</groupId>
+			<artifactId>logback-webapp-lib</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

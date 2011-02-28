@@ -10,11 +10,15 @@
 		<servlet-name>event-viewer</servlet-name>
 		<servlet-class>ch.qos.logback.webapp.EventViewer</servlet-class>
 		<load-on-startup>0</load-on-startup>
+		<init-param>
+			<param-name>appender</param-name>
+			<param-value>event-viewer</param-value>
+		</init-param>
 	</servlet>
 	
 	<servlet-mapping>
 		<servlet-name>event-viewer</servlet-name>
-		<url-pattern>/logback</url-pattern>
+		<url-pattern>/</url-pattern>
 	</servlet-mapping>
 	
 </web-app>

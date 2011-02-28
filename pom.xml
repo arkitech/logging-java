@@ -6,9 +6,11 @@
 	<version>0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
+		<module>logback-amqp-common</module>
 		<module>logback-amqp-appender</module>
 		<module>logback-amqp-consumer</module>
-		<module>logback-webapp</module>
+		<module>logback-amqp-consumer-webapp</module>
+		<module>logback-webapp-lib</module>
 	</modules>
 	<dependencies>
 		<dependency>

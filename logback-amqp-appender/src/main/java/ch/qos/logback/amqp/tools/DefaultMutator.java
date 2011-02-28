@@ -43,7 +43,7 @@ public class DefaultMutator
 		return (this.sequence);
 	}
 	
-	public void mutate (final PubLoggingEventVO event)
+	public void mutate (final SerializableLoggingEvent1 event)
 	{
 		long sequence;
 		synchronized (this) {

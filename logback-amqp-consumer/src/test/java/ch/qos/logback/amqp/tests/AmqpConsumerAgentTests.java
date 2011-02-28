@@ -15,15 +15,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 
-public final class AmqpConsumerTests
+public final class AmqpConsumerAgentTests
 {
 	@Test
 	public final void testAgent ()
 			throws Throwable
 	{
-		final Logger realLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerTests.class.getName ());
+		final Logger realLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerAgentTests.class.getName ());
 		
-		final Logger testLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerTests.testLoggerName);
+		final Logger testLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerAgentTests.testLoggerName);
 		
 		realLogger.debug ("initializing collector appender");
 		final LinkedList<String> collectedMessages = new LinkedList<String> ();
@@ -47,20 +47,20 @@ public final class AmqpConsumerTests
 		agent.start ();
 		
 		realLogger.debug ("waiting for message draining (i.e. until we receive enough)");
-		for (int tries = 0; tries < AmqpConsumerTests.timeoutTries; tries++) {
-			if (collectedMessages.size () >= AmqpConsumerTests.messageCount)
+		for (int tries = 0; tries < AmqpConsumerAgentTests.timeoutTries; tries++) {
+			if (collectedMessages.size () >= AmqpConsumerAgentTests.messageCount)
 				break;
-			Thread.sleep (AmqpConsumerTests.timeout);
+			Thread.sleep (AmqpConsumerAgentTests.timeout);
 		}
 		
 		realLogger.debug ("stopping amqp consumer agent");
 		agent.stop ();
 		
 		realLogger.debug ("joining amqp consumer agent");
-		for (int tries = 0; tries < AmqpConsumerTests.timeoutTries; tries++) {
+		for (int tries = 0; tries < AmqpConsumerAgentTests.timeoutTries; tries++) {
 			if (!agent.isRunning ())
 				break;
-			Thread.sleep (AmqpConsumerTests.timeout);
+			Thread.sleep (AmqpConsumerAgentTests.timeout);
 		}
 		
 		Assert.assertTrue (agent.isDrained ());

@@ -23,7 +23,7 @@ import org.slf4j.Marker;
 import org.slf4j.helpers.MessageFormatter;
 
 
-public class PubLoggingEventVO
+public class SerializableLoggingEvent1
 		implements
 			ILoggingEvent,
 			Serializable
@@ -36,7 +36,7 @@ public class PubLoggingEventVO
 			return false;
 		if (this.getClass () != obj.getClass ())
 			return false;
-		final PubLoggingEventVO other = (PubLoggingEventVO) obj;
+		final SerializableLoggingEvent1 other = (SerializableLoggingEvent1) obj;
 		if (this.message == null) {
 			if (other.message != null)
 				return false;
@@ -198,11 +198,11 @@ public class PubLoggingEventVO
 		this.level = Level.toLevel (levelInt);
 		
 		final int argArrayLen = in.readInt ();
-		if (argArrayLen != PubLoggingEventVO.NULL_ARGUMENT_ARRAY) {
+		if (argArrayLen != SerializableLoggingEvent1.NULL_ARGUMENT_ARRAY) {
 			this.argumentArray = new String[argArrayLen];
 			for (int i = 0; i < argArrayLen; i++) {
 				final Object val = in.readObject ();
-				if (!PubLoggingEventVO.NULL_ARGUMENT_ARRAY_ELEMENT.equals (val)) {
+				if (!SerializableLoggingEvent1.NULL_ARGUMENT_ARRAY_ELEMENT.equals (val)) {
 					this.argumentArray[i] = val;
 				}
 			}
@@ -221,11 +221,11 @@ public class PubLoggingEventVO
 				if (element != null) {
 					out.writeObject (element.toString ());
 				} else {
-					out.writeObject (PubLoggingEventVO.NULL_ARGUMENT_ARRAY_ELEMENT);
+					out.writeObject (SerializableLoggingEvent1.NULL_ARGUMENT_ARRAY_ELEMENT);
 				}
 			}
 		} else {
-			out.writeInt (PubLoggingEventVO.NULL_ARGUMENT_ARRAY);
+			out.writeInt (SerializableLoggingEvent1.NULL_ARGUMENT_ARRAY);
 		}
 	}
 	
@@ -243,10 +243,10 @@ public class PubLoggingEventVO
 	public long timeStamp;
 	private transient String formattedMessage;
 	
-	public static PubLoggingEventVO build (final ILoggingEvent original)
+	public static SerializableLoggingEvent1 build (final ILoggingEvent original)
 	{
 		// taken from `LoggingEventVO.build` but constructing a `PubLoggingEventVO`
-		final PubLoggingEventVO clone = new PubLoggingEventVO ();
+		final SerializableLoggingEvent1 clone = new SerializableLoggingEvent1 ();
 		clone.loggerName = original.getLoggerName ();
 		clone.loggerContextVO = original.getLoggerContextVO ();
 		clone.threadName = original.getThreadName ();

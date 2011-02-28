@@ -2,15 +2,15 @@
 package ch.qos.logback.amqp;
 
 
+import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import ch.qos.logback.amqp.tools.Callbacks;
-
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
 import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
 import ch.qos.logback.amqp.tools.DefaultMutator;
 import ch.qos.logback.amqp.tools.Mutator;
-import ch.qos.logback.amqp.tools.PubLoggingEventVO;
+import ch.qos.logback.amqp.tools.SerializableLoggingEvent1;
 import ch.qos.logback.amqp.tools.Serializer;
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -195,7 +195,7 @@ public class AmqpAppender
 	
 	protected final void append (final ILoggingEvent originalEvent)
 	{
-		final PubLoggingEventVO event = this.prepare (originalEvent);
+		final Serializable event = this.prepare (originalEvent);
 		byte[] data;
 		try {
 			data = this.serializer.serialize (event);
@@ -226,9 +226,9 @@ public class AmqpAppender
 	protected void preStop ()
 	{}
 	
-	private final PubLoggingEventVO prepare (final ILoggingEvent originalEvent)
+	private final Serializable prepare (final ILoggingEvent originalEvent)
 	{
-		final PubLoggingEventVO newEvent = PubLoggingEventVO.build (originalEvent);
+		final SerializableLoggingEvent1 newEvent = SerializableLoggingEvent1.build (originalEvent);
 		if (this.mutator != null)
 			this.mutator.mutate (newEvent);
 		return (newEvent);

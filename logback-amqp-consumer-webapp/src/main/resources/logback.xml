@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration debug="false">
+	
+	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+	
+	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ch.qos.logback.amqp.AmqpConsumerAgentMain$AgentAction"/>
+	
+	<amqpConsumerAgent>
+		<host>127.0.0.1</host>
+		<port>5672</port>
+		<virtualHost>/</virtualHost>
+		<username>guest</username>
+		<password>guest</password>
+		<exchange>logback</exchange>
+		<queue></queue>
+		<routingKey>#</routingKey>
+	</amqpConsumerAgent>
+	
+	<appender name="event-viewer" class="ch.qos.logback.webapp.EventViewerAppender" />
+	
+	<root level="trace">
+		<appender-ref ref="event-viewer" />
+	</root>
+	
+</configuration>
