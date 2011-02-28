@@ -2,7 +2,10 @@
 package ch.qos.logback.webapp;
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
 import javax.servlet.ServletConfig;
@@ -15,6 +18,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.html.HTMLLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.html.CssBuilder;
 import org.slf4j.LoggerFactory;
 
 
@@ -42,6 +46,7 @@ public class EventViewer
 			throw (new ServletException (String.format (
 					"logback event viewer `%s` parameter is not set; aborting!", EventViewer.appenderParameterName)));
 		final String eventPattern = configuration.getInitParameter (EventViewer.eventPatternParameterName);
+		final String cssResourceName = configuration.getInitParameter (EventViewer.cssResourceParameterName);
 		
 		this.rootLogger = (Logger) LoggerFactory.getLogger (org.slf4j.Logger.ROOT_LOGGER_NAME);
 		final LoggerContext context = this.rootLogger.getLoggerContext ();
@@ -56,6 +61,39 @@ public class EventViewer
 					"logback event viewer `%s` parameter value `%s` is wrong (appender has wrong class `%s`)",
 					EventViewer.appenderParameterName, appenderName, appender.getClass ().getName ())));
 		
+		final InputStream cssStream;
+		if (cssResourceName != null) {
+			cssStream = EventViewer.class.getClassLoader ().getResourceAsStream (cssResourceName);
+			if (cssStream == null)
+				throw (new ServletException (String.format (
+						"logback event viewer `%s` parameter value `%s` is wrong (no resource of such name found)",
+						EventViewer.cssResourceParameterName, cssResourceName)));
+		} else
+			cssStream = EventViewer.class.getClassLoader ().getResourceAsStream (EventViewer.defaultCssResource);
+		final StringBuffer css;
+		if (cssStream != null) {
+			css = new StringBuffer ();
+			final BufferedReader cssReader = new BufferedReader (new InputStreamReader (cssStream));
+			final char[] buffer = new char[1024];
+			while (true) {
+				final int read;
+				try {
+					read = cssReader.read (buffer);
+				} catch (final IOException exception) {
+					throw (new ServletException (exception));
+				}
+				if ((read == 0) || (read == -1))
+					break;
+				css.insert (css.length (), buffer, 0, read);
+			}
+			try {
+				cssReader.close ();
+			} catch (final IOException exception) {
+				throw (new ServletException (exception));
+			}
+		} else
+			css = null;
+		
 		super.init ();
 		
 		this.appender = (EventViewerAppender) appender;
@@ -64,7 +102,31 @@ public class EventViewer
 		this.layout.setContext (context);
 		if (eventPattern != null)
 			this.layout.setPattern (eventPattern);
+		if (css != null) {
+			this.layout.setCssBuilder (new CssBuilder () {
+				public void addCss (final StringBuilder sink)
+				{
+					sink.append (css);
+				}
+			});
+		}
 		this.layout.start ();
+		
+		new Thread () {
+			public void run () {
+				final Logger logger = (Logger) LoggerFactory.getLogger (this.getClass ().getName ());
+				int index = 0;
+				while (true) {
+					logger.info (Integer.toString (index));
+					index++;
+					try {
+						Thread.sleep (500);
+					} catch (final InterruptedException exception) {
+						break;
+					}
+				}
+			}
+		}.start ();
 	}
 	
 	protected void doGet (final HttpServletRequest request, final HttpServletResponse response)
@@ -89,6 +151,8 @@ public class EventViewer
 	private Logger rootLogger;
 	
 	public static final String appenderParameterName = "appender";
+	public static final String cssResourceParameterName = "css-resource";
+	public static final String defaultCssResource = "logback-event-viewer.css";
 	public static final String eventPatternParameterName = "event-pattern";
 	private static final long serialVersionUID = 1L;
 }
