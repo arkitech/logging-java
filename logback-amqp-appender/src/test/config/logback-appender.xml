@@ -4,7 +4,7 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<appender name="amqp-appender" class="ch.qos.logback.amqp.AmqpAppender">
+	<appender name="amqp" class="ch.qos.logback.amqp.AmqpAppender">
 		<host>127.0.0.1</host>
 		<port>5672</port>
 		<virtualHost>/</virtualHost>
@@ -22,7 +22,7 @@
 	
 	<root level="trace">
 		<appender-ref ref="console" />
-		<appender-ref ref="amqp-appender" />
+		<!-- <appender-ref ref="amqp" /> -->
 	</root>
 	
 </configuration>
