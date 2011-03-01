@@ -3,5 +3,6 @@
 *.class
 
 target
+META-INF
 
 !.gitignore
