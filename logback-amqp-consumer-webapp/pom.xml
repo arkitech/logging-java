@@ -36,7 +36,7 @@
 				<configuration>
 					<wtpmanifest>true</wtpmanifest>
 					<wtpapplicationxml>true</wtpapplicationxml>
-					<wtpversion>2.0</wtpversion>
+					<wtpversion>1.5</wtpversion>
 					<manifest>${basedir}/src/main/resources/META-INF/MANIFEST.MF</manifest>
 				</configuration>
 			</plugin>
