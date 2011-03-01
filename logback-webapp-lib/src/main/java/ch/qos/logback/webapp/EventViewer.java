@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -16,9 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.html.HTMLLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.html.CssBuilder;
 import org.slf4j.LoggerFactory;
 
 
@@ -70,9 +71,9 @@ public class EventViewer
 						EventViewer.htmlHeadResourceParameterName, htmlHeadResourceName)));
 		} else
 			htmlHeadStream = EventViewer.class.getClassLoader ().getResourceAsStream (EventViewer.defaultHtmlHeadResource);
-		final StringBuffer htmlHead;
+		final StringBuilder htmlHead;
 		if (htmlHeadStream != null) {
-			htmlHead = new StringBuffer ();
+			htmlHead = new StringBuilder ();
 			final BufferedReader cssReader = new BufferedReader (new InputStreamReader (htmlHeadStream));
 			final char[] buffer = new char[1024];
 			while (true) {
@@ -98,25 +99,23 @@ public class EventViewer
 		
 		this.appender = (EventViewerAppender) appender;
 		
-		this.layout = new HTMLLayout ();
+		this.layout = new EventViewerLayout ();
 		this.layout.setContext (context);
 		if (eventPattern != null)
 			this.layout.setPattern (eventPattern);
-		if (htmlHead != null) {
-			this.layout.setCssBuilder (new CssBuilder () {
-				public void addCss (final StringBuilder sink)
-				{
-					sink.append (htmlHead);
-				}
-			});
-		}
 		this.layout.start ();
 		
+		if (htmlHead != null)
+			this.htmlHead = htmlHead.toString ();
+		
 		new Thread () {
-			public void run () {
+			public void run ()
+			{
 				final Logger logger = (Logger) LoggerFactory.getLogger (this.getClass ().getName ());
 				int index = 0;
 				while (true) {
+					if (index % 5 == 0)
+						logger.error (Integer.toString (index), new Throwable (new Throwable ()));
 					logger.info (Integer.toString (index));
 					index++;
 					try {
@@ -132,27 +131,121 @@ public class EventViewer
 	protected void doGet (final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException
 	{
+		response.setHeader ("Content-Type", "text/html");
+		final PrintWriter stream = response.getWriter ();
+		stream.write ("<html>\n");
+		stream.write ("<head>\n");
+		if (this.htmlHead != null)
+			stream.write (this.htmlHead);
+		stream.write ("</head>\n");
+		stream.write ("<body>\n");
+		final String path = request.getPathInfo ();
+		if ((path == null) || path.equals ("/"))
+			this.doGetMain (request, response);
+		else if (path.equals ("/event-log"))
+			this.doGetEventLog (request, response);
+		else
+			this.doGetError (request, response);
+		stream.write ("</body>\n");
+		stream.write ("</html>\n");
+		stream.close ();
+		
+	}
+	
+	protected void doGetError (final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException
+	{}
+	
+	protected void doGetEventLog (final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException
+	{
+		final PrintWriter stream = response.getWriter ();
+		final EventFilter filter = new EventFilter (request);
 		synchronized (this.appender.monitor) {
 			this.appender.drainEvents ();
-			response.setHeader ("Content-Type", "text/html");
-			final PrintWriter stream = response.getWriter ();
-			stream.write (this.layout.getFileHeader ());
 			stream.write (this.layout.getPresentationHeader ());
+			stream.write (this.layout.doHeaderLayout ());
 			for (final ILoggingEvent event : this.appender.getEvents ())
-				stream.write (this.layout.doLayout (event));
+				if (filter.accepts (event))
+					stream.write (this.layout.doLayout (event));
 			stream.write (this.layout.getPresentationFooter ());
-			stream.write (this.layout.getFileFooter ());
-			stream.close ();
+		}
+	}
+	
+	protected void doGetMain (final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException
+	{
+		final PrintWriter stream = response.getWriter ();
+		stream.write ("<iframe class=\"EventLog\" src=\"./event-log");
+		final String query = request.getQueryString ();
+		if (query != null) {
+			stream.write ("?");
+			stream.write (query);
+			stream.write ("\" frameborder=\"0\" scrolling=\"auto\" />");
 		}
 	}
 	
 	private EventViewerAppender appender;
-	private HTMLLayout layout;
+	private String htmlHead;
+	private EventViewerLayout layout;
 	private Logger rootLogger;
 	
 	public static final String appenderParameterName = "appender";
-	public static final String htmlHeadResourceParameterName = "html-head-resource";
 	public static final String defaultHtmlHeadResource = "logback-event-viewer.html-head";
 	public static final String eventPatternParameterName = "event-pattern";
+	public static final String htmlHeadResourceParameterName = "html-head-resource";
 	private static final long serialVersionUID = 1L;
+	
+	protected static class EventFilter
+	{
+		public EventFilter (final HttpServletRequest request)
+		{
+			super ();
+			this.levelValue = request.getParameter ("level");
+			this.mdcValues = null;
+			final Enumeration<String> parameterNames = request.getParameterNames ();
+			while (parameterNames.hasMoreElements ()) {
+				final String parameterName = parameterNames.nextElement ();
+				if (!parameterName.startsWith ("mdc."))
+					continue;
+				final String mdcKey = parameterName.substring ("mdc.".length ());
+				if (this.mdcValues == null)
+					this.mdcValues = new HashMap<String, String> ();
+				this.mdcValues.put (mdcKey, request.getParameter (parameterName));
+			}
+			final String mdcStrictValues = request.getParameter ("mdc_strict");
+			if ((mdcStrictValues != null) && ("true".equals (mdcStrictValues)))
+				this.mdcStrictValues = true;
+			else
+				this.mdcStrictValues = false;
+		}
+		
+		public boolean accepts (final ILoggingEvent event)
+		{
+			if ((this.levelValue != null) && !this.levelValue.equals (event.getLevel ().levelStr))
+				return (false);
+			if (this.mdcValues != null) {
+				final Map<String, String> eventMdcValues = event.getMdc ();
+				if (eventMdcValues == null) {
+					if (this.mdcStrictValues)
+						return (false);
+					else
+						return (true);
+				}
+				for (final String mdcKey : this.mdcValues.keySet ()) {
+					final String eventMdcValue = eventMdcValues.get (mdcKey);
+					if (eventMdcValue == null) {
+						if (this.mdcStrictValues)
+							return (false);
+					} else if (!eventMdcValue.equals (this.mdcValues.get (mdcKey)))
+						return (false);
+				}
+			}
+			return (true);
+		}
+		
+		protected String levelValue;
+		protected boolean mdcStrictValues;
+		protected Map<String, String> mdcValues;
+	}
 }

@@ -1,2 +1,14 @@
 
-<meta http-equiv="refresh" content="6" />
+<style type="text/css" media=screen>
+
+table.Log, table.LOG tr th, table.LOG tr td {
+	border: 1px solid black;
+	border-collapse : collapse;
+}
+
+iframe.EventLog {
+	width : 100%;
+	height : 100%;
+}
+
+</style>
