@@ -174,8 +174,7 @@ public class AmqpAppender
 		this.routingKeyLayout.start ();
 		this.publisher =
 				new AmqpPublisher (
-						this.host, this.port, this.virtualHost, this.username, this.password,
-						this.callbacks, this.buffer);
+						this.host, this.port, this.virtualHost, this.username, this.password, this.callbacks, this.buffer);
 		this.publisher.start ();
 		super.start ();
 		this.postStart ();
@@ -214,13 +213,13 @@ public class AmqpAppender
 		}
 	}
 	
-	protected void preStart ()
-	{}
-	
 	protected void postStart ()
 	{}
 	
 	protected void postStop ()
+	{}
+	
+	protected void preStart ()
 	{}
 	
 	protected void preStop ()
@@ -234,6 +233,7 @@ public class AmqpAppender
 		return (newEvent);
 	}
 	
+	protected final Callbacks callbacks;
 	private final LinkedBlockingDeque<AmqpMessage> buffer;
 	private final PatternLayout exchangeLayout;
 	private String host;
@@ -245,7 +245,6 @@ public class AmqpAppender
 	private Serializer serializer;
 	private String username;
 	private String virtualHost;
-	protected final Callbacks callbacks;
 	
 	public static final String defaultExchangeKeyPattern = "logback%nopex";
 	public static final String defaultRoutingKeyPattern = "%level%nopex";

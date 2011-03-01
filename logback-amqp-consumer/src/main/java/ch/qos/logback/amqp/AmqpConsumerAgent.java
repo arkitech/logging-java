@@ -5,8 +5,6 @@ package ch.qos.logback.amqp;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import ch.qos.logback.core.spi.FilterReply;
-
 import ch.qos.logback.amqp.tools.Callbacks;
 import ch.qos.logback.amqp.tools.DefaultBinarySerializer;
 import ch.qos.logback.amqp.tools.DefaultContextAwareCallbacks;
@@ -17,6 +15,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.ContextAwareBase;
+import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.spi.LifeCycle;
 import org.slf4j.LoggerFactory;
 

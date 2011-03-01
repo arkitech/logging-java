@@ -35,17 +35,17 @@ public class EventViewerLayout
 		this.pattern = EventViewerLayout.defaultPattern;
 	}
 	
-	public String doLayout (final ILoggingEvent event)
-	{
-		final StringBuilder buffer = new StringBuilder ();
-		this.doLayout (event, buffer);
-		return buffer.toString ();
-	}
-	
 	public String doHeaderLayout ()
 	{
 		final StringBuilder buffer = new StringBuilder ();
 		this.doHeaderLayout (buffer);
+		return buffer.toString ();
+	}
+	
+	public String doLayout (final ILoggingEvent event)
+	{
+		final StringBuilder buffer = new StringBuilder ();
+		this.doLayout (event, buffer);
 		return buffer.toString ();
 	}
 	
@@ -141,6 +141,20 @@ public class EventViewerLayout
 		}
 	}
 	
+	protected void doHeaderLayout (final StringBuilder buffer)
+	{
+		buffer.append ("<tr class=\"EventHeader\">\n");
+		Converter<ILoggingEvent> converter = this.convertersHead;
+		while (converter != null) {
+			final String converterName = this.getConverterName (converter);
+			buffer.append ("<th class=\"EventHeader " + converterName.replace ("\"", "\\\"") + "\">");
+			buffer.append (Transform.escapeTags (converterName));
+			buffer.append ("</th>\n");
+			converter = converter.getNext ();
+		}
+		buffer.append ("</tr>\n");
+	}
+	
 	protected void doLayout (final ILoggingEvent event, final StringBuilder buffer)
 	{
 		buffer.append ("<tr class=\"Event " + event.getLevel ().levelStr + "\">\n");
@@ -154,20 +168,6 @@ public class EventViewerLayout
 		buffer.append ("</tr>\n");
 		if (event.getThrowableProxy () != null)
 			this.doLayout (event.getThrowableProxy (), buffer);
-	}
-	
-	protected void doHeaderLayout (final StringBuilder buffer)
-	{
-		buffer.append ("<tr class=\"EventHeader\">\n");
-		Converter<ILoggingEvent> converter = this.convertersHead;
-		while (converter != null) {
-			final String converterName = this.getConverterName (converter);
-			buffer.append ("<th class=\"EventHeader " + converterName.replace ("\"", "\\\"") + "\">");
-			buffer.append (Transform.escapeTags (converterName));
-			buffer.append ("</th>\n");
-			converter = converter.getNext ();
-		}
-		buffer.append ("</tr>\n");
 	}
 	
 	protected void doLayout (final IThrowableProxy throwableHead, final StringBuilder buffer)

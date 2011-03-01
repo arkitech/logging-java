@@ -108,8 +108,8 @@ public final class AmqpConsumerAgentMain
 		}
 		
 		private AmqpConsumerAgent agent;
-		private final boolean autoStart;
 		private final List<AmqpConsumerAgent> agents;
+		private final boolean autoStart;
 	}
 	
 	public static final class Configurator
