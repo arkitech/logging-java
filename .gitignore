@@ -2,6 +2,7 @@
 .*
 *.class
 
+classes
 target
 META-INF
 
