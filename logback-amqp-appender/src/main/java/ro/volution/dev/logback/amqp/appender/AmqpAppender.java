@@ -5,23 +5,19 @@ package ro.volution.dev.logback.amqp.appender;
 import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import ro.volution.dev.logback.amqp.common.DefaultMutator;
-import ro.volution.dev.logback.amqp.common.Mutator;
-
-import ro.volution.dev.logback.amqp.common.Callbacks;
-import ro.volution.dev.logback.amqp.common.DefaultBinarySerializer;
-import ro.volution.dev.logback.amqp.common.DefaultContextAwareCallbacks;
-import ro.volution.dev.logback.amqp.common.SerializableLoggingEvent1;
-import ro.volution.dev.logback.amqp.common.Serializer;
-
-import ro.volution.dev.logback.amqp.accessors.AmqpMessage;
-import ro.volution.dev.logback.amqp.accessors.AmqpPublisher;
-
-
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
+import ro.volution.dev.logback.amqp.accessors.AmqpMessage;
+import ro.volution.dev.logback.amqp.accessors.AmqpPublisher;
+import ro.volution.dev.logback.common.Callbacks;
+import ro.volution.dev.logback.common.DefaultBinarySerializer;
+import ro.volution.dev.logback.common.DefaultContextAwareCallbacks;
+import ro.volution.dev.logback.common.DefaultEventMutator;
+import ro.volution.dev.logback.common.DefaultSerializableEvent1;
+import ro.volution.dev.logback.common.EventMutator;
+import ro.volution.dev.logback.common.Serializer;
 
 
 public class AmqpAppender
@@ -36,7 +32,7 @@ public class AmqpAppender
 		this.routingKeyLayout = new PatternLayout ();
 		this.exchangeLayout.setPattern (AmqpAppender.defaultExchangeKeyPattern);
 		this.routingKeyLayout.setPattern (AmqpAppender.defaultRoutingKeyPattern);
-		this.mutator = new DefaultMutator ();
+		this.mutator = new DefaultEventMutator ();
 		this.serializer = new DefaultBinarySerializer ();
 		this.publisher = null;
 	}
@@ -51,7 +47,7 @@ public class AmqpAppender
 		return (this.host);
 	}
 	
-	public final Mutator getMutator ()
+	public final EventMutator getMutator ()
 	{
 		return (this.mutator);
 	}
@@ -120,7 +116,7 @@ public class AmqpAppender
 		this.host = host;
 	}
 	
-	public final void setMutator (final Mutator mutator)
+	public final void setMutator (final EventMutator mutator)
 	{
 		if (this.isStarted ())
 			throw (new IllegalStateException ("amqp appender is already started"));
@@ -200,23 +196,26 @@ public class AmqpAppender
 	
 	protected final void append (final ILoggingEvent originalEvent)
 	{
-		final Serializable event = this.prepare (originalEvent);
-		byte[] data;
+		final Serializable event;
+		try {
+			event = this.prepare (originalEvent);
+		} catch (final Throwable exception) {
+			this.addError ("amqp appender encountered an error while preparing the event; ignoring!", exception);
+			return;
+		}
+		final byte[] data;
 		try {
 			data = this.serializer.serialize (event);
 		} catch (final Throwable exception) {
-			data = null;
 			this.addError ("amqp appender encountered an error while serializing the event; ignoring!", exception);
+			return;
 		}
-		if (data != null) {
-			final String exchange = this.exchangeLayout.doLayout (originalEvent);
-			final String routingKey = this.routingKeyLayout.doLayout (originalEvent);
-			final AmqpMessage message =
-					new AmqpMessage (
-							exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (),
-							data);
-			this.buffer.add (message);
-		}
+		final String exchange = this.exchangeLayout.doLayout (originalEvent);
+		final String routingKey = this.routingKeyLayout.doLayout (originalEvent);
+		final AmqpMessage message =
+				new AmqpMessage (
+						exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), data);
+		this.buffer.add (message);
 	}
 	
 	protected void postStart ()
@@ -232,8 +231,9 @@ public class AmqpAppender
 	{}
 	
 	private final Serializable prepare (final ILoggingEvent originalEvent)
+			throws Throwable
 	{
-		final SerializableLoggingEvent1 newEvent = SerializableLoggingEvent1.build (originalEvent);
+		final DefaultSerializableEvent1 newEvent = DefaultSerializableEvent1.build (originalEvent);
 		if (this.mutator != null)
 			this.mutator.mutate (newEvent);
 		return (newEvent);
@@ -243,7 +243,7 @@ public class AmqpAppender
 	private final LinkedBlockingDeque<AmqpMessage> buffer;
 	private final PatternLayout exchangeLayout;
 	private String host;
-	private Mutator mutator;
+	private EventMutator mutator;
 	private String password;
 	private Integer port;
 	private AmqpPublisher publisher;

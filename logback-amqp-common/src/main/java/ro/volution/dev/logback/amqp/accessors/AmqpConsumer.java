@@ -4,14 +4,13 @@ package ro.volution.dev.logback.amqp.accessors;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-import ro.volution.dev.logback.amqp.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
+import ro.volution.dev.logback.common.Callbacks;
 
 
 public final class AmqpConsumer

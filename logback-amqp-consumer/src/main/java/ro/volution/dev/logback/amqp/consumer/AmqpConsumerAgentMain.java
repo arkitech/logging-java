@@ -69,15 +69,40 @@ public final class AmqpConsumerAgentMain
 		System.exit (1);
 	}
 	
-	public static final class AgentAction
+	public static final class Configurator
+			extends JoranConfigurator
+	{
+		public Configurator (final List<AmqpConsumerAgent> agents)
+		{
+			super ();
+			this.agentAction = new JoranAction (agents, false);
+			this.agentAction.setContext (this.getContext ());
+		}
+		
+		public final void addInstanceRules (final RuleStore rules)
+		{
+			super.addInstanceRules (rules);
+			rules.addRule (new Pattern ("/configuration/amqpConsumerAgent"), this.agentAction);
+		}
+		
+		public final void setContext (final Context context)
+		{
+			super.setContext (context);
+			this.agentAction.setContext (context);
+		}
+		
+		private final JoranAction agentAction;
+	}
+	
+	public static final class JoranAction
 			extends Action
 	{
-		public AgentAction ()
+		public JoranAction ()
 		{
 			this (null, true);
 		}
 		
-		public AgentAction (final List<AmqpConsumerAgent> agents, final boolean autoStart)
+		public JoranAction (final List<AmqpConsumerAgent> agents, final boolean autoStart)
 		{
 			super ();
 			this.agents = agents;
@@ -110,30 +135,5 @@ public final class AmqpConsumerAgentMain
 		private AmqpConsumerAgent agent;
 		private final List<AmqpConsumerAgent> agents;
 		private final boolean autoStart;
-	}
-	
-	public static final class Configurator
-			extends JoranConfigurator
-	{
-		public Configurator (final List<AmqpConsumerAgent> agents)
-		{
-			super ();
-			this.agentAction = new AgentAction (agents, false);
-			this.agentAction.setContext (this.getContext ());
-		}
-		
-		public final void addInstanceRules (final RuleStore rules)
-		{
-			super.addInstanceRules (rules);
-			rules.addRule (new Pattern ("/configuration/amqpConsumerAgent"), this.agentAction);
-		}
-		
-		public final void setContext (final Context context)
-		{
-			super.setContext (context);
-			this.agentAction.setContext (context);
-		}
-		
-		private final AgentAction agentAction;
 	}
 }

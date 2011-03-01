@@ -1,0 +1,62 @@
+
+<style type="text/css" media="screen">
+
+table.EventLog, table.EventLog tr th, table.EventLog tr td {
+	border: 1px solid silver;
+	border-collapse : collapse;
+	width: 100%;
+	padding: 2px;
+	text-align: center;
+}
+
+table.EventLog tr th {
+	background-color: #228B22;
+	color: white;
+}
+
+iframe.EventLog {
+	width : 100%;
+	height : 100%;
+}
+
+.Date {
+	width: 10px;
+	color: black;
+}
+
+.INFO {
+	color: 	green;
+}
+
+.ERROR {
+	color: red;
+	font-weight: bold;
+}
+
+.WARN {
+	color: #FFD700;
+}
+
+.TRACE {
+	color: #5F9EA0;
+}
+
+.Logger {
+	color: gray;
+}
+
+.Message {
+	color: black;
+}
+
+.MDC th td {
+	width: 200px;
+}
+
+.Exceptions {
+	text-align: left;
+	color: #B22222;
+	background-color: #F5F5F5;
+}
+
+</style>

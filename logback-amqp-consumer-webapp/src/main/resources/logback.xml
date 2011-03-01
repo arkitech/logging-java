@@ -4,7 +4,8 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgentMain$AgentAction"/>
+	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgentMain$JoranAction" />
+	<newRule pattern="/configuration/randomEventGenerator" actionClass="ro.volution.dev.logback.common.RandomEventGenerator$JoranAction" />
 	
 	<amqpConsumerAgent>
 		<host>127.0.0.1</host>
@@ -16,6 +17,11 @@
 		<queue></queue>
 		<routingKey>#</routingKey>
 	</amqpConsumerAgent>
+	
+	<randomEventGenerator>
+		<count>1000</count>
+		<interval>250</interval>
+	</randomEventGenerator>
 	
 	<appender name="webapp" class="ro.volution.dev.logback.webapp.EventLogAppender" />
 	

@@ -2,14 +2,13 @@
 package ro.volution.dev.logback.amqp.accessors;
 
 
-import ro.volution.dev.logback.amqp.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import ro.volution.dev.logback.common.Callbacks;
 
 
 public abstract class AmqpAccessor

@@ -17,7 +17,7 @@
 		</dependency>
 		<dependency>
 			<groupId>ro.volution.dev</groupId>
-			<artifactId>logback-webapp-lib</artifactId>
+			<artifactId>logback-webapp-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>

@@ -2,15 +2,12 @@
 package ro.volution.dev.logback.amqp.tests;
 
 
-import java.util.UUID;
-
-import ro.volution.dev.logback.amqp.common.DefaultMutator;
-
-import ro.volution.dev.logback.amqp.appender.AmqpAppender;
-
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import ro.volution.dev.logback.amqp.appender.AmqpAppender;
+import ro.volution.dev.logback.common.DefaultEventMutator;
+import ro.volution.dev.logback.common.RandomEventGenerator;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,15 +32,14 @@ public final class AmqpAppenderTests
 		testLogger.addAppender (appender);
 		testLogger.setAdditive (false);
 		
+		final RandomEventGenerator generator = new RandomEventGenerator (AmqpAppenderTests.class.getName (), testLogger);
 		realLogger.debug ("logging generated messages");
+		MDC.clear ();
 		for (int index = 0; index < AmqpAppenderTests.messageCount; index++) {
-			MDC.put (DefaultMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
-			MDC.put (DefaultMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
-			final String message = UUID.randomUUID ().toString ();
-			if (index % 4 != 0)
-				testLogger.error (message);
-			else
-				testLogger.error (message, new Throwable (message));
+			MDC.put (DefaultEventMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
+			MDC.put (DefaultEventMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
+			testLogger.callAppenders (generator.generate ());
+			MDC.clear ();
 		}
 		
 		realLogger.debug ("waiting for message draining (i.e. until their all sent)");

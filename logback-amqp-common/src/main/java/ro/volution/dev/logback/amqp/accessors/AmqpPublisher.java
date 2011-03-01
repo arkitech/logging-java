@@ -5,11 +5,10 @@ package ro.volution.dev.logback.amqp.accessors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import ro.volution.dev.logback.amqp.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import ro.volution.dev.logback.common.Callbacks;
 
 
 public final class AmqpPublisher

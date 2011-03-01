@@ -7,17 +7,5 @@
 		<artifactId>logback-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logback-amqp-common</artifactId>
-	<dependencies>
-		<dependency>
-			<groupId>com.rabbitmq</groupId>
-			<artifactId>amqp-client</artifactId>
-			<version>2.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>ro.volution.dev</groupId>
-			<artifactId>logback-common</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-	</dependencies>
+	<artifactId>logback-common</artifactId>
 </project>

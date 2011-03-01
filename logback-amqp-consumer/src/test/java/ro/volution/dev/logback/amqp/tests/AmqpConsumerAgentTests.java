@@ -2,15 +2,10 @@
 package ro.volution.dev.logback.amqp.tests;
 
 
-import java.util.LinkedList;
-
-import ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgent;
-
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.AppenderBase;
 import org.slf4j.LoggerFactory;
+import ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgent;
+import ro.volution.dev.logback.common.BufferedAppender;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,19 +22,12 @@ public final class AmqpConsumerAgentTests
 		final Logger testLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerAgentTests.testLoggerName);
 		
 		realLogger.debug ("initializing collector appender");
-		final LinkedList<String> collectedMessages = new LinkedList<String> ();
-		final Appender<ILoggingEvent> collectorAppender = new AppenderBase<ILoggingEvent> () {
-			protected final void append (final ILoggingEvent event)
-			{
-				collectedMessages.add (event.getMessage ());
-			}
-		};
-		collectorAppender.setName (String.format (
-				"%s@%x", collectorAppender.getClass ().getName (), System.identityHashCode (collectorAppender)));
-		collectorAppender.setContext (testLogger.getLoggerContext ());
-		collectorAppender.start ();
+		final BufferedAppender collector = new BufferedAppender ();
+		collector.setName (String.format ("%s@%x", collector.getClass ().getName (), System.identityHashCode (collector)));
+		collector.setContext (testLogger.getLoggerContext ());
+		collector.start ();
 		
-		testLogger.addAppender (collectorAppender);
+		testLogger.addAppender (collector);
 		testLogger.setAdditive (false);
 		
 		realLogger.debug ("initializing amqp consumer agent");
@@ -49,7 +37,7 @@ public final class AmqpConsumerAgentTests
 		
 		realLogger.debug ("waiting for message draining (i.e. until we receive enough)");
 		for (int tries = 0; tries < AmqpConsumerAgentTests.timeoutTries; tries++) {
-			if (collectedMessages.size () >= AmqpConsumerAgentTests.messageCount)
+			if (collector.size () >= AmqpConsumerAgentTests.messageCount)
 				break;
 			Thread.sleep (AmqpConsumerAgentTests.timeout);
 		}
@@ -68,7 +56,7 @@ public final class AmqpConsumerAgentTests
 		Assert.assertFalse (agent.isStarted ());
 		Assert.assertFalse (agent.isRunning ());
 		
-		testLogger.detachAppender (collectorAppender);
+		testLogger.detachAppender (collector);
 	}
 	
 	private static final int messageCount = 20;

@@ -5,14 +5,6 @@ package ro.volution.dev.logback.amqp.consumer;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import ro.volution.dev.logback.amqp.common.Callbacks;
-import ro.volution.dev.logback.amqp.common.DefaultBinarySerializer;
-import ro.volution.dev.logback.amqp.common.DefaultContextAwareCallbacks;
-import ro.volution.dev.logback.amqp.common.Serializer;
-
-import ro.volution.dev.logback.amqp.accessors.AmqpConsumer;
-import ro.volution.dev.logback.amqp.accessors.AmqpMessage;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -22,6 +14,12 @@ import ch.qos.logback.core.spi.ContextAwareBase;
 import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.spi.LifeCycle;
 import org.slf4j.LoggerFactory;
+import ro.volution.dev.logback.amqp.accessors.AmqpConsumer;
+import ro.volution.dev.logback.amqp.accessors.AmqpMessage;
+import ro.volution.dev.logback.common.Callbacks;
+import ro.volution.dev.logback.common.DefaultBinarySerializer;
+import ro.volution.dev.logback.common.DefaultContextAwareCallbacks;
+import ro.volution.dev.logback.common.Serializer;
 
 
 public class AmqpConsumerAgent
