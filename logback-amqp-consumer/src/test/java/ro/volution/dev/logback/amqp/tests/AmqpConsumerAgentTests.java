@@ -32,6 +32,7 @@ public final class AmqpConsumerAgentTests
 		
 		realLogger.debug ("initializing amqp consumer agent");
 		final AmqpConsumerAgent agent = new AmqpConsumerAgent ();
+		agent.setQueue ("logback.tests");
 		agent.setContext (testLogger.getLoggerContext ());
 		agent.start ();
 		
