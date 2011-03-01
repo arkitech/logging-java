@@ -1,7 +1,7 @@
 
-<style type="text/css" media=screen>
+<style type="text/css" media="screen">
 
-table.Log, table.LOG tr th, table.LOG tr td {
+table.EventLog, table.EventLog tr th, table.EventLog tr td {
 	border: 1px solid black;
 	border-collapse : collapse;
 }

@@ -76,7 +76,7 @@ public class EventViewerLayout
 	
 	public String getPresentationHeader ()
 	{
-		return ("<table class=\"Log\">\n");
+		return ("<table class=\"EventLog\">\n");
 	}
 	
 	public boolean isStarted ()
@@ -143,10 +143,10 @@ public class EventViewerLayout
 	
 	protected void doLayout (final ILoggingEvent event, final StringBuilder buffer)
 	{
-		buffer.append ("<tr class=\"" + event.getLevel ().levelStr + "\">\n");
+		buffer.append ("<tr class=\"Event " + event.getLevel ().levelStr + "\">\n");
 		Converter<ILoggingEvent> converter = this.convertersHead;
 		while (converter != null) {
-			buffer.append ("<td class=\"" + this.getConverterName (converter).replace ("\"", "\\\"") + "\">");
+			buffer.append ("<td class=\"Event " + this.getConverterName (converter).replace ("\"", "\\\"") + "\">");
 			converter.write (buffer, event);
 			buffer.append ("</td>\n");
 			converter = converter.getNext ();
@@ -158,11 +158,11 @@ public class EventViewerLayout
 	
 	protected void doHeaderLayout (final StringBuilder buffer)
 	{
-		buffer.append ("<tr class=\"Header\">\n");
+		buffer.append ("<tr class=\"EventHeader\">\n");
 		Converter<ILoggingEvent> converter = this.convertersHead;
 		while (converter != null) {
 			final String converterName = this.getConverterName (converter);
-			buffer.append ("<th class=\"" + converterName.replace ("\"", "\\\"") + "\">");
+			buffer.append ("<th class=\"EventHeader " + converterName.replace ("\"", "\\\"") + "\">");
 			buffer.append (Transform.escapeTags (converterName));
 			buffer.append ("</th>\n");
 			converter = converter.getNext ();
@@ -172,12 +172,13 @@ public class EventViewerLayout
 	
 	protected void doLayout (final IThrowableProxy throwableHead, final StringBuilder buffer)
 	{
-		buffer.append ("<tr class=\"Exception\">\n");
-		buffer.append ("<td class=\"Exception\" colspan=\"").append (this.convertersCount).append ("\">\n");
+		buffer.append ("<tr class=\"Exceptions\">\n");
+		buffer.append ("<td class=\"Exceptions\" colspan=\"").append (this.convertersCount).append ("\">\n");
+		buffer.append ("<ul class=\"Exceptions\">\n");
 		IThrowableProxy throwable = throwableHead;
 		while (throwable != null) {
-			buffer.append ("<div class=\"Exception\">\n");
-			buffer.append ("<p class=\"Exception_Header\">");
+			buffer.append ("<li class=\"Exception\">\n");
+			buffer.append ("<p class=\"Exception_Header\">\n");
 			buffer
 					.append ("<span class=\"Exception_Class\">").append (Transform.escapeTags (throwable.getClassName ()))
 					.append ("</span>");
@@ -189,7 +190,7 @@ public class EventViewerLayout
 			final StackTraceElementProxy[] frames = throwable.getStackTraceElementProxyArray ();
 			final int commonFramesCount = throwable.getCommonFrames ();
 			final int limitFrameIndex = frames.length - commonFramesCount;
-			buffer.append ("<ul class=\"Exception_StackFrame\">\n");
+			buffer.append ("<ul class=\"Exception_StackFrames\">\n");
 			for (int frameIndex = 0; frameIndex < limitFrameIndex; frameIndex++) {
 				final StackTraceElement frame = frames[frameIndex].getStackTraceElement ();
 				buffer.append ("<li class=\"Exception_StackFrame\">");
@@ -210,9 +211,10 @@ public class EventViewerLayout
 				buffer
 						.append ("<li class=\"Exception_StackFrame_Common\"><span class=\"Exception_StackFrame_Common\">...</span></li>\n");
 			buffer.append ("</ul>\n");
-			buffer.append ("</div>\n");
+			buffer.append ("</li>\n");
 			throwable = throwable.getCause ();
 		}
+		buffer.append ("</ul>\n");
 		buffer.append ("</td>\n");
 		buffer.append ("</tr>\n");
 	}

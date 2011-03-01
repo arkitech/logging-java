@@ -176,9 +176,10 @@ public class EventViewer
 			throws IOException
 	{
 		final PrintWriter stream = response.getWriter ();
+		
 		stream.write ("<iframe class=\"EventLog\" src=\"./event-log");
 		final String query = request.getQueryString ();
-		if (query != null) {
+		if ((query != null) && !query.isEmpty ()) {
 			stream.write ("?");
 			stream.write (query);
 			stream.write ("\" frameborder=\"0\" scrolling=\"auto\" />");
