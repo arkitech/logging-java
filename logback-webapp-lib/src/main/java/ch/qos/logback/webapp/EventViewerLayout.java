@@ -113,8 +113,8 @@ public class EventViewerLayout
 					converterMap.putAll (map);
 			}
 			{
-				final Map<String, String> map =
-						(Map<String, String>) this.context.getObject (CoreConstants.PATTERN_RULE_REGISTRY);
+				@SuppressWarnings ({"unchecked", "rawtypes"}) final Map<String, String> map =
+						(Map) this.context.getObject (CoreConstants.PATTERN_RULE_REGISTRY);
 				if (map != null)
 					converterMap.putAll (map);
 			}

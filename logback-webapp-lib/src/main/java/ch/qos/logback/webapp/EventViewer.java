@@ -128,38 +128,25 @@ public class EventViewer
 		}.start ();
 	}
 	
-	protected void doGet (final HttpServletRequest request, final HttpServletResponse response)
+	protected void doError (final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException
 	{
+		response.setStatus (HttpServletResponse.SC_NOT_FOUND);
 		response.setHeader ("Content-Type", "text/html");
 		final PrintWriter stream = response.getWriter ();
-		stream.write ("<html>\n");
-		stream.write ("<head>\n");
-		if (this.htmlHead != null)
-			stream.write (this.htmlHead);
-		stream.write ("</head>\n");
-		stream.write ("<body>\n");
-		final String path = request.getPathInfo ();
-		if ((path == null) || path.equals ("/"))
-			this.doGetMain (request, response);
-		else if (path.equals ("/event-log"))
-			this.doGetEventLog (request, response);
-		else
-			this.doGetError (request, response);
-		stream.write ("</body>\n");
-		stream.write ("</html>\n");
+		this.doPageHeader (request, response, stream);
+		stream.write ("<p>invalid URI</p>\n");
+		this.doPageFooter (request, response, stream);
 		stream.close ();
-		
 	}
 	
-	protected void doGetError (final HttpServletRequest request, final HttpServletResponse response)
-			throws IOException
-	{}
-	
-	protected void doGetEventLog (final HttpServletRequest request, final HttpServletResponse response)
+	protected void doEventLog (final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException
 	{
+		response.setStatus (HttpServletResponse.SC_OK);
+		response.setHeader ("Content-Type", "text/html");
 		final PrintWriter stream = response.getWriter ();
+		this.doPageHeader (request, response, stream);
 		final EventFilter filter = new EventFilter (request);
 		synchronized (this.appender.monitor) {
 			this.appender.drainEvents ();
@@ -170,20 +157,65 @@ public class EventViewer
 					stream.write (this.layout.doLayout (event));
 			stream.write (this.layout.getPresentationFooter ());
 		}
+		this.doPageFooter (request, response, stream);
+		stream.close ();
 	}
 	
-	protected void doGetMain (final HttpServletRequest request, final HttpServletResponse response)
+	protected void doGet (final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException
 	{
-		final PrintWriter stream = response.getWriter ();
-		
-		stream.write ("<iframe class=\"EventLog\" src=\"./event-log");
+		final String path = request.getPathInfo ();
+		if ((path == null) || path.equals ("/"))
+			this.doMain (request, response);
+		else if (path.equals ("/event-log"))
+			this.doEventLog (request, response);
+		else
+			this.doError (request, response);
+	}
+	
+	protected void doMain (final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException
+	{
+		final String requestUri = request.getRequestURI ();
 		final String query = request.getQueryString ();
+		if (!requestUri.endsWith ("/")) {
+			response.setStatus (HttpServletResponse.SC_MOVED_TEMPORARILY);
+			response.setHeader ("Location", requestUri + "/" + ((query != null) ? query : ""));
+			response.getOutputStream ().close ();
+			return;
+		}
+		response.setStatus (HttpServletResponse.SC_OK);
+		response.setHeader ("Content-Type", "text/html");
+		final PrintWriter stream = response.getWriter ();
+		this.doPageHeader (request, response, stream);
+		stream.write ("<iframe class=\"EventLog\" src=\"./event-log");
 		if ((query != null) && !query.isEmpty ()) {
 			stream.write ("?");
 			stream.write (query);
-			stream.write ("\" frameborder=\"0\" scrolling=\"auto\" />");
 		}
+		stream.write ("\" frameborder=\"0\" scrolling=\"auto\" />");
+		this.doPageFooter (request, response, stream);
+		stream.close ();
+	}
+	
+	protected void doPageFooter (
+			@SuppressWarnings ("unused") final HttpServletRequest request,
+			@SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
+	{
+		stream.write ("</body>\n");
+		stream.write ("</html>\n");
+	}
+	
+	protected void doPageHeader (
+			@SuppressWarnings ("unused") final HttpServletRequest request,
+			@SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
+	{
+		stream.write ("<html>\n");
+		stream.write ("<head>\n");
+		if (this.htmlHead != null)
+			stream.write (this.htmlHead);
+		stream.write ("</head>\n");
+		stream.write ("<body>\n");
 	}
 	
 	private EventViewerAppender appender;
@@ -204,7 +236,7 @@ public class EventViewer
 			super ();
 			this.levelValue = request.getParameter ("level");
 			this.mdcValues = null;
-			final Enumeration<String> parameterNames = request.getParameterNames ();
+			@SuppressWarnings ("unchecked") final Enumeration<String> parameterNames = request.getParameterNames ();
 			while (parameterNames.hasMoreElements ()) {
 				final String parameterName = parameterNames.nextElement ();
 				if (!parameterName.startsWith ("mdc."))
