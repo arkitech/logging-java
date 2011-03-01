@@ -4,7 +4,7 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ch.qos.logback.amqp.AmqpConsumerAgentMain$AgentAction"/>
+	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgentMain$AgentAction"/>
 	
 	<amqpConsumerAgent>
 		<host>127.0.0.1</host>
@@ -17,10 +17,10 @@
 		<routingKey>#</routingKey>
 	</amqpConsumerAgent>
 	
-	<appender name="event-viewer" class="ch.qos.logback.webapp.EventViewerAppender" />
+	<appender name="webapp" class="ro.volution.dev.logback.webapp.EventLogAppender" />
 	
 	<root level="trace">
-		<appender-ref ref="event-viewer" />
+		<appender-ref ref="webapp" />
 	</root>
 	
 </configuration>
