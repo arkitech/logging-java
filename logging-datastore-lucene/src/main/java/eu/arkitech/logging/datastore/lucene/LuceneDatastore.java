@@ -5,9 +5,11 @@ package eu.arkitech.logging.datastore.lucene;
 import java.io.File;
 import java.util.List;
 
+import eu.arkitech.logback.common.DefaultBinarySerializer;
+
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
+import eu.arkitech.logback.common.CompressedBinarySerializer;
 import eu.arkitech.logback.common.Serializer;
 import eu.arkitech.logging.datastore.common.Datastore;
 import org.apache.lucene.queryParser.ParseException;
@@ -18,19 +20,28 @@ public final class LuceneDatastore
 		implements
 			Datastore
 {
-	public LuceneDatastore (final File path)
+	public LuceneDatastore (final File path, final int compressed, final boolean indexed)
 	{
 		super ();
 		this.path = path;
-		this.serializer = new DefaultBinarySerializer ();
+		this.compressed = compressed;
+		this.indexed = indexed;
+		if (this.compressed != -1)
+			this.serializer = new CompressedBinarySerializer (this.compressed);
+		else
+			this.serializer = new DefaultBinarySerializer ();
 		this.bdb = new BdbDatastore (this.path, true, this.serializer);
-		this.index = new LuceneIndex (this.bdb);
+		if (this.indexed)
+			this.index = new LuceneIndex (this.bdb);
+		else
+			this.index = null;
 	}
 	
 	public final boolean close ()
 	{
 		boolean succeeded = true;
-		succeeded |= this.index.close ();
+		if (this.index != null)
+			succeeded |= this.index.close ();
 		succeeded |= this.bdb.close ();
 		return (succeeded);
 	}
@@ -39,10 +50,12 @@ public final class LuceneDatastore
 	{
 		boolean succeeded = this.bdb.open ();
 		if (succeeded) {
-			succeeded = this.index.open ();
-			if (!succeeded) {
-				this.index.close ();
-				this.bdb.close ();
+			if (this.index != null) {
+				succeeded = this.index.open ();
+				if (!succeeded) {
+					this.index.close ();
+					this.bdb.close ();
+				}
 			}
 		}
 		return (succeeded);
@@ -51,11 +64,15 @@ public final class LuceneDatastore
 	public final Query parseQuery (final String query)
 			throws ParseException
 	{
+		if (this.index == null)
+			throw (new IllegalStateException ());
 		return (this.index.parseQuery (query));
 	}
 	
 	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
+		if (this.index == null)
+			throw (new IllegalStateException ());
 		return (this.index.query (query, maxCount));
 	}
 	
@@ -79,10 +96,13 @@ public final class LuceneDatastore
 	public final String store (final ILoggingEvent event)
 	{
 		final String key = this.bdb.store (event);
-		this.index.store (key, event);
+		if (key != null && this.index != null)
+			this.index.store (key, event);
 		return (key);
 	}
 	
+	private final boolean indexed;
+	private final int compressed;
 	private final BdbDatastore bdb;
 	private final LuceneIndex index;
 	private final File path;

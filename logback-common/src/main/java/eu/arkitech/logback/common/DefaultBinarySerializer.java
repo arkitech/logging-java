@@ -4,14 +4,31 @@ package eu.arkitech.logback.common;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 
 
 public class DefaultBinarySerializer
 		implements
 			Serializer
 {
+	public DefaultBinarySerializer ()
+	{
+		this (
+				DefaultBinarySerializer.defaultContentType, DefaultBinarySerializer.defaultContentEncoding,
+				DefaultBinarySerializer.defaultBufferSize);
+	}
+	
+	public DefaultBinarySerializer (final String contentType, final String contentEncoding, final int bufferSize)
+	{
+		super ();
+		this.contentType = contentType;
+		this.contentEncoding = contentEncoding;
+		this.bufferSize = bufferSize;
+	}
+	
 	public Object deserialize (final byte[] data)
 			throws Throwable
 	{
@@ -22,9 +39,16 @@ public class DefaultBinarySerializer
 			throws Throwable
 	{
 		final ByteArrayInputStream stream = new ByteArrayInputStream (data, offset, size);
-		final ObjectInputStream decoder = new ObjectInputStream (stream);
+		final InputStream decoratedStream = this.decorate (stream);
+		final ObjectInputStream decoder = new ObjectInputStream (decoratedStream);
 		final Object object = decoder.readObject ();
+		decoder.close ();
 		return (object);
+	}
+	
+	public int getBufferSize ()
+	{
+		return (this.bufferSize);
 	}
 	
 	public String getContentEncoding ()
@@ -37,19 +61,20 @@ public class DefaultBinarySerializer
 		return (this.contentType);
 	}
 	
-	public int getDefaultBufferSize ()
-	{
-		return (this.defaultBufferSize);
-	}
-	
 	public byte[] serialize (final Object object)
 			throws Throwable
 	{
-		final ByteArrayOutputStream stream = new ByteArrayOutputStream (this.defaultBufferSize);
-		final ObjectOutputStream encoder = new ObjectOutputStream (stream);
+		final ByteArrayOutputStream stream = new ByteArrayOutputStream (this.bufferSize);
+		final OutputStream decoratedStream = this.decorate (stream);
+		final ObjectOutputStream encoder = new ObjectOutputStream (decoratedStream);
 		encoder.writeObject (object);
 		encoder.close ();
 		return (stream.toByteArray ());
+	}
+	
+	public void setBufferSize (final int bufferSize)
+	{
+		this.bufferSize = bufferSize;
 	}
 	
 	public void setContentEncoding (final String contentEncoding)
@@ -62,12 +87,25 @@ public class DefaultBinarySerializer
 		this.contentType = contentType;
 	}
 	
-	public void setDefaultBufferSize (final int defaultBufferSize)
+	@SuppressWarnings ("unused")
+	protected InputStream decorate (final InputStream stream)
+			throws Throwable
 	{
-		this.defaultBufferSize = defaultBufferSize;
+		return (stream);
 	}
 	
-	protected String contentEncoding = "binary";
-	protected String contentType = "application/x-java-serialized-object";
-	protected int defaultBufferSize = 2048;
+	@SuppressWarnings ("unused")
+	protected OutputStream decorate (final OutputStream stream)
+			throws Throwable
+	{
+		return (stream);
+	}
+	
+	protected int bufferSize;
+	protected String contentEncoding;
+	protected String contentType;
+	
+	public static final int defaultBufferSize = 2048;
+	public static final String defaultContentEncoding = "binary";
+	public static final String defaultContentType = "application/x-java-serialized-object";
 }

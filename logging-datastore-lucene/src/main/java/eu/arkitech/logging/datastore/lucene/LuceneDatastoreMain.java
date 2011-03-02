@@ -28,21 +28,23 @@ public final class LuceneDatastoreMain
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
 		
-		final int storeCount = 0;
-		final int selectCount = 0;
+		final int compressed = 0;
+		final boolean indexed = true;
+		final int storeCount = 10 * 1000;
+		final int selectCount = 10;
 		final int queryCount = 10;
 		
 		final Logger logger = LoggerFactory.getLogger (LuceneDatastoreMain.class);
 		
 		logger.info ("opening");
 		final File path = new File ("/tmp/logging");
-		final LuceneDatastore datastore = new LuceneDatastore (path);
+		final LuceneDatastore datastore = new LuceneDatastore (path, compressed, indexed);
 		datastore.open ();
 		
 		final LinkedList<String> keys;
 		if (storeCount > 0) {
 			logger.info ("storing");
-			keys  = new LinkedList<String> ();
+			keys = new LinkedList<String> ();
 			final RandomEventGenerator generator = new RandomEventGenerator ();
 			for (int i = 0; i < storeCount; i++) {
 				final ILoggingEvent event = generator.generate ();
@@ -56,7 +58,7 @@ public final class LuceneDatastoreMain
 		} else
 			keys = null;
 		
-		if (keys != null && selectCount > 0) {
+		if ((keys != null) && (selectCount > 0)) {
 			logger.info ("selecting");
 			int i = 0;
 			for (final String key : keys) {
@@ -69,7 +71,7 @@ public final class LuceneDatastoreMain
 			}
 		}
 		
-		if (queryCount > 0) {
+		if ((queryCount > 0) && indexed) {
 			final String queryString = "(level:INFO OR level:ERROR) AND message:a";
 			logger.info ("querying `{}`", queryString);
 			Query query = null;
@@ -92,7 +94,7 @@ public final class LuceneDatastoreMain
 			}
 		}
 		
-		logger.info ("cloning");
+		logger.info ("closing");
 		datastore.close ();
 	}
 }
