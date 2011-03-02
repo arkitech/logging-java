@@ -229,6 +229,7 @@ public class SLoggingEvent1
 	
 	public Object[] argumentArray;
 	public StackTraceElement[] callerDataArray;
+	public transient String key;
 	public transient Level level;
 	public LoggerContextVO loggerContextVO;
 	public String loggerName;
@@ -239,7 +240,6 @@ public class SLoggingEvent1
 	public IThrowableProxy throwableProxy;
 	public long timeStamp;
 	private transient String formattedMessage;
-	public transient String key;
 	
 	public static SLoggingEvent1 build (final ILoggingEvent original)
 	{

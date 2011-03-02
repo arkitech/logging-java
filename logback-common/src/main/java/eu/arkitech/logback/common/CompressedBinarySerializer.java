@@ -60,7 +60,8 @@ public class CompressedBinarySerializer
 			super (stream, new Inflater ());
 		}
 		
-		public void close () throws IOException
+		public void close ()
+				throws IOException
 		{
 			super.close ();
 			this.inf.end ();
@@ -75,7 +76,8 @@ public class CompressedBinarySerializer
 			super (stream, new Deflater (level));
 		}
 		
-		public void close () throws IOException
+		public void close ()
+				throws IOException
 		{
 			super.close ();
 			this.def.end ();

@@ -5,11 +5,10 @@ package eu.arkitech.logging.datastore.lucene;
 import java.io.File;
 import java.util.List;
 
-import eu.arkitech.logback.common.DefaultBinarySerializer;
-
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import eu.arkitech.logback.common.CompressedBinarySerializer;
+import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.Serializer;
 import eu.arkitech.logging.datastore.common.Datastore;
 import org.apache.lucene.queryParser.ParseException;
@@ -96,15 +95,15 @@ public final class LuceneDatastore
 	public final String store (final ILoggingEvent event)
 	{
 		final String key = this.bdb.store (event);
-		if (key != null && this.index != null)
+		if ((key != null) && (this.index != null))
 			this.index.store (key, event);
 		return (key);
 	}
 	
-	private final boolean indexed;
-	private final int compressed;
 	private final BdbDatastore bdb;
+	private final int compressed;
 	private final LuceneIndex index;
+	private final boolean indexed;
 	private final File path;
 	private final Serializer serializer;
 }

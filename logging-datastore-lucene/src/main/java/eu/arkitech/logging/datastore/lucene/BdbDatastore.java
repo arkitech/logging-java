@@ -142,25 +142,30 @@ public final class BdbDatastore
 		try {
 			final OperationStatus outcome = this.eventDatabase.get (null, keyEntry, eventEntry, null);
 			if (outcome != OperationStatus.SUCCESS) {
-				this.callbacks.handleException (new DatabaseException (), "bdb datastore encountered an error while getting the event `%s`; aborting!", key);
+				this.callbacks.handleException (
+						new DatabaseException (),
+						"bdb datastore encountered an error while getting the event `%s`; aborting!", key);
 				return (null);
 			}
 		} catch (final DatabaseException exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered an error while getting the event `%s`; aborting!", key);
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while getting the event `%s`; aborting!", key);
 			return (null);
 		}
 		final Object object;
 		try {
 			object = this.serializer.deserialize (eventEntry.getData (), eventEntry.getOffset (), eventEntry.getSize ());
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered an error while deserializing the event `%s`; aborting!", key);
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while deserializing the event `%s`; aborting!", key);
 			return (null);
 		}
 		final ILoggingEvent event;
 		try {
 			event = ILoggingEvent.class.cast (object);
 		} catch (final ClassCastException exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered ane error while deserializing the event `%s`; aborting!", key);
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered ane error while deserializing the event `%s`; aborting!", key);
 			return (null);
 		}
 		return (event);
@@ -172,7 +177,8 @@ public final class BdbDatastore
 		try {
 			eventData = this.serializer.serialize (event);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered an error while serealizing the event; aborting!");
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while serealizing the event; aborting!");
 			return (null);
 		}
 		final byte[] keyBytes = this.buildKey (eventData, event.getTimeStamp ());
@@ -182,58 +188,18 @@ public final class BdbDatastore
 		try {
 			final OperationStatus outcome = this.eventDatabase.put (null, keyEntry, eventEntry);
 			if (outcome != OperationStatus.SUCCESS) {
-				this.callbacks.handleException (new DatabaseException (), "bdb datastore encountered an error while storing the event `%s`; aborting!", key);
+				this.callbacks.handleException (
+						new DatabaseException (),
+						"bdb datastore encountered an error while storing the event `%s`; aborting!", key);
 				return (null);
 			}
 		} catch (final DatabaseException exception) {
-			this.callbacks.handleException (new DatabaseException (), "bdb datastore encountered an error while storing the event `%s`; aborting!", key);
+			this.callbacks.handleException (
+					new DatabaseException (), "bdb datastore encountered an error while storing the event `%s`; aborting!",
+					key);
 			return (null);
 		}
 		return (key);
-	}
-	
-	private final byte[] buildKey (final byte[] data, final long timestamp)
-	{
-		return (this.buildKey (data, 0, data.length, timestamp));
-	}
-	
-	private final byte[] buildKey (final byte[] data, final int offset, final int size, final long timestamp)
-	{
-		final byte[] timestampBytes = new byte[] {
-				(byte)((timestamp >> 56) & 0xff),
-				(byte)((timestamp >> 48) & 0xff),
-				(byte)((timestamp >> 40) & 0xff),
-				(byte)((timestamp >> 32) & 0xff),
-				(byte)((timestamp >> 24) & 0xff),
-				(byte)((timestamp >> 16) & 0xff),
-				(byte)((timestamp >> 8) & 0xff),
-				(byte)((timestamp >> 0) & 0xff),
-		};
-		final MessageDigest hasher;
-		try {
-			hasher = MessageDigest.getInstance (defaultHashAlgorithm);
-		} catch (final NoSuchAlgorithmException exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered an error while creating the key for the event; aborting!");
-			return (null);
-		}
-		hasher.update (data, offset, size);
-		final byte[] hashBytes = hasher.digest ();
-		final byte[] keyBytes = new byte[timestampBytes.length + hashBytes.length];
-		System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
-		System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
-		return (keyBytes);
-	}
-	
-	private final String formatKey (final byte[] bytes) {
-		final StringBuilder builder = new StringBuilder ();
-		for (final byte b : bytes) {
-			final String s = Integer.toHexString (b & 0xff);
-			if (s.length () == 1)
-				builder.append ('0') .append (s);
-			else
-				builder.append (s);
-		}
-		return (builder.toString ());
 	}
 	
 	final Database getLuceneBlockDatabase ()
@@ -244,6 +210,47 @@ public final class BdbDatastore
 	final Database getLuceneFileDatabase ()
 	{
 		return (this.luceneFileDatabase);
+	}
+	
+	private final byte[] buildKey (final byte[] data, final int offset, final int size, final long timestamp)
+	{
+		final byte[] timestampBytes =
+				new byte[] {(byte) ((timestamp >> 56) & 0xff), (byte) ((timestamp >> 48) & 0xff),
+						(byte) ((timestamp >> 40) & 0xff), (byte) ((timestamp >> 32) & 0xff),
+						(byte) ((timestamp >> 24) & 0xff), (byte) ((timestamp >> 16) & 0xff),
+						(byte) ((timestamp >> 8) & 0xff), (byte) ((timestamp >> 0) & 0xff),};
+		final MessageDigest hasher;
+		try {
+			hasher = MessageDigest.getInstance (BdbDatastore.defaultHashAlgorithm);
+		} catch (final NoSuchAlgorithmException exception) {
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while creating the key for the event; aborting!");
+			return (null);
+		}
+		hasher.update (data, offset, size);
+		final byte[] hashBytes = hasher.digest ();
+		final byte[] keyBytes = new byte[timestampBytes.length + hashBytes.length];
+		System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
+		System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
+		return (keyBytes);
+	}
+	
+	private final byte[] buildKey (final byte[] data, final long timestamp)
+	{
+		return (this.buildKey (data, 0, data.length, timestamp));
+	}
+	
+	private final String formatKey (final byte[] bytes)
+	{
+		final StringBuilder builder = new StringBuilder ();
+		for (final byte b : bytes) {
+			final String s = Integer.toHexString (b & 0xff);
+			if (s.length () == 1)
+				builder.append ('0').append (s);
+			else
+				builder.append (s);
+		}
+		return (builder.toString ());
 	}
 	
 	private final Callbacks callbacks;
@@ -261,9 +268,9 @@ public final class BdbDatastore
 	private final Serializer serializer;
 	
 	public static final String defaultEventDatabaseName = "events";
+	public static final String defaultHashAlgorithm = "MD5";
 	public static final String defaultLuceneBlockDatabaseName = "lucene-blocks";
 	public static final String defaultLuceneFileDatabaseName = "lucene-files";
-	public static final String defaultHashAlgorithm = "MD5";
 	
 	private final class Callbacks
 			implements

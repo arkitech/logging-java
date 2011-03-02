@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.lucene.search.TopDocs;
-
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import com.sleepycat.je.Database;
@@ -26,6 +24,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.je.JEDirectory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
@@ -136,7 +135,8 @@ public final class LuceneIndex
 			if (event != null)
 				results.add (new LuceneQueryResult (key, event, scores[i]));
 			else
-				this.callbacks.handleException (new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!", key);
+				this.callbacks.handleException (
+						new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!", key);
 		}
 		return (results);
 	}
