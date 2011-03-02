@@ -28,6 +28,10 @@ public final class LuceneDatastoreMain
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
 		
+		final int storeCount = 0;
+		final int selectCount = 0;
+		final int queryCount = 10;
+		
 		final Logger logger = LoggerFactory.getLogger (LuceneDatastoreMain.class);
 		
 		logger.info ("opening");
@@ -35,44 +39,57 @@ public final class LuceneDatastoreMain
 		final LuceneDatastore datastore = new LuceneDatastore (path);
 		datastore.open ();
 		
-		logger.info ("storing");
-		final LinkedList<String> keys = new LinkedList<String> ();
-		final RandomEventGenerator generator = new RandomEventGenerator ();
-		for (int i = 0; i < 100; i++) {
-			final ILoggingEvent event = generator.generate ();
-			final SLoggingEvent1 event1 = SLoggingEvent1.build (event);
-			final String key = datastore.store (event1);
-			if (key != null)
-				keys.add (key);
-			else
-				logger.error ("store failed");
+		final LinkedList<String> keys;
+		if (storeCount > 0) {
+			logger.info ("storing");
+			keys  = new LinkedList<String> ();
+			final RandomEventGenerator generator = new RandomEventGenerator ();
+			for (int i = 0; i < storeCount; i++) {
+				final ILoggingEvent event = generator.generate ();
+				final SLoggingEvent1 event1 = SLoggingEvent1.build (event);
+				final String key = datastore.store (event1);
+				if (key != null)
+					keys.add (key);
+				else
+					logger.error ("store failed");
+			}
+		} else
+			keys = null;
+		
+		if (keys != null && selectCount > 0) {
+			logger.info ("selecting");
+			int i = 0;
+			for (final String key : keys) {
+				final ILoggingEvent event = datastore.select (key);
+				if (event == null)
+					logger.error ("select failed for `{}`", key);
+				i++;
+				if (i >= selectCount)
+					break;
+			}
 		}
 		
-		logger.info ("selecting");
-		for (final String key : keys) {
-			final ILoggingEvent event = datastore.select (key);
-			if (event == null)
-				logger.error ("select failed for `{}`", key);
-		}
-		final String queryString = "(level:INFO OR level:ERROR) AND message:a";
-		logger.info ("querying `{}`", queryString);
-		Query query = null;
-		try {
-			query = datastore.parseQuery (queryString);
-		} catch (final ParseException exception) {
-			logger.error (String.format ("query failed for `{}`", queryString), exception);
-		}
-		if (query != null) {
-			final List<LuceneQueryResult> results = datastore.query (query, 100);
-			if (results != null)
-				for (final LuceneQueryResult result : results) {
-					final ILoggingEvent event = result.event;
-					System.out.format (
-							"%s :: [%s] [%s] [%s] %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (),
-							event.getLoggerName (), event.getFormattedMessage (), result.key);
-				}
-			else
-				logger.error ("query failed for `{}`", queryString);
+		if (queryCount > 0) {
+			final String queryString = "(level:INFO OR level:ERROR) AND message:a";
+			logger.info ("querying `{}`", queryString);
+			Query query = null;
+			try {
+				query = datastore.parseQuery (queryString);
+			} catch (final ParseException exception) {
+				logger.error (String.format ("query failed for `{}`", queryString), exception);
+			}
+			if (query != null) {
+				final List<LuceneQueryResult> results = datastore.query (query, 100);
+				if (results != null)
+					for (final LuceneQueryResult result : results) {
+						final ILoggingEvent event = result.event;
+						System.out.format (
+								"%s :: [%s] [%s] [%s] %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (),
+								event.getLoggerName (), event.getFormattedMessage (), result.key);
+					}
+				else
+					logger.error ("query failed for `{}`", queryString);
+			}
 		}
 		
 		logger.info ("cloning");
