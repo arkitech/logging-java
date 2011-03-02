@@ -4,8 +4,8 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="ro.volution.dev.logback.amqp.consumer.AmqpConsumerAgentMain$JoranAction" />
-	<newRule pattern="/configuration/randomEventGenerator" actionClass="ro.volution.dev.logback.common.RandomEventGenerator$JoranAction" />
+	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAgentMain$JoranAction" />
+	<newRule pattern="/configuration/randomEventGenerator" actionClass="eu.arkitech.logback.common.RandomEventGenerator$JoranAction" />
 	
 	<amqpConsumerAgent>
 		<host>127.0.0.1</host>
@@ -23,7 +23,7 @@
 		<interval>250</interval>
 	</randomEventGenerator>
 	
-	<appender name="webapp" class="ro.volution.dev.logback.webapp.EventLogAppender" />
+	<appender name="webapp" class="eu.arkitech.logback.webapp.EventLogAppender" />
 	
 	<root level="trace">
 		<appender-ref ref="webapp" />

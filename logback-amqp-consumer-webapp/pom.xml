@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>ro.volution.dev</groupId>
+		<groupId>eu.arkitech</groupId>
 		<artifactId>logging-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
@@ -11,12 +11,12 @@
 	<packaging>war</packaging>
 	<dependencies>
 		<dependency>
-			<groupId>ro.volution.dev</groupId>
+			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-amqp-consumer</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>ro.volution.dev</groupId>
+			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-webapp-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>

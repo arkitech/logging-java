@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>ro.volution.dev</groupId>
+		<groupId>eu.arkitech</groupId>
 		<artifactId>logging-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
@@ -15,7 +15,7 @@
 			<version>2.2.0</version>
 		</dependency>
 		<dependency>
-			<groupId>ro.volution.dev</groupId>
+			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
