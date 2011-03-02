@@ -2,24 +2,21 @@
 package eu.arkitech.logback.amqp.appender;
 
 
-import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingDeque;
-
-import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
-import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
-import eu.arkitech.logback.common.DefaultEventMutator;
-import eu.arkitech.logback.common.DefaultSerializableEvent1;
-import eu.arkitech.logback.common.EventMutator;
-import eu.arkitech.logback.common.Serializer;
-
-import eu.arkitech.logback.amqp.accessors.AmqpMessage;
-import eu.arkitech.logback.amqp.accessors.AmqpPublisher;
 
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
+import eu.arkitech.logback.amqp.accessors.AmqpMessage;
+import eu.arkitech.logback.amqp.accessors.AmqpPublisher;
+import eu.arkitech.logback.common.Callbacks;
+import eu.arkitech.logback.common.DefaultBinarySerializer;
+import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
+import eu.arkitech.logback.common.DefaultEventMutator;
+import eu.arkitech.logback.common.EventMutator;
+import eu.arkitech.logback.common.SLoggingEvent1;
+import eu.arkitech.logback.common.Serializer;
 
 
 public class AmqpAppender
@@ -198,7 +195,7 @@ public class AmqpAppender
 	
 	protected final void append (final ILoggingEvent originalEvent)
 	{
-		final Serializable event;
+		final SLoggingEvent1 event;
 		try {
 			event = this.prepare (originalEvent);
 		} catch (final Throwable exception) {
@@ -232,10 +229,10 @@ public class AmqpAppender
 	protected void preStop ()
 	{}
 	
-	private final Serializable prepare (final ILoggingEvent originalEvent)
+	private final SLoggingEvent1 prepare (final ILoggingEvent originalEvent)
 			throws Throwable
 	{
-		final DefaultSerializableEvent1 newEvent = DefaultSerializableEvent1.build (originalEvent);
+		final SLoggingEvent1 newEvent = SLoggingEvent1.build (originalEvent);
 		if (this.mutator != null)
 			this.mutator.mutate (newEvent);
 		return (newEvent);

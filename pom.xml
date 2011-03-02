@@ -13,6 +13,8 @@
 		<module>logback-amqp-consumer</module>
 		<module>logback-amqp-consumer-webapp</module>
 		<module>logback-webapp-common</module>
+		<module>logging-datastore-common</module>
+		<module>logging-datastore-lucene</module>
 	</modules>
 	<dependencies>
 		<dependency>

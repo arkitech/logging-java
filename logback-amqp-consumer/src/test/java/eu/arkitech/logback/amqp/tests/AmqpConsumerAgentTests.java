@@ -2,11 +2,9 @@
 package eu.arkitech.logback.amqp.tests;
 
 
-import eu.arkitech.logback.common.BufferedAppender;
-
-import eu.arkitech.logback.amqp.consumer.AmqpConsumerAgent;
-
 import ch.qos.logback.classic.Logger;
+import eu.arkitech.logback.amqp.consumer.AmqpConsumerAgent;
+import eu.arkitech.logback.common.BufferedAppender;
 import org.slf4j.LoggerFactory;
 
 import org.junit.Assert;

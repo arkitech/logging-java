@@ -2,18 +2,18 @@
 package eu.arkitech.logback.common;
 
 
-import java.io.Serializable;
-
-
 public interface Serializer
 {
-	public abstract Serializable deserialize (final byte[] object)
+	public abstract Object deserialize (final byte[] data)
+			throws Throwable;
+	
+	public abstract Object deserialize (final byte[] data, final int offset, final int size)
 			throws Throwable;
 	
 	public abstract String getContentEncoding ();
 	
 	public abstract String getContentType ();
 	
-	public abstract byte[] serialize (final Serializable object)
+	public abstract byte[] serialize (final Object object)
 			throws Throwable;
 }

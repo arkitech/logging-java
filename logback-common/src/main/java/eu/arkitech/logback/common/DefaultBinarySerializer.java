@@ -6,19 +6,24 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
 
 public class DefaultBinarySerializer
 		implements
 			Serializer
 {
-	public Serializable deserialize (final byte[] data)
+	public Object deserialize (final byte[] data)
 			throws Throwable
 	{
-		final ByteArrayInputStream stream = new ByteArrayInputStream (data);
+		return (this.deserialize (data, 0, data.length));
+	}
+	
+	public Object deserialize (final byte[] data, final int offset, final int size)
+			throws Throwable
+	{
+		final ByteArrayInputStream stream = new ByteArrayInputStream (data, offset, size);
 		final ObjectInputStream decoder = new ObjectInputStream (stream);
-		final Serializable object = (Serializable) decoder.readObject ();
+		final Object object = decoder.readObject ();
 		return (object);
 	}
 	
@@ -37,7 +42,7 @@ public class DefaultBinarySerializer
 		return (this.defaultBufferSize);
 	}
 	
-	public byte[] serialize (final Serializable object)
+	public byte[] serialize (final Object object)
 			throws Throwable
 	{
 		final ByteArrayOutputStream stream = new ByteArrayOutputStream (this.defaultBufferSize);

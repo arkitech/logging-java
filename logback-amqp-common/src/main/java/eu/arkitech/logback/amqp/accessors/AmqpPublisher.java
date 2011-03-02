@@ -5,11 +5,10 @@ package eu.arkitech.logback.amqp.accessors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import eu.arkitech.logback.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import eu.arkitech.logback.common.Callbacks;
 
 
 public final class AmqpPublisher

@@ -47,7 +47,7 @@ public class DefaultEventMutator
 	
 	public void mutate (final ILoggingEvent event_)
 	{
-		final DefaultSerializableEvent1 event = (DefaultSerializableEvent1) event_;
+		final SLoggingEvent1 event = (SLoggingEvent1) event_;
 		long sequence;
 		synchronized (this) {
 			sequence = this.sequence;

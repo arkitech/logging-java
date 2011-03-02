@@ -1,0 +1,90 @@
+
+package eu.arkitech.logging.datastore.lucene;
+
+
+import java.io.File;
+import java.util.List;
+
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import eu.arkitech.logback.common.DefaultBinarySerializer;
+import eu.arkitech.logback.common.Serializer;
+import eu.arkitech.logging.datastore.common.Datastore;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Query;
+
+
+public final class LuceneDatastore
+		implements
+			Datastore
+{
+	public LuceneDatastore (final File path)
+	{
+		super ();
+		this.path = path;
+		this.serializer = new DefaultBinarySerializer ();
+		this.bdb = new BdbDatastore (this.path, true, this.serializer);
+		this.index = new LuceneIndex (this.bdb);
+	}
+	
+	public final boolean close ()
+	{
+		boolean succeeded = true;
+		succeeded |= this.index.close ();
+		succeeded |= this.bdb.close ();
+		return (succeeded);
+	}
+	
+	public final boolean open ()
+	{
+		boolean succeeded = this.bdb.open ();
+		if (succeeded) {
+			succeeded = this.index.open ();
+			if (!succeeded) {
+				this.index.close ();
+				this.bdb.close ();
+			}
+		}
+		return (succeeded);
+	}
+	
+	public final Query parseQuery (final String query)
+			throws ParseException
+	{
+		return (this.index.parseQuery (query));
+	}
+	
+	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
+	{
+		return (this.index.query (query, maxCount));
+	}
+	
+	public final List<ILoggingEvent> select (
+			final ILoggingEvent reference, final int beforeCount, final int afterCount, final Filter<ILoggingEvent> filter)
+	{
+		return (this.bdb.select (reference, beforeCount, afterCount, filter));
+	}
+	
+	public final List<ILoggingEvent> select (
+			final long afterTimestamp, final long intervalMs, final Filter<ILoggingEvent> filter)
+	{
+		return (this.bdb.select (afterTimestamp, intervalMs, filter));
+	}
+	
+	public final ILoggingEvent select (final String key)
+	{
+		return (this.bdb.select (key));
+	}
+	
+	public final String store (final ILoggingEvent event)
+	{
+		final String key = this.bdb.store (event);
+		this.index.store (key, event);
+		return (key);
+	}
+	
+	private final BdbDatastore bdb;
+	private final LuceneIndex index;
+	private final File path;
+	private final Serializer serializer;
+}

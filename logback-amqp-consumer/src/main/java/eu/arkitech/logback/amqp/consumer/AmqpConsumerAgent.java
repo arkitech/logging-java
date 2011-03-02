@@ -5,14 +5,6 @@ package eu.arkitech.logback.amqp.consumer;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
-import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
-import eu.arkitech.logback.common.Serializer;
-
-import eu.arkitech.logback.amqp.accessors.AmqpConsumer;
-import eu.arkitech.logback.amqp.accessors.AmqpMessage;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -21,6 +13,12 @@ import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.ContextAwareBase;
 import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.spi.LifeCycle;
+import eu.arkitech.logback.amqp.accessors.AmqpConsumer;
+import eu.arkitech.logback.amqp.accessors.AmqpMessage;
+import eu.arkitech.logback.common.Callbacks;
+import eu.arkitech.logback.common.DefaultBinarySerializer;
+import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
+import eu.arkitech.logback.common.Serializer;
 import org.slf4j.LoggerFactory;
 
 

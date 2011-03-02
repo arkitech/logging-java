@@ -2,14 +2,13 @@
 package eu.arkitech.logback.amqp.accessors;
 
 
-import eu.arkitech.logback.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import eu.arkitech.logback.common.Callbacks;
 
 
 public abstract class AmqpAccessor

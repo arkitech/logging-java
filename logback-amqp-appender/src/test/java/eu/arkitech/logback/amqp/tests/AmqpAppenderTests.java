@@ -2,12 +2,10 @@
 package eu.arkitech.logback.amqp.tests;
 
 
+import ch.qos.logback.classic.Logger;
+import eu.arkitech.logback.amqp.appender.AmqpAppender;
 import eu.arkitech.logback.common.DefaultEventMutator;
 import eu.arkitech.logback.common.RandomEventGenerator;
-
-import eu.arkitech.logback.amqp.appender.AmqpAppender;
-
-import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 

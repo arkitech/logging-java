@@ -4,14 +4,13 @@ package eu.arkitech.logback.amqp.accessors;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-import eu.arkitech.logback.common.Callbacks;
-
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
+import eu.arkitech.logback.common.Callbacks;
 
 
 public final class AmqpConsumer

@@ -23,7 +23,7 @@ import org.slf4j.Marker;
 import org.slf4j.helpers.MessageFormatter;
 
 
-public class DefaultSerializableEvent1
+public class SLoggingEvent1
 		implements
 			ILoggingEvent,
 			Serializable
@@ -36,7 +36,7 @@ public class DefaultSerializableEvent1
 			return false;
 		if (this.getClass () != obj.getClass ())
 			return false;
-		final DefaultSerializableEvent1 other = (DefaultSerializableEvent1) obj;
+		final SLoggingEvent1 other = (SLoggingEvent1) obj;
 		if (this.message == null) {
 			if (other.message != null)
 				return false;
@@ -96,13 +96,11 @@ public class DefaultSerializableEvent1
 		if (this.formattedMessage != null) {
 			return this.formattedMessage;
 		}
-		
 		if (this.argumentArray != null) {
 			this.formattedMessage = MessageFormatter.arrayFormat (this.message, this.argumentArray).getMessage ();
 		} else {
 			this.formattedMessage = this.message;
 		}
-		
 		return this.formattedMessage;
 	}
 	
@@ -198,11 +196,11 @@ public class DefaultSerializableEvent1
 		this.level = Level.toLevel (levelInt);
 		
 		final int argArrayLen = in.readInt ();
-		if (argArrayLen != DefaultSerializableEvent1.NULL_ARGUMENT_ARRAY) {
+		if (argArrayLen != SLoggingEvent1.NULL_ARGUMENT_ARRAY) {
 			this.argumentArray = new String[argArrayLen];
 			for (int i = 0; i < argArrayLen; i++) {
 				final Object val = in.readObject ();
-				if (!DefaultSerializableEvent1.NULL_ARGUMENT_ARRAY_ELEMENT.equals (val)) {
+				if (!SLoggingEvent1.NULL_ARGUMENT_ARRAY_ELEMENT.equals (val)) {
 					this.argumentArray[i] = val;
 				}
 			}
@@ -221,16 +219,15 @@ public class DefaultSerializableEvent1
 				if (element != null) {
 					out.writeObject (element.toString ());
 				} else {
-					out.writeObject (DefaultSerializableEvent1.NULL_ARGUMENT_ARRAY_ELEMENT);
+					out.writeObject (SLoggingEvent1.NULL_ARGUMENT_ARRAY_ELEMENT);
 				}
 			}
 		} else {
-			out.writeInt (DefaultSerializableEvent1.NULL_ARGUMENT_ARRAY);
+			out.writeInt (SLoggingEvent1.NULL_ARGUMENT_ARRAY);
 		}
 	}
 	
 	public Object[] argumentArray;
-	
 	public StackTraceElement[] callerDataArray;
 	public transient Level level;
 	public LoggerContextVO loggerContextVO;
@@ -242,11 +239,12 @@ public class DefaultSerializableEvent1
 	public IThrowableProxy throwableProxy;
 	public long timeStamp;
 	private transient String formattedMessage;
+	public transient String key;
 	
-	public static DefaultSerializableEvent1 build (final ILoggingEvent original)
+	public static SLoggingEvent1 build (final ILoggingEvent original)
 	{
 		// taken from `LoggingEventVO.build` but constructing a `PubLoggingEventVO`
-		final DefaultSerializableEvent1 clone = new DefaultSerializableEvent1 ();
+		final SLoggingEvent1 clone = new SLoggingEvent1 ();
 		clone.loggerName = original.getLoggerName ();
 		clone.loggerContextVO = original.getLoggerContextVO ();
 		clone.threadName = original.getThreadName ();
