@@ -8,7 +8,6 @@ import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.RandomEventGenerator;
-import eu.arkitech.logback.common.SLoggingEvent1;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.slf4j.Logger;
@@ -33,12 +32,13 @@ public final class LuceneDatastoreMain
 		final int storeCount = 10 * 1000;
 		final int selectCount = 10;
 		final int queryCount = 10;
+		final String queryString = "level:INFO OR level:ERROR";
 		
 		final Logger logger = LoggerFactory.getLogger (LuceneDatastoreMain.class);
 		
 		logger.info ("opening");
 		final File path = new File ("/tmp/logging");
-		final LuceneDatastore datastore = new LuceneDatastore (path, compressed, indexed);
+		final LuceneDatastore datastore = new LuceneDatastore (path, compressed);
 		datastore.open ();
 		
 		final LinkedList<String> keys;
@@ -48,8 +48,7 @@ public final class LuceneDatastoreMain
 			final RandomEventGenerator generator = new RandomEventGenerator ();
 			for (int i = 0; i < storeCount; i++) {
 				final ILoggingEvent event = generator.generate ();
-				final SLoggingEvent1 event1 = SLoggingEvent1.build (event);
-				final String key = datastore.store (event1);
+				final String key = datastore.store (event);
 				if (key != null)
 					keys.add (key);
 				else
@@ -72,7 +71,6 @@ public final class LuceneDatastoreMain
 		}
 		
 		if ((queryCount > 0) && indexed) {
-			final String queryString = "(level:INFO OR level:ERROR) AND message:a";
 			logger.info ("querying `{}`", queryString);
 			Query query = null;
 			try {

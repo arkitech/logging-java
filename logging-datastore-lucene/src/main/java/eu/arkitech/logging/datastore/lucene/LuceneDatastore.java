@@ -7,9 +7,12 @@ import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
+import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.CompressedBinarySerializer;
 import eu.arkitech.logback.common.DefaultBinarySerializer;
+import eu.arkitech.logback.common.DefaultLoggerCallbacks;
 import eu.arkitech.logback.common.Serializer;
+import eu.arkitech.logging.datastore.bdb.BdbDatastore;
 import eu.arkitech.logging.datastore.common.Datastore;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
@@ -19,59 +22,85 @@ public final class LuceneDatastore
 		implements
 			Datastore
 {
-	public LuceneDatastore (final File path, final int compressed, final boolean indexed)
+	public LuceneDatastore (final File environmentPath)
+	{
+		this (environmentPath, -1);
+	}
+	
+	public LuceneDatastore (final File environmentPath, final Callbacks callbacks)
+	{
+		this (environmentPath, -1, callbacks);
+	}
+	
+	public LuceneDatastore (final File environmentPath, final int compressed)
+	{
+		this (environmentPath, compressed, null);
+	}
+	
+	public LuceneDatastore (final File environmentPath, final int compressed, final Callbacks callbacks)
+	{
+		this (environmentPath, compressed == -1 ? new DefaultBinarySerializer ()
+				: new CompressedBinarySerializer (compressed), callbacks);
+	}
+	
+	public LuceneDatastore (final File environmentPath, final Serializer serializer, final Callbacks callbacks)
+	{
+		this (environmentPath, serializer, callbacks, new Object ());
+	}
+	
+	public LuceneDatastore (
+			final File environmentPath, final Serializer serializer, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
-		this.path = path;
-		this.compressed = compressed;
-		this.indexed = indexed;
-		if (this.compressed != -1)
-			this.serializer = new CompressedBinarySerializer (this.compressed);
-		else
-			this.serializer = new DefaultBinarySerializer ();
-		this.bdb = new BdbDatastore (this.path, true, this.serializer);
-		if (this.indexed)
-			this.index = new LuceneIndex (this.bdb);
-		else
-			this.index = null;
+		synchronized (monitor) {
+			this.monitor = monitor;
+			this.state = State.Closed;
+			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
+			this.bdb = new BdbDatastore (environmentPath, serializer, this.callbacks, this.monitor);
+			this.index = new LuceneIndex (this.bdb, this.callbacks, this.monitor);
+		}
 	}
 	
 	public final boolean close ()
 	{
-		boolean succeeded = true;
-		if (this.index != null)
+		synchronized (this.monitor) {
+			if (this.state == State.Closed)
+				return (false);
+			if (this.state != State.Opened)
+				throw (new IllegalStateException ("lucene datastore is not opened"));
+			boolean succeeded = true;
 			succeeded |= this.index.close ();
-		succeeded |= this.bdb.close ();
-		return (succeeded);
+			succeeded |= this.bdb.close ();
+			this.state = State.Closed;
+			return (succeeded);
+		}
 	}
 	
 	public final boolean open ()
 	{
-		boolean succeeded = this.bdb.open ();
-		if (succeeded) {
-			if (this.index != null) {
+		synchronized (this.monitor) {
+			if (this.state != State.Closed)
+				throw (new IllegalStateException ("lucene datastore is already opened"));
+			boolean succeeded = this.bdb.open ();
+			if (succeeded)
 				succeeded = this.index.open ();
-				if (!succeeded) {
-					this.index.close ();
-					this.bdb.close ();
-				}
+			if (!succeeded) {
+				this.close ();
+				return (false);
 			}
+			this.state = State.Opened;
+			return (succeeded);
 		}
-		return (succeeded);
 	}
 	
 	public final Query parseQuery (final String query)
 			throws ParseException
 	{
-		if (this.index == null)
-			throw (new IllegalStateException ());
 		return (this.index.parseQuery (query));
 	}
 	
 	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
-		if (this.index == null)
-			throw (new IllegalStateException ());
 		return (this.index.query (query, maxCount));
 	}
 	
@@ -95,15 +124,20 @@ public final class LuceneDatastore
 	public final String store (final ILoggingEvent event)
 	{
 		final String key = this.bdb.store (event);
-		if ((key != null) && (this.index != null))
+		if (key != null)
 			this.index.store (key, event);
 		return (key);
 	}
 	
 	private final BdbDatastore bdb;
-	private final int compressed;
+	private final Callbacks callbacks;
 	private final LuceneIndex index;
-	private final boolean indexed;
-	private final File path;
-	private final Serializer serializer;
+	private final Object monitor;
+	private State state;
+	
+	public static enum State
+	{
+		Closed,
+		Opened;
+	}
 }

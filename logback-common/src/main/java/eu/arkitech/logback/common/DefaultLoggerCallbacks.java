@@ -4,16 +4,32 @@ package eu.arkitech.logback.common;
 
 import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class DefaultLoggerCallbacks
 		implements
 			Callbacks
 {
+	public DefaultLoggerCallbacks ()
+	{
+		this (LoggerFactory.getLogger (Logger.ROOT_LOGGER_NAME));
+	}
+	
+	public DefaultLoggerCallbacks (final Class<?> clasz)
+	{
+		this (LoggerFactory.getLogger (clasz));
+	}
+	
 	public DefaultLoggerCallbacks (final Logger logger)
 	{
 		super ();
 		this.logger = logger;
+	}
+	
+	public DefaultLoggerCallbacks (final Object target)
+	{
+		this (LoggerFactory.getLogger (target.getClass ()));
 	}
 	
 	public void handleException (final Throwable exception, final String messageFormat, final Object ... messageArguments)

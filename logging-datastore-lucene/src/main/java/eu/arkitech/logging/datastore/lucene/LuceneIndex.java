@@ -9,6 +9,11 @@ import java.util.List;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseException;
+import eu.arkitech.logback.common.Callbacks;
+import eu.arkitech.logback.common.DefaultLoggerCallbacks;
+import eu.arkitech.logging.datastore.bdb.BdbDatastore;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,67 +32,126 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.je.JEDirectory;
 import org.apache.lucene.util.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public final class LuceneIndex
 {
-	public LuceneIndex (final BdbDatastore bdb)
+	public LuceneIndex (final BdbDatastore bdb, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
-		this.logger = LoggerFactory.getLogger (LuceneIndex.class);
-		this.callbacks = new Callbacks (this.logger);
-		this.bdb = bdb;
-		this.analyzer = new StandardAnalyzer (LuceneIndex.version);
-		this.parser = new QueryParser (LuceneIndex.version, LuceneIndex.messageFieldName, this.analyzer);
+		synchronized (monitor) {
+			this.monitor = monitor;
+			this.state = State.Closed;
+			this.bdb = bdb;
+			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
+			this.analyzer = new StandardAnalyzer (LuceneIndex.version);
+			this.parser = new QueryParser (LuceneIndex.version, LuceneIndex.messageFieldName, this.analyzer);
+			this.databaseConfiguration = new DatabaseConfig ();
+			this.databaseConfiguration.setAllowCreate (true);
+			this.databaseConfiguration.setReadOnly (false);
+			this.databaseConfiguration.setSortedDuplicates (false);
+			this.databaseConfiguration.setTransactional (false);
+		}
 	}
 	
 	public final boolean close ()
 	{
-		try {
-			this.searcher.close ();
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene index encountered an error while closing the index searcher; ignoring!");
+		synchronized (this.monitor) {
+			if (this.state == State.Closed)
+				return (false);
+			if (this.state != State.Opened)
+				throw (new IllegalStateException ("lucene indexer is not opened"));
+			if (this.searcher != null)
+				try {
+					this.searcher.close ();
+				} catch (final IOException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while closing the searcher; ignoring!");
+				} finally {
+					this.searcher = null;
+				}
+			if (this.writer != null)
+				try {
+					this.writer.close ();
+				} catch (final IOException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while closing the writer; ignoring!");
+				} finally {
+					this.writer = null;
+				}
+			if (this.directory != null)
+				try {
+					this.directory.close ();
+				} catch (final IOException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while closing the directory; ignoring!");
+				} finally {
+					this.directory = null;
+				}
+			if (this.fileDatabase != null)
+				try {
+					this.fileDatabase.close ();
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while closing the file database; ignoring!");
+				} finally {
+					this.fileDatabase = null;
+				}
+			if (this.blockDatabase != null)
+				try {
+					this.blockDatabase.close ();
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while closing the block database; ignoring!");
+				} finally {
+					this.blockDatabase = null;
+				}
+			this.state = State.Closed;
+			return (true);
 		}
-		try {
-			this.writer.close ();
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene index encountered an error while closing the index writer; ignoring!");
-		}
-		try {
-			this.directory.close ();
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene index encountered an error while closing the directory; ignoring!");
-		}
-		return (true);
 	}
 	
 	public final boolean open ()
 	{
-		this.fileDatabase = this.bdb.getLuceneFileDatabase ();
-		this.blockDatabase = this.bdb.getLuceneBlockDatabase ();
-		this.directory = new JEDirectory (null, this.fileDatabase, this.blockDatabase);
-		try {
-			this.writer = new IndexWriter (this.directory, this.analyzer, MaxFieldLength.UNLIMITED);
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene indexer encountered an error while opening the index writer; aborting!");
-			this.close ();
-			return (false);
+		synchronized (this.monitor) {
+			if (this.state != State.Closed)
+				throw (new IllegalStateException ("lucene indexer is already opened"));
+			try {
+				this.fileDatabase = this.bdb.openDatabase (LuceneIndex.defaultFileDatabaseName, this.databaseConfiguration);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "lucene indexer encountered an error while opening the file database; aborting!");
+				this.close ();
+				return (false);
+			}
+			try {
+				this.blockDatabase = this.bdb.openDatabase (LuceneIndex.defaultBlockDatabaseName, this.databaseConfiguration);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "lucene indexer encountered an error while opening the block database; aborting!");
+				this.close ();
+				return (false);
+			}
+			this.directory = new JEDirectory (null, this.fileDatabase, this.blockDatabase);
+			try {
+				this.writer = new IndexWriter (this.directory, this.analyzer, MaxFieldLength.UNLIMITED);
+			} catch (final IOException exception) {
+				this.callbacks.handleException (
+						exception, "lucene indexer encountered an error while opening the writer; aborting!");
+				this.close ();
+				return (false);
+			}
+			try {
+				this.searcher = new IndexSearcher (this.directory, true);
+			} catch (final IOException exception) {
+				this.callbacks.handleException (
+						exception, "lucene indexer encountered an error while opening the index; aborting!");
+				this.close ();
+				return (false);
+			}
+			this.state = State.Opened;
+			return (true);
 		}
-		try {
-			this.searcher = new IndexSearcher (this.directory, true);
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene indexer encountered an error while opening the index; aborting!");
-			this.close ();
-			return (false);
-		}
-		return (true);
 	}
 	
 	public final Query parseQuery (final String query)
@@ -98,60 +162,70 @@ public final class LuceneIndex
 	
 	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
-		final int count;
-		final String[] keys;
-		final float[] scores;
-		try {
-			final TopDocs outcome = this.searcher.search (query, maxCount);
-			final ScoreDoc[] results = outcome.scoreDocs;
-			count = results.length;
-			keys = new String[count];
-			scores = new float[count];
-			for (int i = 0; i < count; i++) {
-				final ScoreDoc result = results[i];
-				final Document document = this.searcher.doc (result.doc, LuceneIndex.keyFieldSelector);
-				if (document != null) {
-					final String key = document.get (LuceneIndex.keyFieldName);
-					if (key != null) {
-						keys[i] = key;
-						scores[i] = result.score;
+		synchronized (this.monitor) {
+			if (this.state != State.Opened)
+				throw (new IllegalStateException ("lucene indexer is not opened"));
+			final int count;
+			final String[] keys;
+			final float[] scores;
+			try {
+				final TopDocs outcome = this.searcher.search (query, maxCount);
+				final ScoreDoc[] results = outcome.scoreDocs;
+				count = results.length;
+				keys = new String[count];
+				scores = new float[count];
+				for (int i = 0; i < count; i++) {
+					final ScoreDoc result = results[i];
+					final Document document = this.searcher.doc (result.doc, LuceneIndex.keyFieldSelector);
+					if (document != null) {
+						final String key = document.get (LuceneIndex.keyFieldName);
+						if (key != null) {
+							keys[i] = key;
+							scores[i] = result.score;
+						} else
+							this.callbacks.handleException (
+									new Throwable (), "lucene indexer couldn't retrieve the document `%s` key; ignoring!",
+									result.doc);
 					} else
-						this.callbacks.handleException (
-								new Throwable (), "lucene indexer couldn't retrieve the document `%s` key; ignoring!",
-								result.doc);
-				} else
-					this.callbacks.handleException (
-							new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!", result.doc);
-			}
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene indexer encountered an error while accessing the index; aborting!");
-			return (null);
-		}
-		final LinkedList<LuceneQueryResult> results = new LinkedList<LuceneQueryResult> ();
-		for (int i = 0; i < count; i++) {
-			final String key = keys[i];
-			final ILoggingEvent event = this.bdb.select (key);
-			if (event != null)
-				results.add (new LuceneQueryResult (key, event, scores[i]));
-			else
+						this.callbacks
+								.handleException (
+										new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!",
+										result.doc);
+				}
+			} catch (final IOException exception) {
 				this.callbacks.handleException (
-						new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!", key);
+						exception, "lucene indexer encountered an error while accessing the index; aborting!");
+				return (null);
+			}
+			final LinkedList<LuceneQueryResult> results = new LinkedList<LuceneQueryResult> ();
+			for (int i = 0; i < count; i++) {
+				final String key = keys[i];
+				final ILoggingEvent event = this.bdb.select (key);
+				if (event != null)
+					results.add (new LuceneQueryResult (key, event, scores[i]));
+				else
+					this.callbacks.handleException (
+							new Throwable (), "lucene indexer couldn't retrieve the document `%s`; ignoring!", key);
+			}
+			return (results);
 		}
-		return (results);
 	}
 	
 	public final boolean store (final String key, final ILoggingEvent event)
 	{
 		final Document document = this.buildDocument (key, event);
-		try {
-			this.writer.addDocument (document);
-		} catch (final IOException exception) {
-			this.callbacks.handleException (
-					exception, "lucene indexer encountered an error while opening the index writer; aborting!");
-			return (false);
+		synchronized (this.monitor) {
+			if (this.state != State.Opened)
+				throw (new IllegalStateException ("lucene indexer is not opened"));
+			try {
+				this.writer.addDocument (document);
+			} catch (final IOException exception) {
+				this.callbacks.handleException (
+						exception, "lucene indexer encountered an error while storing the document `%s`; aborting!", key);
+				return (false);
+			}
+			return (true);
 		}
-		return (true);
 	}
 	
 	private final Document buildDocument (final String key, final ILoggingEvent event)
@@ -175,13 +249,17 @@ public final class LuceneIndex
 	private final BdbDatastore bdb;
 	private Database blockDatabase;
 	private final Callbacks callbacks;
+	private final DatabaseConfig databaseConfiguration;
 	private JEDirectory directory;
 	private Database fileDatabase;
-	private final Logger logger;
+	private final Object monitor;
 	private final QueryParser parser;
 	private IndexSearcher searcher;
+	private State state;
 	private IndexWriter writer;
 	
+	public static final String defaultBlockDatabaseName = "lucene-blocks";
+	public static final String defaultFileDatabaseName = "lucene-files";
 	public static final String exceptionClassFieldName = "exception-class";
 	public static final String exceptionMessageFieldName = "exception-message";
 	public static final String keyFieldName = "key";
@@ -192,21 +270,10 @@ public final class LuceneIndex
 	@SuppressWarnings ("deprecation")
 	public static final Version version = Version.LUCENE_CURRENT;
 	
-	private final class Callbacks
+	public static enum State
 	{
-		Callbacks (final Logger logger)
-		{
-			super ();
-			this.logger = logger;
-		}
-		
-		public final void handleException (
-				final Throwable exception, final String messageFormat, final Object ... messageArguments)
-		{
-			this.logger.error (String.format (messageFormat, messageArguments), exception);
-		}
-		
-		private final Logger logger;
+		Closed,
+		Opened;
 	}
 	
 	private static final class KeyFieldSelector
