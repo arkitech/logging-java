@@ -1,17 +1,25 @@
 
 <style type="text/css" media="screen">
 
+table.EventLog {
+	width: 100%;
+}
+
 table.EventLog, table.EventLog tr th, table.EventLog tr td {
 	border: 1px solid silver;
 	border-collapse : collapse;
-	width: 100%;
-	padding: 2px;
-	text-align: center;
+	padding: 3px;
 }
 
-table.EventLog tr th {
-	background-color: #228B22;
+table.EventLog th {
+	background-color: #708090;
 	color: white;
+}
+
+
+div.EventLog {
+	width : 100%;
+	height : 90%;
 }
 
 iframe.EventLog {
@@ -19,44 +27,86 @@ iframe.EventLog {
 	height : 100%;
 }
 
-.Date {
-	width: 10px;
-	color: black;
+td.Date , th.Date {
+	width: 23ex;
+	text-align: center;
 }
 
 .INFO {
-	color: 	green;
-}
-
-.ERROR {
-	color: red;
-	font-weight: bold;
-}
-
-.WARN {
-	color: #FFD700;
-}
-
-.TRACE {
-	color: #5F9EA0;
-}
-
-.Logger {
-	color: gray;
-}
-
-.Message {
 	color: black;
-}
-
-.MDC th td {
-	width: 200px;
-}
-
-.Exceptions {
-	text-align: left;
-	color: #B22222;
 	background-color: #F5F5F5;
 }
 
+.ERROR {
+	color: #B22222;
+	background-color: #FFE4E1;
+}
+
+tr.ERROR  .Message{
+	font-weight: bold;
+}
+
+
+.WARN {
+	color: black;
+	background-color: #FAFAD2;
+}
+
+.TRACE {
+	color: gray;
+	background-color: white;
+}
+
+.DEBUG {
+	color: gray;
+	background-color: white;
+}
+
+.Logger {
+	width: 0ex;
+}
+
+
+.Level {
+	width: 0ex;
+	text-align: center;
+}
+
+.Message  td{
+	font-weight: normal;
+}
+
+td.MDC  {
+	width: 30ex;
+}
+
+
+td.Exceptions {
+	text-align: left;
+	color: #B22222;
+	background-color: #FFE4E1;
+}
+
+td.Exceptions ul.Exception_StackFrames {
+	height: 3px;	
+ 	overflow: hidden;
+	list-style-type: none;
+}
+
+ul.Exceptions {
+	list-style-type: none;
+	margin: 0;
+}
+
+td.Exceptions:hover ul.Exception_StackFrames {
+	overflow: visible;
+	height: auto;
+}
+
+.Exception_Header {
+	margin: 0;
+	padding: 0;
+}
+
 </style>
+

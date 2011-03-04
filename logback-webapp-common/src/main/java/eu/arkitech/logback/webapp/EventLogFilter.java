@@ -27,17 +27,20 @@ class EventLogFilter
 			final String parameterName = parameterNames.nextElement ();
 			if (!parameterName.startsWith ("mdc."))
 				continue;
+			final String mdcValue = request.getParameter (parameterName);
+			if ((mdcValue == null) || mdcValue.isEmpty ())
+				continue;
 			final String mdcKey = parameterName.substring ("mdc.".length ());
 			if (mdcValues == null)
 				mdcValues = new HashMap<String, String> ();
-			mdcValues.put (mdcKey, request.getParameter (parameterName));
+			mdcValues.put (mdcKey, mdcValue);
 		}
 		this.mdcValues = mdcValues;
-		final String mdcStrictValues = request.getParameter ("mdc_strict");
-		if ((mdcStrictValues != null) && ("true".equals (mdcStrictValues)))
-			this.mdcStrictValues = true;
+		final String mdcStrictValue = request.getParameter ("mdc_strict");
+		if (mdcStrictValue != null && mdcStrictValue.equals ("on"))
+			this.mdcStrict = true;
 		else
-			this.mdcStrictValues = false;
+			this.mdcStrict = false;
 	}
 	
 	public FilterReply decide (final ILoggingEvent event)
@@ -47,7 +50,7 @@ class EventLogFilter
 		if (this.mdcValues != null) {
 			final Map<String, String> eventMdcValues = event.getMdc ();
 			if (eventMdcValues == null) {
-				if (this.mdcStrictValues)
+				if (this.mdcStrict)
 					return (FilterReply.DENY);
 				else
 					return (FilterReply.NEUTRAL);
@@ -55,7 +58,7 @@ class EventLogFilter
 			for (final String mdcKey : this.mdcValues.keySet ()) {
 				final String eventMdcValue = eventMdcValues.get (mdcKey);
 				if (eventMdcValue == null) {
-					if (this.mdcStrictValues)
+					if (this.mdcStrict)
 						return (FilterReply.DENY);
 				} else if (!eventMdcValue.equals (this.mdcValues.get (mdcKey)))
 					return (FilterReply.DENY);
@@ -65,6 +68,6 @@ class EventLogFilter
 	}
 	
 	protected final Level levelValue;
-	protected final boolean mdcStrictValues;
 	protected final Map<String, String> mdcValues;
+	protected final boolean mdcStrict;
 }

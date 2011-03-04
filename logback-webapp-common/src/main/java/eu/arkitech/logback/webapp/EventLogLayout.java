@@ -156,7 +156,7 @@ public class EventLogLayout
 		buffer.append ("<tr class=\"Event " + event.getLevel ().levelStr + "\">\n");
 		Converter<ILoggingEvent> converter = this.convertersHead;
 		while (converter != null) {
-			buffer.append ("<td class=\"Event " + this.getConverterName (converter).replace ("\"", "\\\"") + "\">");
+			buffer.append ("<td class=\"Event ").append (this.getConverterName (converter).replace ("\"", "\\\"")). append ("\">");
 			converter.write (buffer, event);
 			buffer.append ("</td>\n");
 			converter = converter.getNext ();
@@ -169,7 +169,8 @@ public class EventLogLayout
 	protected void doLayout (final IThrowableProxy throwableHead, final StringBuilder buffer)
 	{
 		buffer.append ("<tr class=\"Exceptions\">\n");
-		buffer.append ("<td class=\"Exceptions\" colspan=\"").append (this.convertersCount).append ("\">\n");
+		buffer.append ("<td class=\"Exceptions_Spacer\"></td>\n");
+		buffer.append ("<td class=\"Exceptions\" colspan=\"").append (this.convertersCount - 1).append ("\">\n");
 		buffer.append ("<ul class=\"Exceptions\">\n");
 		IThrowableProxy throwable = throwableHead;
 		while (throwable != null) {
@@ -237,5 +238,5 @@ public class EventLogLayout
 	protected String pattern;
 	protected boolean started;
 	
-	public static final String defaultPattern = "%date%level%logger%msg%mdc";
+	public static final String defaultPattern = "%mdc%date%level%logger%msg";
 }
