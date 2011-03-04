@@ -2,6 +2,7 @@
 package eu.arkitech.logback.common;
 
 
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -9,11 +10,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
-import ch.qos.logback.core.joran.action.Action;
-import ch.qos.logback.core.joran.spi.InterpretationContext;
 import ch.qos.logback.core.spi.ContextAwareBase;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.Attributes;
 
 
 public class RandomGenerator
@@ -173,34 +171,25 @@ public class RandomGenerator
 	public static final long defaultCount = 10 * 60 * 2;
 	public static final long defaultInterval = 500;
 	
-	public static final class JoranAction
-			extends Action
+	public static final class CreateAction
+			extends ClassNewInstanceAction<RandomGenerator>
 	{
-		public JoranAction ()
+		public CreateAction ()
 		{
-			super ();
-			this.generator = null;
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoStart);
 		}
 		
-		public void begin (final InterpretationContext ic, final String name, final Attributes attributes)
+		public CreateAction (final List<RandomGenerator> collector, final boolean autoStart)
 		{
-			if (this.generator != null)
-				throw (new IllegalStateException ());
-			this.generator = new RandomGenerator ();
-			this.generator.setContext (this.getContext ());
-			ic.pushObject (this.generator);
+			super (RandomGenerator.class, collector, autoStart);
 		}
 		
-		public void end (final InterpretationContext ic, final String name)
+		protected void startObject ()
 		{
-			if (this.generator == null)
-				throw (new IllegalStateException ());
-			if (ic.popObject () != this.generator)
-				throw (new IllegalStateException ());
-			this.generator.start ();
-			this.generator = null;
+			this.object.start ();
 		}
 		
-		private RandomGenerator generator;
+		public static boolean defaultAutoStart = true;
+		public static List<RandomGenerator> defaultCollector = null;
 	}
 }

@@ -11,6 +11,7 @@
 		<module>logback-amqp-common</module>
 		<module>logback-amqp-appender</module>
 		<module>logback-amqp-consumer</module>
+		<module>logback-amqp-consumer-conapp</module>
 		<module>logback-amqp-consumer-webapp</module>
 		<module>logback-webapp-common</module>
 		<module>logging-datastore-common</module>

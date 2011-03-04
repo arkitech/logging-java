@@ -30,7 +30,7 @@ public final class AmqpLoggerInjectorTests
 		testLogger.addAppender (collector);
 		testLogger.setAdditive (false);
 		
-		realLogger.debug ("initializing amqp consumer agent");
+		realLogger.debug ("initializing amqp consumer object");
 		final AmqpLoggingInjector agent = new AmqpLoggingInjector ();
 		agent.setQueue ("logging.events.tests");
 		agent.setContext (testLogger.getLoggerContext ());
@@ -43,7 +43,7 @@ public final class AmqpLoggerInjectorTests
 			Thread.sleep (AmqpLoggerInjectorTests.timeout);
 		}
 		
-		realLogger.debug ("stopping and joining amqp consumer agent");
+		realLogger.debug ("stopping and joining amqp consumer object");
 		agent.stop ();
 		
 		Assert.assertTrue (agent.isDrained ());

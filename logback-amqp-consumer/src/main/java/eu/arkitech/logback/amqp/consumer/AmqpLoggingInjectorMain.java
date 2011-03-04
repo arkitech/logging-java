@@ -11,11 +11,10 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.joran.action.Action;
-import ch.qos.logback.core.joran.spi.InterpretationContext;
 import ch.qos.logback.core.joran.spi.Pattern;
 import ch.qos.logback.core.joran.spi.RuleStore;
+import eu.arkitech.logback.common.RandomGenerator;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.Attributes;
 
 
 public final class AmqpLoggingInjectorMain
@@ -28,34 +27,46 @@ public final class AmqpLoggingInjectorMain
 	public static final void main (final String[] arguments)
 			throws Throwable
 	{
-		if (arguments.length != 1)
+		if ((arguments.length != 0) && (arguments.length != 1))
 			throw (new IllegalArgumentException (
-					"amqp consumer agent main takes exactly one argument (the logback configuration); aborting!"));
+					"amqp consumer console application may take one argument (the logback configuration); aborting!"));
 		
-		final File configurationPath = new File (arguments[0]);
-		if (!configurationPath.isFile ())
-			throw (new IllegalArgumentException (String.format (
-					"specified logback configuration `%s` does not exist (or is not a file); aborting!",
-					configurationPath.getPath ())));
+		final File configurationPath = (arguments.length > 1) ? new File (arguments[0]) : null;
 		
-		final List<AmqpLoggingInjector> agents = Collections.synchronizedList (new LinkedList<AmqpLoggingInjector> ());
+		final List<AmqpLoggingInjector> collector = Collections.synchronizedList (new LinkedList<AmqpLoggingInjector> ());
 		
-		final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory ();
-		context.reset ();
+		if (configurationPath != null) {
+			
+			if (!configurationPath.isFile ())
+				throw (new IllegalArgumentException (String.format (
+						"specified logback configuration `%s` does not exist (or is not a file); aborting!",
+						configurationPath.getPath ())));
+			
+			final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory ();
+			context.reset ();
+			
+			final Configurator configurator = new Configurator (collector);
+			configurator.setContext (context);
+			
+			configurator.doConfigure (configurationPath);
+			
+		} else {
+			
+			AmqpLoggingInjector.CreateAction.defaultCollector = collector;
+			AmqpLoggingInjector.CreateAction.defaultAutoStart = false;
+			
+			LoggerFactory.getILoggerFactory ();
+		}
 		
-		final Configurator configurator = new Configurator (agents);
-		configurator.setContext (context);
-		configurator.doConfigure (configurationPath);
+		if (collector.isEmpty ())
+			throw (new IllegalArgumentException ("no amqp logging injector defined; aborting!"));
 		
-		if (agents.isEmpty ())
-			throw (new IllegalArgumentException ("no amqp consumer agents defined; aborting!"));
-		
-		for (final AmqpLoggingInjector agent : agents)
+		for (final AmqpLoggingInjector agent : collector)
 			agent.start ();
 		
 		while (true) {
 			boolean stillRunning = false;
-			for (final AmqpLoggingInjector agent : agents)
+			for (final AmqpLoggingInjector agent : collector)
 				stillRunning |= agent.isRunning ();
 			if (!stillRunning)
 				break;
@@ -71,71 +82,31 @@ public final class AmqpLoggingInjectorMain
 	
 	public static final long defaultWaitTimeout = 1000;
 	
-	public static final class Configurator
+	private static final class Configurator
 			extends JoranConfigurator
 	{
 		public Configurator (final List<AmqpLoggingInjector> agents)
 		{
 			super ();
-			this.agentAction = new JoranAction (agents, false);
-			this.agentAction.setContext (this.getContext ());
+			this.injectorAction = new AmqpLoggingInjector.CreateAction (agents, false);
+			this.injectorAction.setContext (this.getContext ());
+			this.generatorAction = new RandomGenerator.CreateAction ();
 		}
 		
 		public final void addInstanceRules (final RuleStore rules)
 		{
 			super.addInstanceRules (rules);
-			rules.addRule (new Pattern ("/configuration/amqpLoggingInjector"), this.agentAction);
+			rules.addRule (new Pattern ("/configuration/amqpLoggingInjector"), this.injectorAction);
+			rules.addRule (new Pattern ("/configuration/randomGenerator"), this.generatorAction);
 		}
 		
 		public final void setContext (final Context context)
 		{
 			super.setContext (context);
-			this.agentAction.setContext (context);
+			this.injectorAction.setContext (context);
 		}
 		
-		private final JoranAction agentAction;
-	}
-	
-	public static final class JoranAction
-			extends Action
-	{
-		public JoranAction ()
-		{
-			this (null, true);
-		}
-		
-		public JoranAction (final List<AmqpLoggingInjector> agents, final boolean autoStart)
-		{
-			super ();
-			this.agents = agents;
-			this.autoStart = autoStart;
-			this.agent = null;
-		}
-		
-		public void begin (final InterpretationContext ic, final String name, final Attributes attributes)
-		{
-			if (this.agent != null)
-				throw (new IllegalStateException ());
-			this.agent = new AmqpLoggingInjector ();
-			this.agent.setContext (this.getContext ());
-			ic.pushObject (this.agent);
-		}
-		
-		public void end (final InterpretationContext ic, final String name)
-		{
-			if (this.agent == null)
-				throw (new IllegalStateException ());
-			if (ic.popObject () != this.agent)
-				throw (new IllegalStateException ());
-			if (this.autoStart)
-				this.agent.start ();
-			if (this.agents != null)
-				this.agents.add (this.agent);
-			this.agent = null;
-		}
-		
-		private AmqpLoggingInjector agent;
-		private final List<AmqpLoggingInjector> agents;
-		private final boolean autoStart;
+		private final Action generatorAction;
+		private final Action injectorAction;
 	}
 }

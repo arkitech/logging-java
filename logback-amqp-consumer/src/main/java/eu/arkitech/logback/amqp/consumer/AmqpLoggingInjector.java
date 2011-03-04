@@ -2,9 +2,12 @@
 package eu.arkitech.logback.amqp.consumer;
 
 
+import java.util.List;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.Callbacks;
+import eu.arkitech.logback.common.ClassNewInstanceAction;
 import eu.arkitech.logback.common.DefaultAppenderSink;
 import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
 import eu.arkitech.logback.common.LoggingEventMutator;
@@ -244,4 +247,21 @@ public class AmqpLoggingInjector
 	protected String virtualHost;
 	private LoggingEventPump pump;
 	private AmqpConsumerSource source;
+	
+	public static final class CreateAction
+			extends ClassNewInstanceAction<AmqpLoggingInjector>
+	{
+		public CreateAction ()
+		{
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoStart);
+		}
+		
+		public CreateAction (final List<AmqpLoggingInjector> collector, final boolean autoStart)
+		{
+			super (AmqpLoggingInjector.class, collector, autoStart);
+		}
+		
+		public static boolean defaultAutoStart = true;
+		public static List<AmqpLoggingInjector> defaultCollector = null;
+	}
 }
