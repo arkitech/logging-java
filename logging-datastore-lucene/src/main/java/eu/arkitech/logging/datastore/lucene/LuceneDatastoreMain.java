@@ -4,7 +4,6 @@ package eu.arkitech.logging.datastore.lucene;
 
 import java.io.File;
 import java.util.LinkedList;
-import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.RandomGenerator;
@@ -37,7 +36,7 @@ public final class LuceneDatastoreMain
 		final Logger logger = LoggerFactory.getLogger (LuceneDatastoreMain.class);
 		
 		logger.info ("opening");
-		final File path = new File ("/tmp/logging");
+		final File path = new File ("/tmp/arkitech-logging-datastore");
 		final LuceneDatastore datastore = new LuceneDatastore (path, compressed);
 		datastore.open ();
 		
@@ -79,7 +78,7 @@ public final class LuceneDatastoreMain
 				logger.error (String.format ("query failed for `{}`", queryString), exception);
 			}
 			if (query != null) {
-				final List<LuceneQueryResult> results = datastore.query (query, 100);
+				final Iterable<LuceneQueryResult> results = datastore.query (query, 100);
 				if (results != null)
 					for (final LuceneQueryResult result : results) {
 						final ILoggingEvent event = result.event;

@@ -156,7 +156,9 @@ public class EventLogLayout
 		buffer.append ("<tr class=\"Event " + event.getLevel ().levelStr + "\">\n");
 		Converter<ILoggingEvent> converter = this.convertersHead;
 		while (converter != null) {
-			buffer.append ("<td class=\"Event ").append (this.getConverterName (converter).replace ("\"", "\\\"")). append ("\">");
+			buffer
+					.append ("<td class=\"Event ").append (this.getConverterName (converter).replace ("\"", "\\\""))
+					.append ("\">");
 			converter.write (buffer, event);
 			buffer.append ("</td>\n");
 			converter = converter.getNext ();

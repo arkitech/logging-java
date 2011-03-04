@@ -3,14 +3,14 @@ package eu.arkitech.logging.datastore.lucene;
 
 
 import java.io.File;
-import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.filter.Filter;
 import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.CompressedBinarySerializer;
 import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.DefaultLoggerCallbacks;
+import eu.arkitech.logback.common.LoggingEventFilter;
+import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.Serializer;
 import eu.arkitech.logging.datastore.bdb.BdbDatastore;
 import eu.arkitech.logging.datastore.common.Datastore;
@@ -40,23 +40,26 @@ public final class LuceneDatastore
 	public LuceneDatastore (final File environmentPath, final int compressed, final Callbacks callbacks)
 	{
 		this (environmentPath, compressed == -1 ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed), callbacks);
-	}
-	
-	public LuceneDatastore (final File environmentPath, final Serializer serializer, final Callbacks callbacks)
-	{
-		this (environmentPath, serializer, callbacks, new Object ());
+				: new CompressedBinarySerializer (compressed), null, callbacks);
 	}
 	
 	public LuceneDatastore (
-			final File environmentPath, final Serializer serializer, final Callbacks callbacks, final Object monitor)
+			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
+			final Callbacks callbacks)
+	{
+		this (environmentPath, serializer, mutator, callbacks, new Object ());
+	}
+	
+	public LuceneDatastore (
+			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
+			final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		synchronized (monitor) {
 			this.monitor = monitor;
 			this.state = State.Closed;
 			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
-			this.bdb = new BdbDatastore (environmentPath, serializer, this.callbacks, this.monitor);
+			this.bdb = new BdbDatastore (environmentPath, serializer, mutator, this.callbacks, this.monitor);
 			this.index = new LuceneIndex (this.bdb, this.callbacks, this.monitor);
 		}
 	}
@@ -99,19 +102,19 @@ public final class LuceneDatastore
 		return (this.index.parseQuery (query));
 	}
 	
-	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
+	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
 		return (this.index.query (query, maxCount));
 	}
 	
-	public final List<ILoggingEvent> select (
-			final ILoggingEvent reference, final int beforeCount, final int afterCount, final Filter<ILoggingEvent> filter)
+	public final Iterable<ILoggingEvent> select (
+			final ILoggingEvent reference, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
 	{
 		return (this.bdb.select (reference, beforeCount, afterCount, filter));
 	}
 	
-	public final List<ILoggingEvent> select (
-			final long afterTimestamp, final long intervalMs, final Filter<ILoggingEvent> filter)
+	public final Iterable<ILoggingEvent> select (
+			final long afterTimestamp, final long intervalMs, final LoggingEventFilter filter)
 	{
 		return (this.bdb.select (afterTimestamp, intervalMs, filter));
 	}

@@ -4,7 +4,6 @@ package eu.arkitech.logging.datastore.lucene;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
@@ -160,7 +159,7 @@ public final class LuceneIndex
 		return (this.parser.parse (query));
 	}
 	
-	public final List<LuceneQueryResult> query (final Query query, final int maxCount)
+	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)

@@ -113,7 +113,8 @@ public final class AmqpLoggingEventPublisher
 				routingKey = this.router.generateRoutingKey (event);
 			else
 				routingKey =
-						String.format (AmqpLoggingEventPublisher.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
+						String.format (
+								AmqpLoggingEventPublisher.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (
 					exception,

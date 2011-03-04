@@ -180,11 +180,16 @@ public class EventLogServlet
 		final boolean mdcStrict = filter.mdcStrict;
 		stream.write ("<div class=\"EventFilter\">\n");
 		stream.write ("<form action=\"\" method=\"GET\">\n");
-		stream.write ("Level:&nbsp;<input type=\"text\" name=\"level\" value=\"" + ((level != null) ? level.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC.Application:&nbsp;<input type=\"text\" name=\"mdc.application\" value=\"" + ((mdcApplication != null) ? mdcApplication.replace ("\"", "\\\"") : "") + "\" />\n");
-		stream.write ("MDC.Component:&nbsp;<input type=\"text\" name=\"mdc.component\" value=\"" + ((mdcComponent != null) ? mdcComponent.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC.Node:&nbsp;<input type=\"text\" name=\"mdc.node\" value=\"" + ((mdcNode != null) ? mdcNode.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC Strict:&nbsp;<input type=\"checkbox\" name=\"mdc_strict\" " + (mdcStrict ?" checked=\"on\"" : "") + " />\n");
+		stream.write ("Level:&nbsp;<input type=\"text\" name=\"level\" value=\""
+				+ ((level != null) ? level.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC.Application:&nbsp;<input type=\"text\" name=\"mdc.application\" value=\""
+				+ ((mdcApplication != null) ? mdcApplication.replace ("\"", "\\\"") : "") + "\" />\n");
+		stream.write ("MDC.Component:&nbsp;<input type=\"text\" name=\"mdc.component\" value=\""
+				+ ((mdcComponent != null) ? mdcComponent.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC.Node:&nbsp;<input type=\"text\" name=\"mdc.node\" value=\""
+				+ ((mdcNode != null) ? mdcNode.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC Strict:&nbsp;<input type=\"checkbox\" name=\"mdc_strict\" " + (mdcStrict ? " checked=\"on\"" : "")
+				+ " />\n");
 		stream.write ("<input type=\"submit\" value=\"Refresh!\" />\n");
 		stream.write ("</form>");
 		stream.write ("</div>\n");

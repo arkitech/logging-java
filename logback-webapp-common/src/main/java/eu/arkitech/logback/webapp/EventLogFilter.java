@@ -37,7 +37,7 @@ class EventLogFilter
 		}
 		this.mdcValues = mdcValues;
 		final String mdcStrictValue = request.getParameter ("mdc_strict");
-		if (mdcStrictValue != null && mdcStrictValue.equals ("on"))
+		if ((mdcStrictValue != null) && mdcStrictValue.equals ("on"))
 			this.mdcStrict = true;
 		else
 			this.mdcStrict = false;
@@ -68,6 +68,6 @@ class EventLogFilter
 	}
 	
 	protected final Level levelValue;
-	protected final Map<String, String> mdcValues;
 	protected final boolean mdcStrict;
+	protected final Map<String, String> mdcValues;
 }

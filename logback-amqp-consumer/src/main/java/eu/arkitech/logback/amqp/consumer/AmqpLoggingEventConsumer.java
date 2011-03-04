@@ -7,8 +7,8 @@ import java.util.concurrent.TimeUnit;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventAccessor;
-import eu.arkitech.logback.amqp.accessors.AmqpRawConsumer;
 import eu.arkitech.logback.amqp.accessors.AmqpMessage;
+import eu.arkitech.logback.amqp.accessors.AmqpRawConsumer;
 import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.LoggingEventSource;
