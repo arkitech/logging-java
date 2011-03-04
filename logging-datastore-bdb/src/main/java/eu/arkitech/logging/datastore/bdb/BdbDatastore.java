@@ -8,10 +8,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import ch.qos.logback.core.spi.FilterReply;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.spi.FilterReply;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -221,12 +220,13 @@ public final class BdbDatastore
 						if (outcome == OperationStatus.NOTFOUND)
 							break outer;
 						if (outcome != OperationStatus.SUCCESS) {
-							this.callbacks.handleException (
-									new DatabaseException (),
-									"bdb datastore encountered an error while searching backward from the reference event; aborting!");
+							this.callbacks
+									.handleException (
+											new DatabaseException (),
+											"bdb datastore encountered an error while searching backward from the reference event; aborting!");
 							return (null);
 						}
-						String key = this.decodeKeyEntry (keyEntry);
+						final String key = this.decodeKeyEntry (keyEntry);
 						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
 						if (this.filterEvent (filter, event)) {
 							events.addFirst (event);
@@ -255,12 +255,13 @@ public final class BdbDatastore
 						if (outcome == OperationStatus.NOTFOUND)
 							break outer;
 						if (outcome != OperationStatus.SUCCESS) {
-							this.callbacks.handleException (
-									new DatabaseException (),
-									"bdb datastore encountered an error while searching forward from the reference event; aborting!");
+							this.callbacks
+									.handleException (
+											new DatabaseException (),
+											"bdb datastore encountered an error while searching forward from the reference event; aborting!");
 							return (null);
 						}
-						String key = this.decodeKeyEntry (keyEntry);
+						final String key = this.decodeKeyEntry (keyEntry);
 						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
 						if (this.filterEvent (filter, event)) {
 							events.addLast (event);
@@ -329,12 +330,13 @@ public final class BdbDatastore
 					if (outcome == OperationStatus.NOTFOUND)
 						break;
 					if (outcome != OperationStatus.SUCCESS) {
-						this.callbacks.handleException (
-								new DatabaseException (),
-								"bdb datastore encountered an error while searching forward from the reference event; aborting!");
+						this.callbacks
+								.handleException (
+										new DatabaseException (),
+										"bdb datastore encountered an error while searching forward from the reference event; aborting!");
 						return (null);
 					}
-					String key = this.decodeKeyEntry (keyEntry);
+					final String key = this.decodeKeyEntry (keyEntry);
 					final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
 					if (event.getTimeStamp () > beforeTimestamp)
 						break;
@@ -355,20 +357,6 @@ public final class BdbDatastore
 				}
 			}
 		}
-	}
-	
-	private final boolean filterEvent (final LoggingEventFilter filter, final ILoggingEvent event)
-	{
-		if (filter == null)
-			return (true);
-		final FilterReply outcome;
-		try {
-			outcome = filter.filter (event);
-		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "bdb datastore encountered an error while filtering the event; ignoring!");
-			return (false);
-		}
-		return (outcome != FilterReply.DENY);
 	}
 	
 	public final ILoggingEvent select (final String key)
@@ -544,6 +532,21 @@ public final class BdbDatastore
 		System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
 		System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
 		return (keyBytes);
+	}
+	
+	private final boolean filterEvent (final LoggingEventFilter filter, final ILoggingEvent event)
+	{
+		if (filter == null)
+			return (true);
+		final FilterReply outcome;
+		try {
+			outcome = filter.filter (event);
+		} catch (final Throwable exception) {
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while filtering the event; ignoring!");
+			return (false);
+		}
+		return (outcome != FilterReply.DENY);
 	}
 	
 	private final ILoggingEvent prepareEvent (final ILoggingEvent originalEvent)
