@@ -28,7 +28,7 @@ public final class LuceneDatastoreMain
 		
 		final int compressed = 0;
 		final boolean indexed = true;
-		final int storeCount = 10 * 1000;
+		final int storeCount = 1 * 1000;
 		final int selectCount = 10;
 		final int queryCount = 10;
 		final String queryString = "level:INFO OR level:ERROR";
@@ -57,7 +57,7 @@ public final class LuceneDatastoreMain
 			keys = null;
 		
 		if ((keys != null) && (selectCount > 0)) {
-			logger.info ("selecting");
+			logger.info ("selecting keys");
 			int i = 0;
 			for (final String key : keys) {
 				final ILoggingEvent event = datastore.select (key);
@@ -66,6 +66,42 @@ public final class LuceneDatastoreMain
 				i++;
 				if (i >= selectCount)
 					break;
+			}
+		}
+		
+		if (keys != null) {
+			logger.info ("selecting");
+			final ILoggingEvent referenceEvent = datastore.select (keys.get (keys.size () / 2));
+			if (referenceEvent == null)
+				logger.error ("select failed for reference event");
+			else {
+				System.out.format (
+						"reference: [%s] [%s] [%s] %s\n", referenceEvent.getTimeStamp (), referenceEvent.getLevel (),
+						referenceEvent.getLoggerName (), referenceEvent.getFormattedMessage ());
+				{
+					logger.info ("selecting after interval");
+					final Iterable<ILoggingEvent> events = datastore.select (referenceEvent.getTimeStamp (), 10, null);
+					if (events != null)
+						for (final ILoggingEvent event : events) {
+							System.out.format (
+									"[%s] [%s] [%s] %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (),
+									event.getFormattedMessage ());
+						}
+					else
+						logger.error ("select interval failed");
+				}
+				{
+					logger.info ("selecting around reference");
+					final Iterable<ILoggingEvent> events = datastore.select (referenceEvent, 10, 10, null);
+					if (events != null)
+						for (final ILoggingEvent event : events) {
+							System.out.format (
+									"[%s] [%s] [%s] %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (),
+									event.getFormattedMessage ());
+						}
+					else
+						logger.error ("select around reference failed");
+				}
 			}
 		}
 		
@@ -78,7 +114,7 @@ public final class LuceneDatastoreMain
 				logger.error (String.format ("query failed for `{}`", queryString), exception);
 			}
 			if (query != null) {
-				final Iterable<LuceneQueryResult> results = datastore.query (query, 100);
+				final Iterable<LuceneQueryResult> results = datastore.query (query, 100, true);
 				if (results != null)
 					for (final LuceneQueryResult result : results) {
 						final ILoggingEvent event = result.event;

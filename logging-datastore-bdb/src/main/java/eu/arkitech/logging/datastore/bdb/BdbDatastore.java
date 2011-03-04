@@ -5,8 +5,14 @@ package eu.arkitech.logging.datastore.bdb;
 import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
+import ch.qos.logback.core.spi.FilterReply;
+
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -139,8 +145,7 @@ public final class BdbDatastore
 			}
 			try {
 				this.eventDatabase =
-						this.environment.openDatabase (
-								null, BdbDatastore.defaultEventDatabaseName, this.eventDatabaseConfiguration);
+						this.environment.openDatabase (null, BdbDatastore.eventDatabaseName, this.eventDatabaseConfiguration);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
 						exception, "bdb datastore encountered an error while opening the environment; aborting!", exception);
@@ -168,7 +173,114 @@ public final class BdbDatastore
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
 				throw (new IllegalStateException ("bdb datastore is not opened"));
-			throw (new UnsupportedOperationException ());
+			if ((reference == null) || (beforeCount < 0) || (afterCount < 0))
+				throw (new IllegalArgumentException ());
+			final String relativeReferenceKey;
+			if ((reference instanceof SLoggingEvent1) && (((SLoggingEvent1) reference).key != null))
+				relativeReferenceKey = ((SLoggingEvent1) reference).key;
+			else
+				relativeReferenceKey = this.encodeMinKey (reference.getTimeStamp ());
+			if (relativeReferenceKey == null)
+				return (null);
+			final Cursor cursor;
+			try {
+				cursor = this.eventDatabase.openCursor (null, null);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an error while opening the cursor; aborting!");
+				return (null);
+			}
+			final LinkedList<ILoggingEvent> events = new LinkedList<ILoggingEvent> ();
+			try {
+				OperationStatus outcome;
+				DatabaseEntry keyEntry;
+				DatabaseEntry valueEntry;
+				final String realReferenceKey;
+				{
+					keyEntry = this.encodeKeyEntry (relativeReferenceKey);
+					valueEntry = new DatabaseEntry ();
+					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
+					if (outcome == OperationStatus.NOTFOUND)
+						return (events);
+					if (outcome != OperationStatus.SUCCESS) {
+						this.callbacks.handleException (
+								new DatabaseException (),
+								"bdb datastore encountered an error while searching the reference event; aborting!");
+						return (null);
+					}
+					realReferenceKey = this.decodeKeyEntry (keyEntry);
+					final ILoggingEvent event = this.decodeEventEntry (realReferenceKey, valueEntry);
+					if (this.filterEvent (filter, event))
+						events.add (event);
+				}
+				outer : for (int index = 0; index < beforeCount; index++) {
+					while (true) {
+						keyEntry = new DatabaseEntry ();
+						valueEntry = new DatabaseEntry ();
+						outcome = cursor.getPrev (keyEntry, valueEntry, null);
+						if (outcome == OperationStatus.NOTFOUND)
+							break outer;
+						if (outcome != OperationStatus.SUCCESS) {
+							this.callbacks.handleException (
+									new DatabaseException (),
+									"bdb datastore encountered an error while searching backward from the reference event; aborting!");
+							return (null);
+						}
+						String key = this.decodeKeyEntry (keyEntry);
+						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
+						if (this.filterEvent (filter, event)) {
+							events.addFirst (event);
+							break;
+						}
+					}
+				}
+				{
+					keyEntry = this.encodeKeyEntry (realReferenceKey);
+					valueEntry = new DatabaseEntry ();
+					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
+					if (outcome == OperationStatus.NOTFOUND)
+						return (events);
+					if (outcome != OperationStatus.SUCCESS) {
+						this.callbacks.handleException (
+								new DatabaseException (),
+								"bdb datastore encountered an error while searching the reference event; aborting!");
+						return (null);
+					}
+				}
+				outer : for (int index = 0; index < afterCount; index++) {
+					while (true) {
+						keyEntry = new DatabaseEntry ();
+						valueEntry = new DatabaseEntry ();
+						outcome = cursor.getNext (keyEntry, valueEntry, null);
+						if (outcome == OperationStatus.NOTFOUND)
+							break outer;
+						if (outcome != OperationStatus.SUCCESS) {
+							this.callbacks.handleException (
+									new DatabaseException (),
+									"bdb datastore encountered an error while searching forward from the reference event; aborting!");
+							return (null);
+						}
+						String key = this.decodeKeyEntry (keyEntry);
+						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
+						if (this.filterEvent (filter, event)) {
+							events.addLast (event);
+							break;
+						}
+					}
+				}
+				return (events);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an error while searching the events; aborting!");
+				return (null);
+			} finally {
+				try {
+					cursor.close ();
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception, "bdb datastore encountered an error while closing the cursor; ignoring!");
+				}
+			}
 		}
 	}
 	
@@ -178,8 +290,85 @@ public final class BdbDatastore
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
 				throw (new IllegalStateException ("bdb datastore is not opened"));
-			throw (new UnsupportedOperationException ());
+			if ((afterTimestamp < 0) || (intervalMs < 0))
+				throw (new IllegalArgumentException ());
+			final long beforeTimestamp = afterTimestamp + intervalMs;
+			final String relativeReferenceKey = this.encodeMinKey (afterTimestamp);
+			if (relativeReferenceKey == null)
+				return (null);
+			final Cursor cursor;
+			try {
+				cursor = this.eventDatabase.openCursor (null, null);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an error while opening the cursor; aborting!");
+				return (null);
+			}
+			final LinkedList<ILoggingEvent> events = new LinkedList<ILoggingEvent> ();
+			try {
+				OperationStatus outcome;
+				DatabaseEntry keyEntry;
+				DatabaseEntry valueEntry;
+				{
+					keyEntry = this.encodeKeyEntry (relativeReferenceKey);
+					valueEntry = new DatabaseEntry ();
+					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
+					if (outcome == OperationStatus.NOTFOUND)
+						return (events);
+					if (outcome != OperationStatus.SUCCESS) {
+						this.callbacks.handleException (
+								new DatabaseException (),
+								"bdb datastore encountered an error while searching the reference event; aborting!");
+						return (null);
+					}
+				}
+				while (true) {
+					keyEntry = new DatabaseEntry ();
+					valueEntry = new DatabaseEntry ();
+					outcome = cursor.getNext (keyEntry, valueEntry, null);
+					if (outcome == OperationStatus.NOTFOUND)
+						break;
+					if (outcome != OperationStatus.SUCCESS) {
+						this.callbacks.handleException (
+								new DatabaseException (),
+								"bdb datastore encountered an error while searching forward from the reference event; aborting!");
+						return (null);
+					}
+					String key = this.decodeKeyEntry (keyEntry);
+					final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
+					if (event.getTimeStamp () > beforeTimestamp)
+						break;
+					if (this.filterEvent (filter, event))
+						events.addLast (event);
+				}
+				return (events);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an error while searching the events; aborting!");
+				return (null);
+			} finally {
+				try {
+					cursor.close ();
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception, "bdb datastore encountered an error while closing the cursor; ignoring!");
+				}
+			}
 		}
+	}
+	
+	private final boolean filterEvent (final LoggingEventFilter filter, final ILoggingEvent event)
+	{
+		if (filter == null)
+			return (true);
+		final FilterReply outcome;
+		try {
+			outcome = filter.filter (event);
+		} catch (final Throwable exception) {
+			this.callbacks.handleException (exception, "bdb datastore encountered an error while filtering the event; ignoring!");
+			return (false);
+		}
+		return (outcome != FilterReply.DENY);
 	}
 	
 	public final ILoggingEvent select (final String key)
@@ -205,9 +394,9 @@ public final class BdbDatastore
 				return (null);
 			}
 		}
-		final ILoggingEvent event = this.decodeEventEntry (eventEntry);
-		if (event instanceof SLoggingEvent1)
-			((SLoggingEvent1) event).key = key;
+		final ILoggingEvent event = this.decodeEventEntry (key, eventEntry);
+		if (event == null)
+			return (null);
 		return (event);
 	}
 	
@@ -244,7 +433,7 @@ public final class BdbDatastore
 		return (key);
 	}
 	
-	private final ILoggingEvent decodeEventEntry (final DatabaseEntry entry)
+	private final ILoggingEvent decodeEventEntry (final String key, final DatabaseEntry entry)
 	{
 		final Object object;
 		try {
@@ -262,7 +451,14 @@ public final class BdbDatastore
 					exception, "bdb datastore encountered ane error while deserializing the event; aborting!");
 			return (null);
 		}
+		if ((key != null) && (event instanceof SLoggingEvent1))
+			((SLoggingEvent1) event).key = key;
 		return (event);
+	}
+	
+	private final String decodeKeyEntry (final DatabaseEntry entry)
+	{
+		return (new String (entry.getData (), entry.getOffset (), entry.getSize ()));
 	}
 	
 	private final DatabaseEntry encodeEventEntry (final ILoggingEvent event)
@@ -284,7 +480,7 @@ public final class BdbDatastore
 				this.encodeRawKeyFromData (timestamp, eventEntry.getData (), eventEntry.getOffset (), eventEntry.getSize ());
 		if (data == null)
 			return (null);
-		return (this.encodeKeyFromHash (data));
+		return (this.encodeKeyFromData (data));
 	}
 	
 	private final DatabaseEntry encodeKeyEntry (final String key)
@@ -292,7 +488,7 @@ public final class BdbDatastore
 		return (new DatabaseEntry (key.getBytes ()));
 	}
 	
-	private final String encodeKeyFromHash (final byte[] hashBytes)
+	private final String encodeKeyFromData (final byte[] hashBytes)
 	{
 		final StringBuilder builder = new StringBuilder ();
 		for (final byte b : hashBytes) {
@@ -305,18 +501,35 @@ public final class BdbDatastore
 		return (builder.toString ());
 	}
 	
+	private final String encodeMinKey (final long timestamp)
+	{
+		return (this.encodeKeyFromData (this.encodeRawKeyFromData (
+				timestamp, BdbDatastore.minHashBytes, 0, BdbDatastore.minHashBytes.length)));
+	}
+	
 	private final byte[] encodeRawKeyFromData (final long timestamp, final byte[] data, final int offset, final int size)
 	{
 		final MessageDigest hasher;
 		try {
-			hasher = MessageDigest.getInstance (BdbDatastore.defaultHashAlgorithm);
+			hasher = MessageDigest.getInstance (BdbDatastore.hashAlgorithm);
 		} catch (final NoSuchAlgorithmException exception) {
 			this.callbacks.handleException (
 					exception, "bdb datastore encountered an error while creating the hasher; aborting!");
 			return (null);
 		}
-		hasher.update (data, offset, size);
-		final byte[] hashBytes = hasher.digest ();
+		final byte[] hashBytes;
+		try {
+			hasher.update (data, offset, size);
+			hashBytes = hasher.digest ();
+		} catch (final Error exception) {
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered an error while feeding the hasher; aborting!");
+			return (null);
+		}
+		if (hashBytes.length != BdbDatastore.hashSize) {
+			this.callbacks.handleLogEvent (Level.ERROR, null, "bdb datastore obtained an invalid hash size; aborting!");
+			return (null);
+		}
 		return (this.encodeRawKeyFromHash (timestamp, hashBytes));
 	}
 	
@@ -368,8 +581,17 @@ public final class BdbDatastore
 	private final Serializer serializer;
 	private State state;
 	
-	public static final String defaultEventDatabaseName = "events";
-	public static final String defaultHashAlgorithm = "MD5";
+	static {
+		minHashBytes = new byte[BdbDatastore.hashSize];
+		Arrays.fill (BdbDatastore.minHashBytes, Byte.MIN_VALUE);
+		maxHashBytes = new byte[BdbDatastore.hashSize];
+		Arrays.fill (BdbDatastore.maxHashBytes, Byte.MAX_VALUE);
+	}
+	public static final String eventDatabaseName = "events";
+	public static final String hashAlgorithm = "MD5";
+	public static final int hashSize = 16;
+	private static final byte[] maxHashBytes;
+	private static final byte[] minHashBytes;
 	
 	public static enum State
 	{

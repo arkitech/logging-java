@@ -116,7 +116,7 @@ public final class LuceneIndex
 			if (this.state != State.Closed)
 				throw (new IllegalStateException ("lucene indexer is already opened"));
 			try {
-				this.fileDatabase = this.bdb.openDatabase (LuceneIndex.defaultFileDatabaseName, this.databaseConfiguration);
+				this.fileDatabase = this.bdb.openDatabase (LuceneIndex.fileDatabaseName, this.databaseConfiguration);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
 						exception, "lucene indexer encountered an error while opening the file database; aborting!");
@@ -124,7 +124,7 @@ public final class LuceneIndex
 				return (false);
 			}
 			try {
-				this.blockDatabase = this.bdb.openDatabase (LuceneIndex.defaultBlockDatabaseName, this.databaseConfiguration);
+				this.blockDatabase = this.bdb.openDatabase (LuceneIndex.blockDatabaseName, this.databaseConfiguration);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
 						exception, "lucene indexer encountered an error while opening the block database; aborting!");
@@ -140,14 +140,6 @@ public final class LuceneIndex
 				this.close ();
 				return (false);
 			}
-			try {
-				this.searcher = new IndexSearcher (this.directory, true);
-			} catch (final IOException exception) {
-				this.callbacks.handleException (
-						exception, "lucene indexer encountered an error while opening the index; aborting!");
-				this.close ();
-				return (false);
-			}
 			this.state = State.Opened;
 			return (true);
 		}
@@ -159,7 +151,7 @@ public final class LuceneIndex
 		return (this.parser.parse (query));
 	}
 	
-	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount)
+	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount, final boolean flush)
 	{
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
@@ -168,6 +160,26 @@ public final class LuceneIndex
 			final String[] keys;
 			final float[] scores;
 			try {
+				if (flush) {
+					this.writer.commit ();
+					if (this.searcher != null)
+						try {
+							this.searcher.close ();
+						} catch (final IOException exception) {
+							this.callbacks.handleException (
+									exception, "lucene indexer encountered an error while closing the searcher; ignoring!");
+						} finally {
+							this.searcher = null;
+						}
+				}
+				if (this.searcher == null)
+					try {
+						this.searcher = new IndexSearcher (this.directory, true);
+					} catch (final IOException exception) {
+						this.callbacks.handleException (
+								exception, "lucene indexer encountered an error while opening the searcher; aborting!");
+						return (null);
+					}
 				final TopDocs outcome = this.searcher.search (query, maxCount);
 				final ScoreDoc[] results = outcome.scoreDocs;
 				count = results.length;
@@ -257,10 +269,10 @@ public final class LuceneIndex
 	private State state;
 	private IndexWriter writer;
 	
-	public static final String defaultBlockDatabaseName = "lucene-blocks";
-	public static final String defaultFileDatabaseName = "lucene-files";
+	public static final String blockDatabaseName = "lucene-blocks";
 	public static final String exceptionClassFieldName = "exception-class";
 	public static final String exceptionMessageFieldName = "exception-message";
+	public static final String fileDatabaseName = "lucene-files";
 	public static final String keyFieldName = "key";
 	public static final KeyFieldSelector keyFieldSelector = new KeyFieldSelector ();
 	public static final String levelFieldName = "level";

@@ -102,9 +102,9 @@ public final class LuceneDatastore
 		return (this.index.parseQuery (query));
 	}
 	
-	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount)
+	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount, final boolean flush)
 	{
-		return (this.index.query (query, maxCount));
+		return (this.index.query (query, maxCount, flush));
 	}
 	
 	public final Iterable<ILoggingEvent> select (
