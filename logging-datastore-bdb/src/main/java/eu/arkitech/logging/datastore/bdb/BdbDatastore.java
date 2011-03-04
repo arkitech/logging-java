@@ -36,55 +36,56 @@ public final class BdbDatastore
 		implements
 			Datastore
 {
-	public BdbDatastore (final File environmentPath)
+	public BdbDatastore (final File environmentPath, final boolean readOnly)
 	{
-		this (environmentPath, -1);
+		this (environmentPath, readOnly, -1);
 	}
 	
-	public BdbDatastore (final File environmentPath, final Callbacks callbacks)
+	public BdbDatastore (final File environmentPath, final boolean readOnly, final Callbacks callbacks)
 	{
-		this (environmentPath, -1, callbacks);
+		this (environmentPath, readOnly, -1, callbacks);
 	}
 	
-	public BdbDatastore (final File environmentPath, final int compressed)
+	public BdbDatastore (final File environmentPath, final boolean readOnly, final int compressed)
 	{
-		this (environmentPath, compressed, null);
+		this (environmentPath, readOnly, compressed, null);
 	}
 	
-	public BdbDatastore (final File environmentPath, final int compressed, final Callbacks callbacks)
+	public BdbDatastore (final File environmentPath, final boolean readOnly, final int compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, compressed == -1 ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed), null, callbacks);
-	}
-	
-	public BdbDatastore (
-			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks)
-	{
-		this (environmentPath, serializer, mutator, callbacks, new Object ());
+		this (environmentPath, readOnly, compressed == -1 ? new DefaultBinarySerializer () : new CompressedBinarySerializer (
+				compressed), null, callbacks);
 	}
 	
 	public BdbDatastore (
-			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks, final Object monitor)
+			final File environmentPath, final boolean readOnly, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks)
+	{
+		this (environmentPath, readOnly, serializer, mutator, callbacks, new Object ());
+	}
+	
+	public BdbDatastore (
+			final File environmentPath, final boolean readOnly, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		synchronized (monitor) {
 			this.monitor = monitor;
 			this.state = State.Closed;
 			this.environmentPath = environmentPath;
+			this.readOnly = readOnly;
 			this.serializer = (serializer != null) ? serializer : new DefaultBinarySerializer ();
 			this.mutator = mutator;
 			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
 			this.environmentConfiguration = new EnvironmentConfig ();
-			this.environmentConfiguration.setAllowCreate (true);
-			this.environmentConfiguration.setReadOnly (false);
+			this.environmentConfiguration.setAllowCreate (!this.readOnly);
+			this.environmentConfiguration.setReadOnly (this.readOnly);
 			this.environmentConfiguration.setTransactional (false);
 			this.environmentConfiguration.setLocking (false);
 			this.environmentConfiguration.setExceptionListener (new ExceptionHandler ());
 			this.eventDatabaseConfiguration = new DatabaseConfig ();
-			this.eventDatabaseConfiguration.setAllowCreate (true);
-			this.eventDatabaseConfiguration.setReadOnly (false);
+			this.eventDatabaseConfiguration.setAllowCreate (!this.readOnly);
+			this.eventDatabaseConfiguration.setReadOnly (this.readOnly);
 			this.eventDatabaseConfiguration.setSortedDuplicates (false);
 			this.eventDatabaseConfiguration.setTransactional (false);
 		}
@@ -390,6 +391,10 @@ public final class BdbDatastore
 	
 	public final String store (final ILoggingEvent originalEvent)
 	{
+		if (originalEvent == null)
+			throw (new IllegalArgumentException ());
+		if (this.readOnly)
+			throw (new IllegalStateException ());
 		final ILoggingEvent clonedEvent = this.prepareEvent (originalEvent);
 		if (clonedEvent == null)
 			return (null);
@@ -581,6 +586,7 @@ public final class BdbDatastore
 	private final DatabaseConfig eventDatabaseConfiguration;
 	private final Object monitor;
 	private final LoggingEventMutator mutator;
+	private final boolean readOnly;
 	private final Serializer serializer;
 	private State state;
 	

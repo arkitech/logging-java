@@ -35,19 +35,20 @@ import org.apache.lucene.util.Version;
 
 public final class LuceneIndex
 {
-	public LuceneIndex (final BdbDatastore bdb, final Callbacks callbacks, final Object monitor)
+	public LuceneIndex (final BdbDatastore bdb, final boolean readOnly, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		synchronized (monitor) {
 			this.monitor = monitor;
+			this.readOnly = readOnly;
 			this.state = State.Closed;
 			this.bdb = bdb;
 			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
 			this.analyzer = new StandardAnalyzer (LuceneIndex.version);
 			this.parser = new QueryParser (LuceneIndex.version, LuceneIndex.messageFieldName, this.analyzer);
 			this.databaseConfiguration = new DatabaseConfig ();
-			this.databaseConfiguration.setAllowCreate (true);
-			this.databaseConfiguration.setReadOnly (false);
+			this.databaseConfiguration.setAllowCreate (!this.readOnly);
+			this.databaseConfiguration.setReadOnly (this.readOnly);
 			this.databaseConfiguration.setSortedDuplicates (false);
 			this.databaseConfiguration.setTransactional (false);
 		}
@@ -132,14 +133,15 @@ public final class LuceneIndex
 				return (false);
 			}
 			this.directory = new JEDirectory (null, this.fileDatabase, this.blockDatabase);
-			try {
-				this.writer = new IndexWriter (this.directory, this.analyzer, MaxFieldLength.UNLIMITED);
-			} catch (final IOException exception) {
-				this.callbacks.handleException (
-						exception, "lucene indexer encountered an error while opening the writer; aborting!");
-				this.close ();
-				return (false);
-			}
+			if (!this.readOnly)
+				try {
+					this.writer = new IndexWriter (this.directory, this.analyzer, MaxFieldLength.UNLIMITED);
+				} catch (final IOException exception) {
+					this.callbacks.handleException (
+							exception, "lucene indexer encountered an error while opening the writer; aborting!");
+					this.close ();
+					return (false);
+				}
 			this.state = State.Opened;
 			return (true);
 		}
@@ -148,11 +150,15 @@ public final class LuceneIndex
 	public final Query parseQuery (final String query)
 			throws ParseException
 	{
+		if (query == null)
+			throw (new IllegalArgumentException ());
 		return (this.parser.parse (query));
 	}
 	
 	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount, final boolean flush)
 	{
+		if ((query == null) || (maxCount <= 0))
+			throw (new IllegalArgumentException ());
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
 				throw (new IllegalStateException ("lucene indexer is not opened"));
@@ -160,7 +166,7 @@ public final class LuceneIndex
 			final String[] keys;
 			final float[] scores;
 			try {
-				if (flush) {
+				if (flush && !this.readOnly) {
 					this.writer.commit ();
 					if (this.searcher != null)
 						try {
@@ -224,7 +230,13 @@ public final class LuceneIndex
 	
 	public final boolean store (final String key, final ILoggingEvent event)
 	{
+		if ((key == null) || (event == null))
+			throw (new IllegalArgumentException ());
+		if (this.readOnly)
+			throw (new IllegalStateException ());
 		final Document document = this.buildDocument (key, event);
+		if (document == null)
+			return (false);
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
 				throw (new IllegalStateException ("lucene indexer is not opened"));
@@ -265,6 +277,7 @@ public final class LuceneIndex
 	private Database fileDatabase;
 	private final Object monitor;
 	private final QueryParser parser;
+	private final boolean readOnly;
 	private IndexSearcher searcher;
 	private State state;
 	private IndexWriter writer;

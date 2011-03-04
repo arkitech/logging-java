@@ -37,7 +37,7 @@ public final class LuceneDatastoreMain
 		
 		logger.info ("opening");
 		final File path = new File ("/tmp/arkitech-logging-datastore");
-		final LuceneDatastore datastore = new LuceneDatastore (path, compressed);
+		final LuceneDatastore datastore = new LuceneDatastore (path, false, compressed);
 		datastore.open ();
 		
 		final LinkedList<String> keys;

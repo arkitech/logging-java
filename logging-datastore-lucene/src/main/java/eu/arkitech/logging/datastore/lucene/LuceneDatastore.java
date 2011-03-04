@@ -22,45 +22,47 @@ public final class LuceneDatastore
 		implements
 			Datastore
 {
-	public LuceneDatastore (final File environmentPath)
+	public LuceneDatastore (final File environmentPath, final boolean readOnly)
 	{
-		this (environmentPath, -1);
+		this (environmentPath, readOnly, -1);
 	}
 	
-	public LuceneDatastore (final File environmentPath, final Callbacks callbacks)
+	public LuceneDatastore (final File environmentPath, final boolean readOnly, final Callbacks callbacks)
 	{
-		this (environmentPath, -1, callbacks);
+		this (environmentPath, readOnly, -1, callbacks);
 	}
 	
-	public LuceneDatastore (final File environmentPath, final int compressed)
+	public LuceneDatastore (final File environmentPath, final boolean readOnly, final int compressed)
 	{
-		this (environmentPath, compressed, null);
-	}
-	
-	public LuceneDatastore (final File environmentPath, final int compressed, final Callbacks callbacks)
-	{
-		this (environmentPath, compressed == -1 ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed), null, callbacks);
+		this (environmentPath, readOnly, compressed, null);
 	}
 	
 	public LuceneDatastore (
-			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks)
+			final File environmentPath, final boolean readOnly, final int compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, serializer, mutator, callbacks, new Object ());
+		this (environmentPath, readOnly, compressed == -1 ? new DefaultBinarySerializer () : new CompressedBinarySerializer (
+				compressed), null, callbacks);
 	}
 	
 	public LuceneDatastore (
-			final File environmentPath, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks, final Object monitor)
+			final File environmentPath, final boolean readOnly, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks)
+	{
+		this (environmentPath, readOnly, serializer, mutator, callbacks, new Object ());
+	}
+	
+	public LuceneDatastore (
+			final File environmentPath, final boolean readOnly, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		synchronized (monitor) {
 			this.monitor = monitor;
+			this.readOnly = readOnly;
 			this.state = State.Closed;
 			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
-			this.bdb = new BdbDatastore (environmentPath, serializer, mutator, this.callbacks, this.monitor);
-			this.index = new LuceneIndex (this.bdb, this.callbacks, this.monitor);
+			this.bdb = new BdbDatastore (environmentPath, this.readOnly, serializer, mutator, this.callbacks, this.monitor);
+			this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
 		}
 	}
 	
@@ -136,6 +138,7 @@ public final class LuceneDatastore
 	private final Callbacks callbacks;
 	private final LuceneIndex index;
 	private final Object monitor;
+	private final boolean readOnly;
 	private State state;
 	
 	public static enum State
