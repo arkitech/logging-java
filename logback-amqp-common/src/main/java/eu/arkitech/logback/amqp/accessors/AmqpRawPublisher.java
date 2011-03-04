@@ -12,10 +12,10 @@ import com.rabbitmq.client.Channel;
 import eu.arkitech.logback.common.Callbacks;
 
 
-public final class AmqpPublisher
-		extends AmqpAccessor
+public final class AmqpRawPublisher
+		extends AmqpRawAccessor
 {
-	public AmqpPublisher (
+	public AmqpRawPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
 			final BlockingDeque<AmqpMessage> buffer, final Callbacks callbacks, final Object monitor)
 	{

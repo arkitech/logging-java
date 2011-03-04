@@ -14,21 +14,21 @@ import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.Worker;
 
 
-public abstract class AmqpAccessor
+public abstract class AmqpRawAccessor
 		extends Worker
 {
-	protected AmqpAccessor (
+	protected AmqpRawAccessor (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
 			final Callbacks callbacks, final Object monitor)
 	{
 		super (callbacks, monitor);
 		synchronized (this.monitor) {
-			this.host = ((host != null) && !host.isEmpty ()) ? host : AmqpAccessor.defaultHost;
-			this.port = ((port != null) && (port != 0)) ? port : AmqpAccessor.defaultPort;
+			this.host = ((host != null) && !host.isEmpty ()) ? host : AmqpRawAccessor.defaultHost;
+			this.port = ((port != null) && (port != 0)) ? port : AmqpRawAccessor.defaultPort;
 			this.virtualHost =
-					((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : AmqpAccessor.defaultVirtualHost;
-			this.username = ((username != null) && !username.isEmpty ()) ? username : AmqpAccessor.defaultUsername;
-			this.password = ((password != null) && !password.isEmpty ()) ? password : AmqpAccessor.defaultPassword;
+					((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : AmqpRawAccessor.defaultVirtualHost;
+			this.username = ((username != null) && !username.isEmpty ()) ? username : AmqpRawAccessor.defaultUsername;
+			this.password = ((password != null) && !password.isEmpty ()) ? password : AmqpRawAccessor.defaultPassword;
 		}
 	}
 	
@@ -63,9 +63,9 @@ public abstract class AmqpAccessor
 			this.connection.addShutdownListener (new ShutdownListener () {
 				public void shutdownCompleted (final ShutdownSignalException exception)
 				{
-					AmqpAccessor.this.disconnect ();
+					AmqpRawAccessor.this.disconnect ();
 					if (!exception.isInitiatedByApplication ())
-						AmqpAccessor.this.callbacks.handleException (
+						AmqpRawAccessor.this.callbacks.handleException (
 								exception, "amqp accessor encountered an shutdown error; ignoring!");
 				}
 			});

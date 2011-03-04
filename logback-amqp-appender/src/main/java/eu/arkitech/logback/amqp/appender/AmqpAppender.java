@@ -87,20 +87,16 @@ public class AmqpAppender
 	
 	public final boolean isDrained ()
 	{
-		final AmqpPublisherSink sink;
 		synchronized (this) {
-			sink = this.sink;
+			return ((this.publisher == null) || this.publisher.isDrained ());
 		}
-		return ((sink == null) || sink.isDrained ());
 	}
 	
 	public final boolean isRunning ()
 	{
-		final AmqpPublisherSink sink;
 		synchronized (this) {
-			sink = this.sink;
+			return ((this.publisher != null) && this.publisher.isRunning ());
 		}
-		return ((sink != null) && sink.isRunning ());
 	}
 	
 	public void setContext (final Context context)
@@ -178,7 +174,7 @@ public class AmqpAppender
 	protected void append (final ILoggingEvent event)
 	{
 		try {
-			this.sink.push (event);
+			this.publisher.push (event);
 		} catch (final Error exception) {
 			throw (exception);
 		} catch (final Throwable exception) {
@@ -190,15 +186,15 @@ public class AmqpAppender
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
-			final boolean sinkStartSucceeded;
+			final boolean publisherStartSucceeded;
 			try {
-				if (this.sink != null)
+				if (this.publisher != null)
 					throw (new IllegalStateException ());
-				this.sink =
-						new AmqpPublisherSink (
+				this.publisher =
+						new AmqpLoggingEventPublisher (
 								this.host, this.port, this.virtualHost, this.username, this.password, this, this.mutator,
 								this.serializer, this.callbacks);
-				sinkStartSucceeded = this.sink.start ();
+				publisherStartSucceeded = this.publisher.start ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "amqp appender encountered an error while starting; aborting!");
 				try {
@@ -206,32 +202,32 @@ public class AmqpAppender
 				} catch (final Error exception1) {}
 				throw (exception);
 			}
-			return (sinkStartSucceeded);
+			return (publisherStartSucceeded);
 		}
 	}
 	
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
-			boolean sinkStopSucceeded = false;
+			boolean publisherStopSucceeded = false;
 			try {
-				if (this.sink != null)
-					this.sink.requestStop ();
+				if (this.publisher != null)
+					this.publisher.requestStop ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (
-						exception, "amqp appender encountered an error while stopping the sink; ignoring");
-				this.sink = null;
+						exception, "amqp appender encountered an error while stopping the publisher; ignoring");
+				this.publisher = null;
 			}
 			try {
-				if (this.sink != null)
-					sinkStopSucceeded = this.sink.awaitStop ();
+				if (this.publisher != null)
+					publisherStopSucceeded = this.publisher.awaitStop ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (
-						exception, "amqp appender encountered an error while stopping the sink; ignoring");
+						exception, "amqp appender encountered an error while stopping the publisher; ignoring");
 			} finally {
-				this.sink = null;
+				this.publisher = null;
 			}
-			return (sinkStopSucceeded);
+			return (publisherStopSucceeded);
 		}
 	}
 	
@@ -245,7 +241,7 @@ public class AmqpAppender
 	protected Serializer serializer;
 	protected String username;
 	protected String virtualHost;
-	private AmqpPublisherSink sink;
+	private AmqpLoggingEventPublisher publisher;
 	
 	public static final String defaultExchangeKeyPattern = "logging%nopex";
 	public static final String defaultRoutingKeyPattern = "logging.event.%level%nopex";

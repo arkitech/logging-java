@@ -6,23 +6,23 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import eu.arkitech.logback.amqp.accessors.AmqpAccessorWrapper;
+import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventAccessor;
 import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventRouter;
 import eu.arkitech.logback.amqp.accessors.AmqpMessage;
-import eu.arkitech.logback.amqp.accessors.AmqpPublisher;
+import eu.arkitech.logback.amqp.accessors.AmqpRawPublisher;
 import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.LoggingEventSink;
 import eu.arkitech.logback.common.Serializer;
 
 
-public final class AmqpPublisherSink
-		extends AmqpAccessorWrapper<AmqpPublisher>
+public final class AmqpLoggingEventPublisher
+		extends AmqpLoggingEventAccessor<AmqpRawPublisher>
 		implements
 			LoggingEventSink
 {
-	public AmqpPublisherSink (
-			final AmqpPublisher accessor, final AmqpLoggingEventRouter router, final LoggingEventMutator mutator,
+	public AmqpLoggingEventPublisher (
+			final AmqpRawPublisher accessor, final AmqpLoggingEventRouter router, final LoggingEventMutator mutator,
 			final Serializer serializer, final Callbacks callbacks)
 	{
 		super (accessor, mutator, serializer, callbacks, accessor.monitor);
@@ -30,19 +30,19 @@ public final class AmqpPublisherSink
 		this.buffer = this.accessor.getBuffer ();
 	}
 	
-	public AmqpPublisherSink (
+	public AmqpLoggingEventPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password)
 	{
 		this (host, port, virtualHost, username, password, null, null, null, null);
 	}
 	
-	public AmqpPublisherSink (
+	public AmqpLoggingEventPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
 			final AmqpLoggingEventRouter router, final LoggingEventMutator mutator, final Serializer serializer,
 			final Callbacks callbacks)
 	{
 		this (
-				new AmqpPublisher (host, port, virtualHost, username, password, null, callbacks, null), router, mutator,
+				new AmqpRawPublisher (host, port, virtualHost, username, password, null, callbacks, null), router, mutator,
 				serializer, callbacks);
 	}
 	
@@ -100,7 +100,7 @@ public final class AmqpPublisherSink
 			if (this.router != null)
 				exchange = this.router.generateExchange (event);
 			else
-				exchange = AmqpPublisherSink.defaultExchange;
+				exchange = AmqpLoggingEventPublisher.defaultExchange;
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (
 					exception,
@@ -113,7 +113,7 @@ public final class AmqpPublisherSink
 				routingKey = this.router.generateRoutingKey (event);
 			else
 				routingKey =
-						String.format (AmqpPublisherSink.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
+						String.format (AmqpLoggingEventPublisher.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (
 					exception,

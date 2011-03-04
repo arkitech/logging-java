@@ -12,10 +12,10 @@ import eu.arkitech.logback.common.Serializer;
 import eu.arkitech.logback.common.Worker;
 
 
-public abstract class AmqpAccessorWrapper<_Accessor_ extends AmqpAccessor>
+public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccessor>
 		extends Worker
 {
-	protected AmqpAccessorWrapper (
+	protected AmqpLoggingEventAccessor (
 			final _Accessor_ accessor, final LoggingEventMutator mutator, final Serializer serializer,
 			final Callbacks callbacks, final Object monitor)
 	{

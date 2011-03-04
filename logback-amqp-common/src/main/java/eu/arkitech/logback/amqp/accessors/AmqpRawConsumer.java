@@ -14,19 +14,19 @@ import com.rabbitmq.client.ShutdownSignalException;
 import eu.arkitech.logback.common.Callbacks;
 
 
-public final class AmqpConsumer
-		extends AmqpAccessor
+public final class AmqpRawConsumer
+		extends AmqpRawAccessor
 {
-	public AmqpConsumer (
+	public AmqpRawConsumer (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
 			final String exchange, final String queue, final String routingKey, final BlockingQueue<AmqpMessage> buffer,
 			final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, callbacks, monitor);
 		synchronized (this.monitor) {
-			this.exchange = (exchange != null) ? exchange : AmqpConsumer.defaultExchange;
-			this.queue = (queue != null) ? queue : AmqpConsumer.defaultQueue;
-			this.routingKey = (routingKey != null) ? routingKey : AmqpConsumer.defaultRoutingKey;
+			this.exchange = (exchange != null) ? exchange : AmqpRawConsumer.defaultExchange;
+			this.queue = (queue != null) ? queue : AmqpRawConsumer.defaultQueue;
+			this.routingKey = (routingKey != null) ? routingKey : AmqpRawConsumer.defaultRoutingKey;
 			this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpMessage> ();
 		}
 	}
@@ -196,7 +196,7 @@ public final class AmqpConsumer
 		public void handleDelivery (
 				final String consumerTag, final Envelope envelope, final BasicProperties properties, final byte[] content)
 		{
-			AmqpConsumer.this.consume (envelope, properties, content);
+			AmqpRawConsumer.this.consume (envelope, properties, content);
 		}
 		
 		public void handleRecoverOk ()

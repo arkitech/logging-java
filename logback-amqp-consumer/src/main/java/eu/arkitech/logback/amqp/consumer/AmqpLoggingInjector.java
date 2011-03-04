@@ -77,20 +77,16 @@ public class AmqpLoggingInjector
 	
 	public final boolean isDrained ()
 	{
-		final AmqpConsumerSource source;
 		synchronized (this) {
-			source = this.source;
+			return ((this.consumer == null) || this.consumer.isDrained ());
 		}
-		return ((source == null) || source.isDrained ());
 	}
 	
 	public final boolean isRunning ()
 	{
-		final AmqpConsumerSource source;
 		synchronized (this) {
-			source = this.source;
+			return ((this.consumer != null) && this.consumer.isRunning ());
 		}
-		return ((source != null) && source.isRunning ());
 	}
 	
 	public void setExchange (final String exchange)
@@ -168,17 +164,17 @@ public class AmqpLoggingInjector
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
-			final boolean sourceStartSucceeded;
+			final boolean consumerStartSucceeded;
 			final boolean pumpStartSucceeded;
 			try {
-				if ((this.source != null) || (this.pump != null))
+				if ((this.consumer != null) || (this.pump != null))
 					throw (new IllegalStateException ());
-				this.source =
-						new AmqpConsumerSource (
+				this.consumer =
+						new AmqpLoggingEventConsumer (
 								this.host, this.port, this.virtualHost, this.username, this.password, this.exchange,
 								this.queue, this.routingKey, this.mutator, this.serializer, this.callbacks);
-				this.pump = new LoggingEventPump (this.source, this, this.callbacks);
-				sourceStartSucceeded = this.source.start ();
+				this.pump = new LoggingEventPump (this.consumer, this, this.callbacks);
+				consumerStartSucceeded = this.consumer.start ();
 				pumpStartSucceeded = this.pump.start ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "amqp consumer encountered an error while starting; aborting!");
@@ -187,22 +183,22 @@ public class AmqpLoggingInjector
 				} catch (final Error exception1) {}
 				throw (exception);
 			}
-			return (sourceStartSucceeded && pumpStartSucceeded);
+			return (consumerStartSucceeded && pumpStartSucceeded);
 		}
 	}
 	
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
-			boolean sourceStopSucceeded = false;
+			boolean consumerStopSucceeded = false;
 			final boolean pumpStopSucceeded = false;
 			try {
-				if (this.source != null)
-					this.source.requestStop ();
+				if (this.consumer != null)
+					this.consumer.requestStop ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the source; ignoring");
-				this.source = null;
+						exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
+				this.consumer = null;
 			}
 			try {
 				if (this.pump != null)
@@ -213,24 +209,24 @@ public class AmqpLoggingInjector
 				this.pump = null;
 			}
 			try {
-				if (this.source != null)
-					sourceStopSucceeded = this.source.awaitStop ();
+				if (this.consumer != null)
+					consumerStopSucceeded = this.consumer.awaitStop ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the source; ignoring");
+						exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
 			} finally {
-				this.source = null;
+				this.consumer = null;
 			}
 			try {
 				if (this.pump != null)
-					sourceStopSucceeded = this.pump.awaitStop ();
+					consumerStopSucceeded = this.pump.awaitStop ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (
 						exception, "amqp consumer encountered an error while stopping the pump; ignoring");
 			} finally {
 				this.pump = null;
 			}
-			return (sourceStopSucceeded && pumpStopSucceeded);
+			return (consumerStopSucceeded && pumpStopSucceeded);
 		}
 	}
 	
@@ -245,8 +241,8 @@ public class AmqpLoggingInjector
 	protected Serializer serializer;
 	protected String username;
 	protected String virtualHost;
+	private AmqpLoggingEventConsumer consumer;
 	private LoggingEventPump pump;
-	private AmqpConsumerSource source;
 	
 	public static final class CreateAction
 			extends ClassNewInstanceAction<AmqpLoggingInjector>
