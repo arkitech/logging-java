@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 
 
-public final class AmqpConsumerAgentMain
+public final class AmqpLoggingInjectorMain
 {
-	private AmqpConsumerAgentMain ()
+	private AmqpLoggingInjectorMain ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
@@ -38,7 +38,7 @@ public final class AmqpConsumerAgentMain
 					"specified logback configuration `%s` does not exist (or is not a file); aborting!",
 					configurationPath.getPath ())));
 		
-		final List<AmqpConsumerAgent> agents = Collections.synchronizedList (new LinkedList<AmqpConsumerAgent> ());
+		final List<AmqpLoggingInjector> agents = Collections.synchronizedList (new LinkedList<AmqpLoggingInjector> ());
 		
 		final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory ();
 		context.reset ();
@@ -50,17 +50,17 @@ public final class AmqpConsumerAgentMain
 		if (agents.isEmpty ())
 			throw (new IllegalArgumentException ("no amqp consumer agents defined; aborting!"));
 		
-		for (final AmqpConsumerAgent agent : agents)
+		for (final AmqpLoggingInjector agent : agents)
 			agent.start ();
 		
 		while (true) {
 			boolean stillRunning = false;
-			for (final AmqpConsumerAgent agent : agents)
+			for (final AmqpLoggingInjector agent : agents)
 				stillRunning |= agent.isRunning ();
 			if (!stillRunning)
 				break;
 			try {
-				Thread.sleep (AmqpConsumerAgent.waitTimeout);
+				Thread.sleep (AmqpLoggingInjectorMain.defaultWaitTimeout);
 			} catch (final InterruptedException exception) {
 				break;
 			}
@@ -69,10 +69,12 @@ public final class AmqpConsumerAgentMain
 		System.exit (1);
 	}
 	
+	public static final long defaultWaitTimeout = 1000;
+	
 	public static final class Configurator
 			extends JoranConfigurator
 	{
-		public Configurator (final List<AmqpConsumerAgent> agents)
+		public Configurator (final List<AmqpLoggingInjector> agents)
 		{
 			super ();
 			this.agentAction = new JoranAction (agents, false);
@@ -82,7 +84,7 @@ public final class AmqpConsumerAgentMain
 		public final void addInstanceRules (final RuleStore rules)
 		{
 			super.addInstanceRules (rules);
-			rules.addRule (new Pattern ("/configuration/amqpConsumerAgent"), this.agentAction);
+			rules.addRule (new Pattern ("/configuration/amqpLoggingInjector"), this.agentAction);
 		}
 		
 		public final void setContext (final Context context)
@@ -102,7 +104,7 @@ public final class AmqpConsumerAgentMain
 			this (null, true);
 		}
 		
-		public JoranAction (final List<AmqpConsumerAgent> agents, final boolean autoStart)
+		public JoranAction (final List<AmqpLoggingInjector> agents, final boolean autoStart)
 		{
 			super ();
 			this.agents = agents;
@@ -114,7 +116,7 @@ public final class AmqpConsumerAgentMain
 		{
 			if (this.agent != null)
 				throw (new IllegalStateException ());
-			this.agent = new AmqpConsumerAgent ();
+			this.agent = new AmqpLoggingInjector ();
 			this.agent.setContext (this.getContext ());
 			ic.pushObject (this.agent);
 		}
@@ -132,8 +134,8 @@ public final class AmqpConsumerAgentMain
 			this.agent = null;
 		}
 		
-		private AmqpConsumerAgent agent;
-		private final List<AmqpConsumerAgent> agents;
+		private AmqpLoggingInjector agent;
+		private final List<AmqpLoggingInjector> agents;
 		private final boolean autoStart;
 	}
 }

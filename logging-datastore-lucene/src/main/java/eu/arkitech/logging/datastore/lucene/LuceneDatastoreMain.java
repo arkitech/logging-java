@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import eu.arkitech.logback.common.RandomEventGenerator;
+import eu.arkitech.logback.common.RandomGenerator;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public final class LuceneDatastoreMain
 		if (storeCount > 0) {
 			logger.info ("storing");
 			keys = new LinkedList<String> ();
-			final RandomEventGenerator generator = new RandomEventGenerator ();
+			final RandomGenerator generator = new RandomGenerator ();
 			for (int i = 0; i < storeCount; i++) {
 				final ILoggingEvent event = generator.generate ();
 				final String key = datastore.store (event);

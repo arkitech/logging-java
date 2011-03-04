@@ -4,33 +4,16 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<amqpConsumerAgent>
+	<amqpLoggingInjector>
 		<host>127.0.0.1</host>
 		<port>5672</port>
 		<virtualHost>/</virtualHost>
 		<username>guest</username>
 		<password>guest</password>
-		<exchange>logback</exchange>
+		<exchange>logging</exchange>
 		<queue></queue>
 		<routingKey>#</routingKey>
-		<!--
-		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
-				<expression>
-					final String applicationFilter = (String) System.getProperty ("amqp.consumer.agent.application_filter");
-					if ((applicationFilter == null) || applicationFilter.isEmpty ())
-						return (true);
-					final String applicationValue = (mdc != null) ? (String) mdc.get("application") : null;
-					if ((applicationValue == null) || applicationValue.isEmpty ())
-						return (true);
-					return (applicationFilter.equals (applicationValue));
-				</expression>
-			</evaluator>
-			<onMismatch>DENY</onMismatch>
-			<onMatch>NEUTRAL</onMatch>
-		</filter>
-		-->
-	</amqpConsumerAgent>
+	</amqpLoggingInjector>
 	
 	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">
 		<discriminator>
@@ -39,7 +22,7 @@
 		</discriminator>
 		<sift>
 			<appender name="sifter-${application}" class="ch.qos.logback.core.FileAppender">
-				<file>/tmp/logback-${application}.log</file>
+				<file>/tmp/logging-${application}.log</file>
 				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 					<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{YYYY-MM-DDTHH:mm:ss.SSS}] [%level] [%logger] %msg%n</pattern>
 				</encoder>

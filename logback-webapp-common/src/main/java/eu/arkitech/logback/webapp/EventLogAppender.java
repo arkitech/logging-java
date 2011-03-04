@@ -2,11 +2,11 @@
 package eu.arkitech.logback.webapp;
 
 
-import eu.arkitech.logback.common.BufferedAppender;
+import eu.arkitech.logback.common.BlockingQueueAppender;
 
 
 public class EventLogAppender
-		extends BufferedAppender
+		extends BlockingQueueAppender
 {
 	public void start ()
 	{

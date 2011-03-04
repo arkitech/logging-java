@@ -2,6 +2,7 @@
 package eu.arkitech.logback.amqp.accessors;
 
 
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -16,48 +17,62 @@ public final class AmqpPublisher
 {
 	public AmqpPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final Callbacks callbacks, final LinkedBlockingDeque<AmqpMessage> source)
+			final BlockingDeque<AmqpMessage> buffer, final Callbacks callbacks, final Object monitor)
 	{
-		super (host, port, virtualHost, username, password, callbacks);
-		this.source = source;
+		super (host, port, virtualHost, username, password, callbacks, monitor);
+		synchronized (this.monitor) {
+			this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpMessage> ();
+		}
+	}
+	
+	public final BlockingDeque<AmqpMessage> getBuffer ()
+	{
+		return (this.buffer);
 	}
 	
 	protected final void loop ()
 	{
 		loop : while (true) {
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.reconnect ())
 						break;
 				}
-				this.sleep ();
+				try {
+					Thread.sleep (this.waitTimeout);
+				} catch (final InterruptedException exception) {}
 			}
-			this.callbacks.handleLogEvent (Level.INFO, null, "amqp publisher showeling outbound messages");
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp publisher shoveling outbound messages");
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.shouldReconnect ())
 						break;
 				}
 				final AmqpMessage message;
 				try {
-					message = this.source.poll (AmqpAccessor.waitTimeout, TimeUnit.MILLISECONDS);
+					message = this.buffer.poll (this.waitTimeout, TimeUnit.MILLISECONDS);
 				} catch (final InterruptedException exception) {
 					continue;
 				}
 				if (message == null)
 					continue;
-				synchronized (this) {
+				synchronized (this.monitor) {
 					if (!this.publish (message))
-						this.source.addFirst (message);
+						this.buffer.addFirst (message);
 				}
 			}
 		}
 		if (this.isConnected ())
 			this.disconnect ();
+	}
+	
+	protected final boolean shouldStopSoft ()
+	{
+		return (this.buffer.isEmpty () && super.shouldStopSoft ());
 	}
 	
 	private final boolean publish (final AmqpMessage message)
@@ -69,13 +84,14 @@ public final class AmqpPublisher
 		properties.setDeliveryMode (2);
 		try {
 			channel.basicPublish (message.exchange, message.routingKey, false, false, properties, message.content);
-			return (true);
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (
 					exception, "amqp publisher encountered an error while publishing the message; requeueing!");
+			this.disconnect ();
 			return (false);
 		}
+		return (true);
 	}
 	
-	private final LinkedBlockingDeque<AmqpMessage> source;
+	private final BlockingDeque<AmqpMessage> buffer;
 }

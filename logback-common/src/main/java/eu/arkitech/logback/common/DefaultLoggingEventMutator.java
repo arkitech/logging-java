@@ -9,11 +9,11 @@ import java.util.HashMap;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 
-public class DefaultEventMutator
+public class DefaultLoggingEventMutator
 		implements
-			EventMutator
+			LoggingEventMutator
 {
-	public DefaultEventMutator ()
+	public DefaultLoggingEventMutator ()
 	{
 		this.sequence = 0;
 		this.application = System.getProperty ("application");
@@ -57,14 +57,15 @@ public class DefaultEventMutator
 			event.mdcPropertyMap = new HashMap<String, String> (3);
 		else
 			event.mdcPropertyMap = new HashMap<String, String> (event.mdcPropertyMap);
-		event.mdcPropertyMap.put (DefaultEventMutator.sequenceKey, Long.toString (sequence));
-		if (!event.mdcPropertyMap.containsKey (DefaultEventMutator.applicationKey))
-			event.mdcPropertyMap.put (DefaultEventMutator.applicationKey, this.application != null ? this.application
+		event.mdcPropertyMap.put (DefaultLoggingEventMutator.sequenceKey, Long.toString (sequence));
+		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.applicationKey))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.applicationKey, this.application != null ? this.application
 					: "unknown");
-		if (!event.mdcPropertyMap.containsKey (DefaultEventMutator.componentKey))
-			event.mdcPropertyMap.put (DefaultEventMutator.componentKey, this.component != null ? this.component : "unknown");
-		if (!event.mdcPropertyMap.containsKey (DefaultEventMutator.nodeKey))
-			event.mdcPropertyMap.put (DefaultEventMutator.nodeKey, this.node != null ? this.node : "unknown");
+		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.componentKey))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.componentKey, this.component != null ? this.component
+					: "unknown");
+		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.nodeKey))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.nodeKey, this.node != null ? this.node : "unknown");
 	}
 	
 	public void setApplication (final String application)

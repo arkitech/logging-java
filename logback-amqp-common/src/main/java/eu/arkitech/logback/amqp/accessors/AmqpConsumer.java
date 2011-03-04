@@ -2,7 +2,8 @@
 package eu.arkitech.logback.amqp.accessors;
 
 
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -18,65 +19,79 @@ public final class AmqpConsumer
 {
 	public AmqpConsumer (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String exchange, final String queue, final String routingKey, final Callbacks callbacks,
-			final LinkedBlockingQueue<AmqpMessage> sink)
+			final String exchange, final String queue, final String routingKey, final BlockingQueue<AmqpMessage> buffer,
+			final Callbacks callbacks, final Object monitor)
 	{
-		super (host, port, virtualHost, username, password, callbacks);
-		this.exchange = (exchange != null) ? exchange : "logback";
-		this.queue = (queue != null) ? queue : "";
-		this.routingKey = (routingKey != null) ? routingKey : "#";
-		this.queue1 = null;
-		this.sink = sink;
+		super (host, port, virtualHost, username, password, callbacks, monitor);
+		synchronized (this.monitor) {
+			this.exchange = (exchange != null) ? exchange : AmqpConsumer.defaultExchange;
+			this.queue = (queue != null) ? queue : AmqpConsumer.defaultQueue;
+			this.routingKey = (routingKey != null) ? routingKey : AmqpConsumer.defaultRoutingKey;
+			this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpMessage> ();
+		}
+	}
+	
+	public final BlockingQueue<AmqpMessage> getBuffer ()
+	{
+		return (this.buffer);
 	}
 	
 	protected final void loop ()
 	{
 		loop : while (true) {
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.reconnect ())
 						break;
 				}
-				this.sleep ();
+				try {
+					Thread.sleep (this.waitTimeout);
+				} catch (final InterruptedException exception) {}
 			}
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;
 					if (this.declare ())
 						break;
 				}
-				this.sleep ();
+				try {
+					Thread.sleep (this.waitTimeout);
+				} catch (final InterruptedException exception) {}
 				continue loop;
 			}
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;
 					if (this.register ())
 						break;
 				}
-				this.sleep ();
+				try {
+					Thread.sleep (this.waitTimeout);
+				} catch (final InterruptedException exception) {}
 				continue loop;
 			}
-			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer showeling inbound messages");
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer shoveling inbound messages");
 			while (true) {
-				synchronized (this) {
-					if (this.shouldStopLoop ())
+				synchronized (this.monitor) {
+					if (this.shouldStopSoft ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;
 				}
-				this.sleep ();
+				try {
+					Thread.sleep (this.waitTimeout);
+				} catch (final InterruptedException exception) {}
 			}
 		}
-		synchronized (this) {
+		synchronized (this.monitor) {
 			if (this.isConnected ())
 				this.disconnect ();
 		}
@@ -88,12 +103,8 @@ public final class AmqpConsumer
 				new AmqpMessage (
 						envelope.getExchange (), envelope.getRoutingKey (), properties.getContentType (),
 						properties.getContentEncoding (), content);
-		try {
-			this.sink.put (message);
-		} catch (final InterruptedException exception) {
-			this.callbacks.handleException (
-					exception, "amqp consumer encountered an error while enqueueing the message; ignoring!");
-		}
+		if (!this.buffer.offer (message))
+			this.callbacks.handleLogEvent (Level.ERROR, null, "amqp consumer buffer overrun; ignoring!");
 	}
 	
 	private final boolean declare ()
@@ -162,11 +173,15 @@ public final class AmqpConsumer
 		}
 	}
 	
+	private final BlockingQueue<AmqpMessage> buffer;
 	private final String exchange;
 	private final String queue;
 	private String queue1;
 	private final String routingKey;
-	private final LinkedBlockingQueue<AmqpMessage> sink;
+	
+	public static final String defaultExchange = "logging";
+	public static final String defaultQueue = "";
+	public static final String defaultRoutingKey = "#";
 	
 	private final class ConsumerCallback
 			implements

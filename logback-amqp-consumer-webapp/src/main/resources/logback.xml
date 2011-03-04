@@ -4,19 +4,19 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpConsumerAgent" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAgentMain$JoranAction" />
-	<newRule pattern="/configuration/randomEventGenerator" actionClass="eu.arkitech.logback.common.RandomEventGenerator$JoranAction" />
+	<newRule pattern="/configuration/amqpLoggingInjector" actionClass="eu.arkitech.logback.amqp.consumer.AmqpLoggingInjectorMain$JoranAction" />
+	<newRule pattern="/configuration/randomEventGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$JoranAction" />
 	
-	<amqpConsumerAgent>
+	<amqpLoggingInjector>
 		<host>127.0.0.1</host>
 		<port>5672</port>
 		<virtualHost>/</virtualHost>
 		<username>guest</username>
 		<password>guest</password>
-		<exchange>logback</exchange>
+		<exchange>logging</exchange>
 		<queue></queue>
 		<routingKey>#</routingKey>
-	</amqpConsumerAgent>
+	</amqpLoggingInjector>
 	
 	<randomEventGenerator>
 		<count>1000</count>

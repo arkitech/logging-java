@@ -27,7 +27,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>eu.arkitech.logback.amqp.consumer.AmqpConsumerAgentMain</mainClass>
+							<mainClass>eu.arkitech.logback.amqp.consumer.AmqpLoggingInjectorMain</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

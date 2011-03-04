@@ -4,8 +4,8 @@ package eu.arkitech.logback.amqp.tests;
 
 import ch.qos.logback.classic.Logger;
 import eu.arkitech.logback.amqp.appender.AmqpAppender;
-import eu.arkitech.logback.common.DefaultEventMutator;
-import eu.arkitech.logback.common.RandomEventGenerator;
+import eu.arkitech.logback.common.DefaultLoggingEventMutator;
+import eu.arkitech.logback.common.RandomGenerator;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
@@ -32,12 +32,12 @@ public final class AmqpAppenderTests
 		testLogger.addAppender (appender);
 		testLogger.setAdditive (false);
 		
-		final RandomEventGenerator generator = new RandomEventGenerator (AmqpAppenderTests.class.getName (), testLogger);
+		final RandomGenerator generator = new RandomGenerator (AmqpAppenderTests.class.getName (), testLogger);
 		realLogger.debug ("logging generated messages");
 		MDC.clear ();
 		for (int index = 0; index < AmqpAppenderTests.messageCount; index++) {
-			MDC.put (DefaultEventMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
-			MDC.put (DefaultEventMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
+			MDC.put (DefaultLoggingEventMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
+			MDC.put (DefaultLoggingEventMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
 			testLogger.callAppenders (generator.generate ());
 			MDC.clear ();
 		}
@@ -49,15 +49,8 @@ public final class AmqpAppenderTests
 			Thread.sleep (AmqpAppenderTests.timeout);
 		}
 		
-		realLogger.debug ("stopping amqp appender");
+		realLogger.debug ("stopping and joining amqp appender");
 		appender.stop ();
-		
-		realLogger.debug ("joining amqp appender");
-		for (int tries = 0; tries < AmqpAppenderTests.timeoutTries; tries++) {
-			if (!appender.isRunning ())
-				break;
-			Thread.sleep (AmqpAppenderTests.timeout);
-		}
 		
 		Assert.assertTrue (appender.isDrained ());
 		Assert.assertFalse (appender.isStarted ());
@@ -69,5 +62,5 @@ public final class AmqpAppenderTests
 	private static final int messageCount = 20;
 	private static final String testLoggerName = "__testing__.eu.ackitech.logback.amqp.logger";
 	private static final int timeout = 100;
-	private static final int timeoutTries = 100;
+	private static final int timeoutTries = 100 * 1000;
 }

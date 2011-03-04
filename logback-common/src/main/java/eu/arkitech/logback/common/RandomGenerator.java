@@ -16,27 +16,27 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 
 
-public class RandomEventGenerator
+public class RandomGenerator
 		extends ContextAwareBase
 {
-	public RandomEventGenerator ()
+	public RandomGenerator ()
 	{
-		this (RandomEventGenerator.class.getName (), null);
+		this (RandomGenerator.class.getName (), null);
 	}
 	
-	public RandomEventGenerator (final Object source)
+	public RandomGenerator (final Object source)
 	{
 		this (source.getClass ().getName (), null);
 	}
 	
-	public RandomEventGenerator (final String fqdn, final Logger logger)
+	public RandomGenerator (final String fqdn, final Logger logger)
 	{
 		super ();
 		this.random = new Random ();
 		this.fqdn = fqdn;
 		this.logger = logger;
-		this.count = RandomEventGenerator.defaultCount;
-		this.interval = RandomEventGenerator.defaultInterval;
+		this.count = RandomGenerator.defaultCount;
+		this.interval = RandomGenerator.defaultInterval;
 	}
 	
 	public void append ()
@@ -148,7 +148,7 @@ public class RandomEventGenerator
 			public void run ()
 			{
 				for (long index = 0; index < count; index++) {
-					RandomEventGenerator.this.append ();
+					RandomGenerator.this.append ();
 					try {
 						Thread.sleep (interval);
 					} catch (final InterruptedException exception) {
@@ -186,7 +186,7 @@ public class RandomEventGenerator
 		{
 			if (this.generator != null)
 				throw (new IllegalStateException ());
-			this.generator = new RandomEventGenerator ();
+			this.generator = new RandomGenerator ();
 			this.generator.setContext (this.getContext ());
 			ic.pushObject (this.generator);
 		}
@@ -201,6 +201,6 @@ public class RandomEventGenerator
 			this.generator = null;
 		}
 		
-		private RandomEventGenerator generator;
+		private RandomGenerator generator;
 	}
 }

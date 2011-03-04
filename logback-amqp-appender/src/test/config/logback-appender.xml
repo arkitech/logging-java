@@ -10,8 +10,8 @@
 		<virtualHost>/</virtualHost>
 		<username>guest</username>
 		<password>guest</password>
-		<exchangePattern>logback%nopex</exchangePattern>
-		<routingKeyPattern>%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
+		<exchangePattern>logging%nopex</exchangePattern>
+		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
 	</appender>
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">

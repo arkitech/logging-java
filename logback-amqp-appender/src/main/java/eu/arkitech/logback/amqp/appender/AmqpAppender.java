@@ -2,255 +2,251 @@
 package eu.arkitech.logback.amqp.appender;
 
 
-import java.util.concurrent.LinkedBlockingDeque;
-
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import eu.arkitech.logback.amqp.accessors.AmqpMessage;
-import eu.arkitech.logback.amqp.accessors.AmqpPublisher;
+import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventRouter;
 import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
-import eu.arkitech.logback.common.DefaultEventMutator;
-import eu.arkitech.logback.common.EventMutator;
-import eu.arkitech.logback.common.SLoggingEvent1;
+import eu.arkitech.logback.common.DefaultLoggingEventMutator;
+import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.Serializer;
 
 
 public class AmqpAppender
 		extends UnsynchronizedAppenderBase<ILoggingEvent>
+		implements
+			AmqpLoggingEventRouter
 {
 	public AmqpAppender ()
 	{
 		super ();
 		this.callbacks = new DefaultContextAwareCallbacks (this);
-		this.buffer = new LinkedBlockingDeque<AmqpMessage> ();
 		this.exchangeLayout = new PatternLayout ();
 		this.routingKeyLayout = new PatternLayout ();
 		this.exchangeLayout.setPattern (AmqpAppender.defaultExchangeKeyPattern);
 		this.routingKeyLayout.setPattern (AmqpAppender.defaultRoutingKeyPattern);
-		this.mutator = new DefaultEventMutator ();
-		this.serializer = new DefaultBinarySerializer ();
-		this.publisher = null;
+		this.mutator = new DefaultLoggingEventMutator ();
 	}
 	
-	public final String getExchangePattern ()
+	public String generateExchange (final ILoggingEvent event)
+	{
+		return (this.exchangeLayout.doLayout (event));
+	}
+	
+	public String generateRoutingKey (final ILoggingEvent event)
+	{
+		return (this.routingKeyLayout.doLayout (event));
+	}
+	
+	public String getExchangePattern ()
 	{
 		return (this.exchangeLayout.getPattern ());
 	}
 	
-	public final String getHost ()
+	public String getHost ()
 	{
 		return (this.host);
 	}
 	
-	public final EventMutator getMutator ()
+	public LoggingEventMutator getMutator ()
 	{
 		return (this.mutator);
 	}
 	
-	public final String getPassword ()
+	public String getPassword ()
 	{
 		return (this.password);
 	}
 	
-	public final Integer getPort ()
+	public Integer getPort ()
 	{
 		return (this.port);
 	}
 	
-	public final String getRoutingKeyPattern ()
+	public String getRoutingKeyPattern ()
 	{
 		return (this.routingKeyLayout.getPattern ());
 	}
 	
-	public final Serializer getSerializer ()
+	public Serializer getSerializer ()
 	{
 		return (this.serializer);
 	}
 	
-	public final String getUsername ()
+	public String getUsername ()
 	{
 		return (this.username);
 	}
 	
-	public final String getVirtualHost ()
+	public String getVirtualHost ()
 	{
 		return (this.virtualHost);
 	}
 	
 	public final boolean isDrained ()
 	{
-		return (this.buffer.isEmpty ());
+		final AmqpPublisherSink sink;
+		synchronized (this) {
+			sink = this.sink;
+		}
+		return ((sink == null) || sink.isDrained ());
 	}
 	
 	public final boolean isRunning ()
 	{
-		final AmqpPublisher publisher = this.publisher;
-		return (((publisher != null) && publisher.isRunning ()) || super.isStarted ());
+		final AmqpPublisherSink sink;
+		synchronized (this) {
+			sink = this.sink;
+		}
+		return ((sink != null) && sink.isRunning ());
 	}
 	
-	public final void setContext (final Context context)
+	public void setContext (final Context context)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		super.setContext (context);
 		this.exchangeLayout.setContext (context);
 		this.routingKeyLayout.setContext (context);
 	}
 	
-	public final void setExchangePattern (final String pattern)
+	public void setExchangePattern (final String pattern)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.exchangeLayout.setPattern (pattern);
 	}
 	
-	public final void setHost (final String host)
+	public void setHost (final String host)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.host = host;
 	}
 	
-	public final void setMutator (final EventMutator mutator)
+	public void setMutator (final LoggingEventMutator mutator)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.mutator = mutator;
 	}
 	
-	public final void setPassword (final String password)
+	public void setPassword (final String password)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.password = password;
 	}
 	
-	public final void setPort (final Integer port)
+	public void setPort (final Integer port)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.port = port;
 	}
 	
-	public final void setRoutingKeyPattern (final String pattern)
+	public void setRoutingKeyPattern (final String pattern)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.routingKeyLayout.setPattern (pattern);
 	}
 	
-	public final void setSerializer (final Serializer serializer)
+	public void setSerializer (final Serializer serializer)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.serializer = serializer;
 	}
 	
-	public final void setUsername (final String username)
+	public void setUsername (final String username)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.username = username;
 	}
 	
-	public final void setVirtualHost (final String virtualHost)
+	public void setVirtualHost (final String virtualHost)
 	{
-		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
 		this.virtualHost = virtualHost;
 	}
 	
-	public final void start ()
+	public void start ()
 	{
 		if (this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is already started"));
-		if (this.publisher != null)
-			throw (new IllegalStateException ("amqp appender has passed its life-cycle"));
-		this.preStart ();
+			return;
+		this.reallyStart ();
 		this.exchangeLayout.start ();
 		this.routingKeyLayout.start ();
-		this.publisher =
-				new AmqpPublisher (
-						this.host, this.port, this.virtualHost, this.username, this.password, this.callbacks, this.buffer);
-		this.publisher.start ();
 		super.start ();
-		this.postStart ();
 	}
 	
-	public final void stop ()
+	public void stop ()
 	{
 		if (!this.isStarted ())
-			throw (new IllegalStateException ("amqp appender is not started"));
-		this.preStop ();
+			return;
+		this.reallyStop ();
 		this.exchangeLayout.stop ();
 		this.routingKeyLayout.stop ();
-		this.publisher.stop ();
 		super.stop ();
-		this.postStop ();
 	}
 	
-	protected final void append (final ILoggingEvent originalEvent)
+	protected void append (final ILoggingEvent event)
 	{
-		final SLoggingEvent1 event;
 		try {
-			event = this.prepare (originalEvent);
+			this.sink.push (event);
+		} catch (final Error exception) {
+			throw (exception);
 		} catch (final Throwable exception) {
-			this.addError ("amqp appender encountered an error while preparing the event; ignoring!", exception);
-			return;
+			this.callbacks.handleException (
+					exception, "amqp appender encountered an error while processing the event; ignoring!");
 		}
-		final byte[] data;
-		try {
-			data = this.serializer.serialize (event);
-		} catch (final Throwable exception) {
-			this.addError ("amqp appender encountered an error while serializing the event; ignoring!", exception);
-			return;
-		}
-		final String exchange = this.exchangeLayout.doLayout (originalEvent);
-		final String routingKey = this.routingKeyLayout.doLayout (originalEvent);
-		final AmqpMessage message =
-				new AmqpMessage (
-						exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), data);
-		this.buffer.add (message);
 	}
 	
-	protected void postStart ()
-	{}
-	
-	protected void postStop ()
-	{}
-	
-	protected void preStart ()
-	{}
-	
-	protected void preStop ()
-	{}
-	
-	private final SLoggingEvent1 prepare (final ILoggingEvent originalEvent)
-			throws Throwable
+	protected final boolean reallyStart ()
 	{
-		final SLoggingEvent1 newEvent = SLoggingEvent1.build (originalEvent);
-		if (this.mutator != null)
-			this.mutator.mutate (newEvent);
-		return (newEvent);
+		synchronized (this) {
+			final boolean sinkStartSucceeded;
+			try {
+				if (this.sink != null)
+					throw (new IllegalStateException ());
+				this.sink =
+						new AmqpPublisherSink (
+								this.host, this.port, this.virtualHost, this.username, this.password, this, this.mutator,
+								this.serializer, this.callbacks);
+				sinkStartSucceeded = this.sink.start ();
+			} catch (final Error exception) {
+				this.callbacks.handleException (exception, "amqp appender encountered an error while starting; aborting!");
+				try {
+					this.reallyStop ();
+				} catch (final Error exception1) {}
+				throw (exception);
+			}
+			return (sinkStartSucceeded);
+		}
+	}
+	
+	protected final boolean reallyStop ()
+	{
+		synchronized (this) {
+			boolean sinkStopSucceeded = false;
+			try {
+				if (this.sink != null)
+					this.sink.requestStop ();
+			} catch (final Error exception) {
+				this.callbacks.handleException (
+						exception, "amqp appender encountered an error while stopping the sink; ignoring");
+				this.sink = null;
+			}
+			try {
+				if (this.sink != null)
+					sinkStopSucceeded = this.sink.awaitStop ();
+			} catch (final Error exception) {
+				this.callbacks.handleException (
+						exception, "amqp appender encountered an error while stopping the sink; ignoring");
+			} finally {
+				this.sink = null;
+			}
+			return (sinkStopSucceeded);
+		}
 	}
 	
 	protected final Callbacks callbacks;
-	private final LinkedBlockingDeque<AmqpMessage> buffer;
-	private final PatternLayout exchangeLayout;
-	private String host;
-	private EventMutator mutator;
-	private String password;
-	private Integer port;
-	private AmqpPublisher publisher;
-	private final PatternLayout routingKeyLayout;
-	private Serializer serializer;
-	private String username;
-	private String virtualHost;
+	protected PatternLayout exchangeLayout;
+	protected String host;
+	protected LoggingEventMutator mutator;
+	protected String password;
+	protected Integer port;
+	protected PatternLayout routingKeyLayout;
+	protected Serializer serializer;
+	protected String username;
+	protected String virtualHost;
+	private AmqpPublisherSink sink;
 	
-	public static final String defaultExchangeKeyPattern = "logback%nopex";
-	public static final String defaultRoutingKeyPattern = "%level%nopex";
+	public static final String defaultExchangeKeyPattern = "logging%nopex";
+	public static final String defaultRoutingKeyPattern = "logging.event.%level%nopex";
 }
