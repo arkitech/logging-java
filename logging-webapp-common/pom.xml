@@ -7,11 +7,16 @@
 		<artifactId>logging-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logback-webapp-common</artifactId>
+	<artifactId>logging-webapp-common</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.arkitech</groupId>
+			<artifactId>logging-datastore-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

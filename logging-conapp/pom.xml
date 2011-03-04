@@ -7,11 +7,21 @@
 		<artifactId>logging-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logback-amqp-consumer-conapp</artifactId>
+	<artifactId>logging-conapp</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-amqp-consumer</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.arkitech</groupId>
+			<artifactId>logging-datastore-bdb</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.arkitech</groupId>
+			<artifactId>logging-datastore-lucene</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
