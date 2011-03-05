@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.RandomGenerator;
 import eu.arkitech.logback.common.SLoggingEvent1;
-import eu.arkitech.logging.datastore.bdb.BdbDatastoreConfiguration;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.slf4j.Logger;
@@ -22,13 +21,14 @@ public final class LuceneDatastoreMain
 		throw (new UnsupportedOperationException ());
 	}
 	
+	@SuppressWarnings ({"unused", "null"})
 	public static final void main (final String[] arguments)
 			throws Throwable
 	{
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
 		
-		final boolean readOnly = true;
+		final boolean readOnly = false;
 		final int compressed = -1;
 		final int storeCount = 100;
 		final int selectKeysCount = 5;
@@ -36,15 +36,15 @@ public final class LuceneDatastoreMain
 		final int selectReferenceAfterCount = 2;
 		final long selectAfterTimestamp = System.currentTimeMillis () - 10 * 1000;
 		final long selectAfterInterval = Long.MAX_VALUE;
-		final int selectAfterCount = 100;
-		final int queryCount = 0;
+		final int selectAfterCount = 10;
+		final int queryCount = 10;
 		final String queryString = "level:INFO OR level:ERROR";
 		
 		final Logger logger = LoggerFactory.getLogger (LuceneDatastoreMain.class);
 		
 		logger.info ("opening");
 		final File path = new File ("/tmp/arkitech-logging-datastore");
-		final LuceneDatastore datastore = new LuceneDatastore (new BdbDatastoreConfiguration (path, readOnly, compressed));
+		final LuceneDatastore datastore = new LuceneDatastore (new LuceneDatastoreConfiguration (path, readOnly, compressed));
 		if (!datastore.open ()) {
 			logger.error ("open failed");
 			return;
@@ -63,6 +63,10 @@ public final class LuceneDatastoreMain
 				else
 					logger.error ("store failed");
 			}
+			if (!datastore.syncWrite ())
+				logger.error ("store sync write failed");
+			if (!datastore.syncRead ())
+				logger.error ("store sync read failed");
 		} else
 			keys = null;
 		
@@ -121,7 +125,7 @@ public final class LuceneDatastoreMain
 				logger.error (String.format ("query failed for `{}`", queryString), exception);
 			}
 			if (query != null) {
-				final Iterable<LuceneQueryResult> results = datastore.query (query, 100, true);
+				final Iterable<LuceneQueryResult> results = datastore.query (query, 100);
 				if (results != null)
 					for (final LuceneQueryResult result : results) {
 						final ILoggingEvent event = result.event;

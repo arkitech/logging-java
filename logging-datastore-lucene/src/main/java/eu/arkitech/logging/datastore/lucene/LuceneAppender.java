@@ -6,7 +6,6 @@ import java.io.File;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.DefaultSerializerAppenderSink;
-import eu.arkitech.logging.datastore.bdb.BdbDatastoreConfiguration;
 
 
 public class LuceneAppender
@@ -32,9 +31,9 @@ public class LuceneAppender
 		this.environmentPath = environmentPath;
 	}
 	
-	protected BdbDatastoreConfiguration buildConfiguration ()
+	protected LuceneDatastoreConfiguration buildConfiguration ()
 	{
-		return (new BdbDatastoreConfiguration (
+		return (new LuceneDatastoreConfiguration (
 				(this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer,
 				this.mutator, this.mutator, this.callbacks));
 	}

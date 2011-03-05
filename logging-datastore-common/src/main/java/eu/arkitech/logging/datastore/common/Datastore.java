@@ -13,7 +13,7 @@ public interface Datastore
 	public abstract boolean open ();
 	
 	public abstract Iterable<ILoggingEvent> select (
-			final ILoggingEvent reference, final int beforeCount, final int afterCount, final LoggingEventFilter filter);
+			final ILoggingEvent referenceEvent, final int beforeCount, final int afterCount, final LoggingEventFilter filter);
 	
 	public abstract Iterable<ILoggingEvent> select (
 			final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter);

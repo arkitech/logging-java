@@ -41,26 +41,28 @@ public final class BdbDatastore
 		this (null);
 	}
 	
-	public BdbDatastore (final BdbDatastoreConfiguration configuration)
-	{
-		this (configuration, null);
-	}
-	
-	public BdbDatastore (final BdbDatastoreConfiguration configuration_, final Callbacks callbacks)
+	public BdbDatastore (final BdbDatastoreConfiguration configuration_)
 	{
 		super ();
 		final BdbDatastoreConfiguration configuration =
 				(configuration_ != null) ? configuration_ : new BdbDatastoreConfiguration ();
-		synchronized (configuration.monitor) {
-			this.monitor = Preconditions.checkNotNull (configuration.monitor);
-			this.callbacks =
-					((callbacks != null) ? callbacks : ((configuration.callbacks != null) ? configuration.callbacks
-							: new DefaultLoggerCallbacks (this)));
-			this.environmentPath = Preconditions.checkNotNull (configuration.environmentPath);
-			this.readOnly = configuration.readOnly;
-			this.serializer = Preconditions.checkNotNull (configuration.serializer);
-			this.loadMutator = configuration.loadMutator;
-			this.storeMutator = configuration.storeMutator;
+		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
+		synchronized (monitor) {
+			this.monitor = monitor;
+			this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
+			this.environmentPath =
+					Preconditions.checkNotNull ((configuration.environmentPath != null) ? configuration.environmentPath
+							: BdbDatastoreConfiguration.defaultEnvironmentPath);
+			this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
+			this.serializer =
+					Preconditions.checkNotNull ((configuration.serializer != null) ? configuration.serializer
+							: BdbDatastoreConfiguration.defaultSerializer);
+			this.loadMutator =
+					(configuration.loadMutator != null) ? configuration.loadMutator
+							: BdbDatastoreConfiguration.defaultLoadMutator;
+			this.storeMutator =
+					(configuration.storeMutator != null) ? configuration.storeMutator
+							: BdbDatastoreConfiguration.defaultStoreMutator;
 			this.state = State.Closed;
 		}
 	}
@@ -101,8 +103,8 @@ public final class BdbDatastore
 						exception, "bdb datastore encountered an unknown error while closing; aborting!");
 				return (false);
 			} finally {
-				this.environment = null;
 				this.eventDatabase = null;
+				this.environment = null;
 			}
 		}
 	}
@@ -148,8 +150,7 @@ public final class BdbDatastore
 					onfiguration.setReadOnly (this.readOnly);
 					onfiguration.setSortedDuplicates (false);
 					onfiguration.setTransactional (false);
-					this.eventDatabase =
-							this.environment.openDatabase (null, BdbDatastore.defaultEventDatabaseName, onfiguration);
+					this.eventDatabase = this.environment.openDatabase (null, BdbDatastore.eventDatabaseName, onfiguration);
 				} catch (final DatabaseException exception) {
 					this.callbacks.handleException (
 							exception,
@@ -334,7 +335,7 @@ public final class BdbDatastore
 				}
 			} catch (final InternalException exception) {
 				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error internal while selecting the eventns; aborting!");
+						exception, "bdb datastore encountered an error internal while selecting the events; aborting!");
 				return (null);
 			} catch (final Throwable exception) {
 				this.callbacks.handleException (
@@ -394,6 +395,34 @@ public final class BdbDatastore
 				this.callbacks.handleException (
 						exception, "bdb datastore encountered an unknown error while storing the event; aborting!");
 				return (null);
+			}
+		}
+	}
+	
+	public final boolean syncRead ()
+	{
+		synchronized (this.monitor) {
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
+			return (true);
+		}
+	}
+	
+	public final boolean syncWrite ()
+	{
+		synchronized (this.monitor) {
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
+			Preconditions.checkState (!this.readOnly, "bdb datastore is read-only");
+			try {
+				this.environment.sync ();
+				return (true);
+			} catch (final DatabaseException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered a database error while commiting the environment; aborting!");
+				return (false);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unknown error while commiting the environment; aborting!");
+				return (false);
 			}
 		}
 	}
@@ -678,7 +707,7 @@ public final class BdbDatastore
 		minHashBytes = new byte[BdbDatastore.hashSize];
 		Arrays.fill (BdbDatastore.minHashBytes, (byte) 0);
 	}
-	public static final String defaultEventDatabaseName = "events";
+	public static final String eventDatabaseName = "events";
 	private static final String hashAlgorithm;
 	private static final int hashSize;
 	private static final byte[] minHashBytes;

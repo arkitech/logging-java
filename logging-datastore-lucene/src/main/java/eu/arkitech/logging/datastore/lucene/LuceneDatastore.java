@@ -20,26 +20,23 @@ public final class LuceneDatastore
 {
 	public LuceneDatastore ()
 	{
-		this (new BdbDatastoreConfiguration ());
+		this (new LuceneDatastoreConfiguration ());
 	}
 	
-	public LuceneDatastore (final BdbDatastoreConfiguration configuration)
-	{
-		this (configuration, null);
-	}
-	
-	public LuceneDatastore (final BdbDatastoreConfiguration configuration_, final Callbacks callbacks)
+	public LuceneDatastore (final LuceneDatastoreConfiguration configuration_)
 	{
 		super ();
-		final BdbDatastoreConfiguration configuration =
-				(configuration_ != null) ? configuration_ : new BdbDatastoreConfiguration ();
-		synchronized (configuration.monitor) {
-			this.monitor = Preconditions.checkNotNull (configuration.monitor);
-			this.callbacks =
-					((callbacks != null) ? callbacks : ((configuration.callbacks != null) ? configuration.callbacks
-							: new DefaultLoggerCallbacks (this)));
-			this.readOnly = configuration.readOnly;
-			this.bdb = new BdbDatastore (configuration, this.callbacks);
+		final LuceneDatastoreConfiguration configuration =
+				(configuration_ != null) ? configuration_ : new LuceneDatastoreConfiguration ();
+		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
+		synchronized (monitor) {
+			this.monitor = monitor;
+			this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
+			this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
+			this.bdb =
+					new BdbDatastore (new BdbDatastoreConfiguration (
+							configuration.environmentPath, this.readOnly, configuration.serializer,
+							configuration.loadMutator, configuration.storeMutator, this.callbacks, this.monitor));
 			this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
 			this.state = State.Closed;
 		}
@@ -50,8 +47,7 @@ public final class LuceneDatastore
 		synchronized (this.monitor) {
 			if (this.state == State.Closed)
 				return (false);
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("lucene datastore is not opened"));
+			Preconditions.checkState (this.state == State.Opened, "lucene datastore is not opened");
 			boolean succeeded = true;
 			succeeded |= this.index.close ();
 			succeeded |= this.bdb.close ();
@@ -63,14 +59,7 @@ public final class LuceneDatastore
 	public final boolean open ()
 	{
 		synchronized (this.monitor) {
-			if (this.state != State.Closed)
-				throw (new IllegalStateException ("lucene datastore is already opened"));
-			Runtime.getRuntime ().addShutdownHook (new Thread () {
-				public final void run ()
-				{
-					LuceneDatastore.this.close ();
-				}
-			});
+			Preconditions.checkState (this.state == State.Closed, "lucene datastore is already opened");
 			boolean succeeded = this.bdb.open ();
 			if (succeeded)
 				succeeded = this.index.open ();
@@ -89,15 +78,15 @@ public final class LuceneDatastore
 		return (this.index.parseQuery (query));
 	}
 	
-	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount, final boolean flush)
+	public final Iterable<LuceneQueryResult> query (final Query query, final int maxCount)
 	{
-		return (this.index.query (query, maxCount, flush));
+		return (this.index.query (query, maxCount));
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final ILoggingEvent reference, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
+			final ILoggingEvent referenceEvent, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
 	{
-		return (this.bdb.select (reference, beforeCount, afterCount, filter));
+		return (this.bdb.select (referenceEvent, beforeCount, afterCount, filter));
 	}
 	
 	public final Iterable<ILoggingEvent> select (
@@ -117,6 +106,20 @@ public final class LuceneDatastore
 		if (key != null)
 			this.index.store (key, event);
 		return (key);
+	}
+	
+	public final boolean syncRead ()
+	{
+		synchronized (this.monitor) {
+			return (this.bdb.syncRead () && this.index.syncRead ());
+		}
+	}
+	
+	public final boolean syncWrite ()
+	{
+		synchronized (this.monitor) {
+			return (this.bdb.syncWrite () && this.index.syncWrite ());
+		}
 	}
 	
 	private final BdbDatastore bdb;
