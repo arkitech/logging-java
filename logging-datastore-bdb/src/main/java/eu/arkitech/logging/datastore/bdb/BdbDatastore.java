@@ -46,15 +46,16 @@ public final class BdbDatastore
 		this (environmentPath, readOnly, -1, callbacks);
 	}
 	
-	public BdbDatastore (final File environmentPath, final boolean readOnly, final int compressed)
+	public BdbDatastore (final File environmentPath, final boolean readOnly, final Integer compressed)
 	{
 		this (environmentPath, readOnly, compressed, null);
 	}
 	
-	public BdbDatastore (final File environmentPath, final boolean readOnly, final int compressed, final Callbacks callbacks)
+	public BdbDatastore (
+			final File environmentPath, final boolean readOnly, final Integer compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, readOnly, compressed == -1 ? new DefaultBinarySerializer () : new CompressedBinarySerializer (
-				compressed), null, callbacks);
+		this (environmentPath, readOnly, ((compressed != null) ? (compressed == -1 ? new DefaultBinarySerializer ()
+				: new CompressedBinarySerializer (compressed)) : null), null, callbacks);
 	}
 	
 	public BdbDatastore (
@@ -72,7 +73,8 @@ public final class BdbDatastore
 		synchronized (monitor) {
 			this.monitor = monitor;
 			this.state = State.Closed;
-			this.environmentPath = environmentPath;
+			this.environmentPath =
+					(environmentPath != null) ? environmentPath : new File (BdbDatastore.defaultEnvironmentPath);
 			this.readOnly = readOnly;
 			this.serializer = (serializer != null) ? serializer : new DefaultBinarySerializer ();
 			this.mutator = mutator;
@@ -287,14 +289,14 @@ public final class BdbDatastore
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long intervalMs, final LoggingEventFilter filter)
+			final long afterTimestamp, final long interval, final LoggingEventFilter filter)
 	{
 		synchronized (this.monitor) {
 			if (this.state != State.Opened)
 				throw (new IllegalStateException ("bdb datastore is not opened"));
-			if ((afterTimestamp < 0) || (intervalMs < 0))
+			if ((afterTimestamp < 0) || (interval < 0))
 				throw (new IllegalArgumentException ());
-			final long beforeTimestamp = afterTimestamp + intervalMs;
+			final long beforeTimestamp = ((afterTimestamp + interval) > 0) ? (afterTimestamp + interval) : Long.MAX_VALUE;
 			final String relativeReferenceKey = this.encodeMinKey (afterTimestamp);
 			if (relativeReferenceKey == null)
 				return (null);
@@ -416,8 +418,7 @@ public final class BdbDatastore
 				}
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
-						new DatabaseException (),
-						"bdb datastore encountered an error while storing the event `%s`; aborting!", key);
+						exception, "bdb datastore encountered an error while storing the event `%s`; aborting!", key);
 				return (null);
 			}
 		}
@@ -467,21 +468,7 @@ public final class BdbDatastore
 		return (new DatabaseEntry (data));
 	}
 	
-	private final String encodeKey (final long timestamp, final DatabaseEntry eventEntry)
-	{
-		final byte[] data =
-				this.encodeRawKeyFromData (timestamp, eventEntry.getData (), eventEntry.getOffset (), eventEntry.getSize ());
-		if (data == null)
-			return (null);
-		return (this.encodeKeyFromData (data));
-	}
-	
-	private final DatabaseEntry encodeKeyEntry (final String key)
-	{
-		return (new DatabaseEntry (key.getBytes ()));
-	}
-	
-	private final String encodeKeyFromData (final byte[] hashBytes)
+	private final String encodeKey (final byte[] hashBytes)
 	{
 		final StringBuilder builder = new StringBuilder ();
 		for (final byte b : hashBytes) {
@@ -494,10 +481,28 @@ public final class BdbDatastore
 		return (builder.toString ());
 	}
 	
+	private final String encodeKey (final long timestamp, final DatabaseEntry eventEntry)
+	{
+		final byte[] data =
+				this.encodeRawKeyFromData (timestamp, eventEntry.getData (), eventEntry.getOffset (), eventEntry.getSize ());
+		if (data == null)
+			return (null);
+		return (this.encodeKey (data));
+	}
+	
+	private final DatabaseEntry encodeKeyEntry (final String key)
+	{
+		return (new DatabaseEntry (key.getBytes ()));
+	}
+	
+	private final String encodeMaxKey (final long timestamp)
+	{
+		return (this.encodeKey (this.encodeRawKeyFromHash (timestamp, BdbDatastore.maxHashBytes)));
+	}
+	
 	private final String encodeMinKey (final long timestamp)
 	{
-		return (this.encodeKeyFromData (this.encodeRawKeyFromData (
-				timestamp, BdbDatastore.minHashBytes, 0, BdbDatastore.minHashBytes.length)));
+		return (this.encodeKey (this.encodeRawKeyFromHash (timestamp, BdbDatastore.minHashBytes)));
 	}
 	
 	private final byte[] encodeRawKeyFromData (final long timestamp, final byte[] data, final int offset, final int size)
@@ -516,7 +521,7 @@ public final class BdbDatastore
 			hashBytes = hasher.digest ();
 		} catch (final Error exception) {
 			this.callbacks.handleException (
-					exception, "bdb datastore encountered an error while feeding the hasher; aborting!");
+					exception, "bdb datastore encountered an error while feedingt the hasher; aborting!");
 			return (null);
 		}
 		if (hashBytes.length != BdbDatastore.hashSize) {
@@ -592,10 +597,11 @@ public final class BdbDatastore
 	
 	static {
 		minHashBytes = new byte[BdbDatastore.hashSize];
-		Arrays.fill (BdbDatastore.minHashBytes, Byte.MIN_VALUE);
+		Arrays.fill (BdbDatastore.minHashBytes, (byte) 0);
 		maxHashBytes = new byte[BdbDatastore.hashSize];
-		Arrays.fill (BdbDatastore.maxHashBytes, Byte.MAX_VALUE);
+		Arrays.fill (BdbDatastore.maxHashBytes, (byte) -1);
 	}
+	public static final String defaultEnvironmentPath = "/tmp/logging-bdb-datastore";
 	public static final String eventDatabaseName = "events";
 	public static final String hashAlgorithm = "MD5";
 	public static final int hashSize = 16;

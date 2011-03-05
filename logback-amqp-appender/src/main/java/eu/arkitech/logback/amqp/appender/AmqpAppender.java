@@ -5,24 +5,19 @@ package eu.arkitech.logback.amqp.appender;
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import ch.qos.logback.core.UnsynchronizedAppenderBase;
+import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventAppenderSink;
 import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventRouter;
-import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
 import eu.arkitech.logback.common.DefaultLoggingEventMutator;
-import eu.arkitech.logback.common.LoggingEventMutator;
-import eu.arkitech.logback.common.Serializer;
 
 
 public class AmqpAppender
-		extends UnsynchronizedAppenderBase<ILoggingEvent>
+		extends AmqpLoggingEventAppenderSink
 		implements
 			AmqpLoggingEventRouter
 {
 	public AmqpAppender ()
 	{
 		super ();
-		this.callbacks = new DefaultContextAwareCallbacks (this);
 		this.exchangeLayout = new PatternLayout ();
 		this.routingKeyLayout = new PatternLayout ();
 		this.exchangeLayout.setPattern (AmqpAppender.defaultExchangeKeyPattern);
@@ -45,44 +40,9 @@ public class AmqpAppender
 		return (this.exchangeLayout.getPattern ());
 	}
 	
-	public String getHost ()
-	{
-		return (this.host);
-	}
-	
-	public LoggingEventMutator getMutator ()
-	{
-		return (this.mutator);
-	}
-	
-	public String getPassword ()
-	{
-		return (this.password);
-	}
-	
-	public Integer getPort ()
-	{
-		return (this.port);
-	}
-	
 	public String getRoutingKeyPattern ()
 	{
 		return (this.routingKeyLayout.getPattern ());
-	}
-	
-	public Serializer getSerializer ()
-	{
-		return (this.serializer);
-	}
-	
-	public String getUsername ()
-	{
-		return (this.username);
-	}
-	
-	public String getVirtualHost ()
-	{
-		return (this.virtualHost);
 	}
 	
 	public final boolean isDrained ()
@@ -111,76 +71,15 @@ public class AmqpAppender
 		this.exchangeLayout.setPattern (pattern);
 	}
 	
-	public void setHost (final String host)
-	{
-		this.host = host;
-	}
-	
-	public void setMutator (final LoggingEventMutator mutator)
-	{
-		this.mutator = mutator;
-	}
-	
-	public void setPassword (final String password)
-	{
-		this.password = password;
-	}
-	
-	public void setPort (final Integer port)
-	{
-		this.port = port;
-	}
-	
 	public void setRoutingKeyPattern (final String pattern)
 	{
 		this.routingKeyLayout.setPattern (pattern);
 	}
 	
-	public void setSerializer (final Serializer serializer)
+	protected final void reallyAppend (final ILoggingEvent event)
+			throws Throwable
 	{
-		this.serializer = serializer;
-	}
-	
-	public void setUsername (final String username)
-	{
-		this.username = username;
-	}
-	
-	public void setVirtualHost (final String virtualHost)
-	{
-		this.virtualHost = virtualHost;
-	}
-	
-	public void start ()
-	{
-		if (this.isStarted ())
-			return;
-		this.reallyStart ();
-		this.exchangeLayout.start ();
-		this.routingKeyLayout.start ();
-		super.start ();
-	}
-	
-	public void stop ()
-	{
-		if (!this.isStarted ())
-			return;
-		this.reallyStop ();
-		this.exchangeLayout.stop ();
-		this.routingKeyLayout.stop ();
-		super.stop ();
-	}
-	
-	protected void append (final ILoggingEvent event)
-	{
-		try {
-			this.publisher.push (event);
-		} catch (final Error exception) {
-			throw (exception);
-		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp appender encountered an error while processing the event; ignoring!");
-		}
+		this.publisher.push (event);
 	}
 	
 	protected final boolean reallyStart ()
@@ -192,8 +91,8 @@ public class AmqpAppender
 					throw (new IllegalStateException ());
 				this.publisher =
 						new AmqpLoggingEventPublisher (
-								this.host, this.port, this.virtualHost, this.username, this.password, this, this.mutator,
-								this.serializer, this.callbacks);
+								this.host, this.port, this.virtualHost, this.username, this.password, this, this.serializer,
+								this.mutator, this.callbacks);
 				publisherStartSucceeded = this.publisher.start ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "amqp appender encountered an error while starting; aborting!");
@@ -201,6 +100,10 @@ public class AmqpAppender
 					this.reallyStop ();
 				} catch (final Error exception1) {}
 				throw (exception);
+			}
+			if (publisherStartSucceeded) {
+				this.exchangeLayout.start ();
+				this.routingKeyLayout.start ();
 			}
 			return (publisherStartSucceeded);
 		}
@@ -227,20 +130,16 @@ public class AmqpAppender
 			} finally {
 				this.publisher = null;
 			}
+			if (publisherStopSucceeded) {
+				this.exchangeLayout.stop ();
+				this.routingKeyLayout.stop ();
+			}
 			return (publisherStopSucceeded);
 		}
 	}
 	
-	protected final Callbacks callbacks;
 	protected PatternLayout exchangeLayout;
-	protected String host;
-	protected LoggingEventMutator mutator;
-	protected String password;
-	protected Integer port;
 	protected PatternLayout routingKeyLayout;
-	protected Serializer serializer;
-	protected String username;
-	protected String virtualHost;
 	private AmqpLoggingEventPublisher publisher;
 	
 	public static final String defaultExchangeKeyPattern = "logging%nopex";

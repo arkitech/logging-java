@@ -29,7 +29,35 @@ public abstract class DefaultAppenderSink
 		return (this.doPush (event));
 	}
 	
-	protected boolean doPush (final ILoggingEvent event)
+	public void start ()
+	{
+		this.reallyStart ();
+		super.start ();
+	}
+	
+	public void stop ()
+	{
+		this.reallyStop ();
+		super.stop ();
+	}
+	
+	protected void append (final ILoggingEvent event)
+	{
+		try {
+			this.reallyAppend (event);
+		} catch (final Throwable exception) {
+			this.callbacks.handleException (exception, "appender encountered an error while appending the event; ignoring!");
+		}
+	}
+	
+	protected abstract void reallyAppend (final ILoggingEvent event)
+			throws Throwable;
+	
+	protected abstract boolean reallyStart ();
+	
+	protected abstract boolean reallyStop ();
+	
+	private final boolean doPush (final ILoggingEvent event)
 	{
 		this.doAppend (event);
 		return (true);

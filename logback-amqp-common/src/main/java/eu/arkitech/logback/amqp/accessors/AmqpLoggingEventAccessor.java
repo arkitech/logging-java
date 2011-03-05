@@ -16,13 +16,13 @@ public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccesso
 		extends Worker
 {
 	protected AmqpLoggingEventAccessor (
-			final _Accessor_ accessor, final LoggingEventMutator mutator, final Serializer serializer,
+			final _Accessor_ accessor, final Serializer serializer, final LoggingEventMutator mutator,
 			final Callbacks callbacks, final Object monitor)
 	{
 		super (callbacks, monitor);
 		this.accessor = accessor;
-		this.mutator = mutator;
 		this.serializer = (serializer != null) ? serializer : new DefaultBinarySerializer ();
+		this.mutator = mutator;
 		this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
 	}
 	

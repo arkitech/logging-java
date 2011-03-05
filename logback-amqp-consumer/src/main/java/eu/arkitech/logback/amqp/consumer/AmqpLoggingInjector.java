@@ -6,48 +6,23 @@ import java.util.List;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import eu.arkitech.logback.common.Callbacks;
+import eu.arkitech.logback.amqp.accessors.AmqpLoggingEventAppenderSink;
 import eu.arkitech.logback.common.ClassNewInstanceAction;
-import eu.arkitech.logback.common.DefaultAppenderSink;
-import eu.arkitech.logback.common.DefaultContextAwareCallbacks;
-import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.LoggingEventPump;
-import eu.arkitech.logback.common.Serializer;
 import org.slf4j.LoggerFactory;
 
 
 public class AmqpLoggingInjector
-		extends DefaultAppenderSink
+		extends AmqpLoggingEventAppenderSink
 {
 	public AmqpLoggingInjector ()
 	{
 		super ();
-		this.callbacks = new DefaultContextAwareCallbacks (this);
 	}
 	
 	public String getExchange ()
 	{
 		return (this.exchange);
-	}
-	
-	public String getHost ()
-	{
-		return (this.host);
-	}
-	
-	public LoggingEventMutator getMutator ()
-	{
-		return (this.mutator);
-	}
-	
-	public String getPassword ()
-	{
-		return (this.password);
-	}
-	
-	public Integer getPort ()
-	{
-		return (this.port);
 	}
 	
 	public String getQueue ()
@@ -58,21 +33,6 @@ public class AmqpLoggingInjector
 	public String getRoutingKey ()
 	{
 		return (this.routingKey);
-	}
-	
-	public Serializer getSerializer ()
-	{
-		return (this.serializer);
-	}
-	
-	public String getUsername ()
-	{
-		return (this.username);
-	}
-	
-	public String getVirtualHost ()
-	{
-		return (this.virtualHost);
 	}
 	
 	public final boolean isDrained ()
@@ -94,26 +54,6 @@ public class AmqpLoggingInjector
 		this.exchange = exchange;
 	}
 	
-	public void setHost (final String host)
-	{
-		this.host = host;
-	}
-	
-	public void setMutator (final LoggingEventMutator mutator)
-	{
-		this.mutator = mutator;
-	}
-	
-	public void setPassword (final String password)
-	{
-		this.password = password;
-	}
-	
-	public void setPort (final Integer port)
-	{
-		this.port = port;
-	}
-	
 	public void setQueue (final String queue)
 	{
 		this.queue = queue;
@@ -124,38 +64,7 @@ public class AmqpLoggingInjector
 		this.routingKey = routingKey;
 	}
 	
-	public void setSerializer (final Serializer serializer)
-	{
-		this.serializer = serializer;
-	}
-	
-	public void setUsername (final String username)
-	{
-		this.username = username;
-	}
-	
-	public void setVirtualHost (final String virtualHost)
-	{
-		this.virtualHost = virtualHost;
-	}
-	
-	public void start ()
-	{
-		if (this.isStarted ())
-			return;
-		this.reallyStart ();
-		super.start ();
-	}
-	
-	public void stop ()
-	{
-		if (!this.isStarted ())
-			return;
-		this.reallyStop ();
-		super.stop ();
-	}
-	
-	protected void append (final ILoggingEvent event)
+	protected void reallyAppend (final ILoggingEvent event)
 	{
 		final Logger logger = (Logger) LoggerFactory.getLogger (event.getLoggerName ());
 		logger.callAppenders (event);
@@ -172,7 +81,7 @@ public class AmqpLoggingInjector
 				this.consumer =
 						new AmqpLoggingEventConsumer (
 								this.host, this.port, this.virtualHost, this.username, this.password, this.exchange,
-								this.queue, this.routingKey, this.mutator, this.serializer, this.callbacks);
+								this.queue, this.routingKey, this.serializer, this.mutator, this.callbacks);
 				this.pump = new LoggingEventPump (this.consumer, this, this.callbacks);
 				consumerStartSucceeded = this.consumer.start ();
 				pumpStartSucceeded = this.pump.start ();
@@ -230,17 +139,9 @@ public class AmqpLoggingInjector
 		}
 	}
 	
-	protected final Callbacks callbacks;
 	protected String exchange;
-	protected String host;
-	protected LoggingEventMutator mutator;
-	protected String password;
-	protected Integer port;
 	protected String queue;
 	protected String routingKey;
-	protected Serializer serializer;
-	protected String username;
-	protected String virtualHost;
 	private AmqpLoggingEventConsumer consumer;
 	private LoggingEventPump pump;
 	

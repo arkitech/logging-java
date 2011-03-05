@@ -21,10 +21,10 @@ public final class AmqpLoggingEventConsumer
 			LoggingEventSource
 {
 	public AmqpLoggingEventConsumer (
-			final AmqpRawConsumer accessor, final LoggingEventMutator mutator, final Serializer serializer,
+			final AmqpRawConsumer accessor, final Serializer serializer, final LoggingEventMutator mutator,
 			final Callbacks callbacks)
 	{
-		super (accessor, mutator, serializer, callbacks, accessor.monitor);
+		super (accessor, serializer, mutator, callbacks, accessor.monitor);
 		this.buffer = this.accessor.getBuffer ();
 	}
 	
@@ -37,13 +37,13 @@ public final class AmqpLoggingEventConsumer
 	
 	public AmqpLoggingEventConsumer (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String exchange, final String queue, final String routingKey, final LoggingEventMutator mutator,
-			final Serializer serializer, final Callbacks callbacks)
+			final String exchange, final String queue, final String routingKey, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks)
 	{
 		this (
 				new AmqpRawConsumer (
 						host, port, virtualHost, username, password, exchange, queue, routingKey, null, callbacks, null),
-				mutator, serializer, callbacks);
+				serializer, mutator, callbacks);
 	}
 	
 	public final boolean isDrained ()

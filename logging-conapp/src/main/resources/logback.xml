@@ -19,12 +19,14 @@
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
 	</amqpLoggingInjector>
 	
-	<!--
+	<appender name="lucene" class="eu.arkitech.logging.datastore.lucene.LuceneAppender">
+		<environmentPath>${arkitech.logging.bdb.environment.path:-/tmp/arkitech-logging-datastore}</environmentPath>
+	</appender>
+	
 	<randomGenerator>
 		<count>1000</count>
 		<interval>250</interval>
 	</randomGenerator>
-	-->
 	
 	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">
 		<discriminator>
@@ -50,6 +52,7 @@
 	<root level="trace">
 		<appender-ref ref="console" />
 		<appender-ref ref="sifter" />
+		<appender-ref ref="lucene" />
 	</root>
 	
 </configuration>

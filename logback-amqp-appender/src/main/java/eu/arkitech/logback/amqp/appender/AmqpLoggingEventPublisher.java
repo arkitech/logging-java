@@ -22,10 +22,10 @@ public final class AmqpLoggingEventPublisher
 			LoggingEventSink
 {
 	public AmqpLoggingEventPublisher (
-			final AmqpRawPublisher accessor, final AmqpLoggingEventRouter router, final LoggingEventMutator mutator,
-			final Serializer serializer, final Callbacks callbacks)
+			final AmqpRawPublisher accessor, final AmqpLoggingEventRouter router, final Serializer serializer,
+			final LoggingEventMutator mutator, final Callbacks callbacks)
 	{
-		super (accessor, mutator, serializer, callbacks, accessor.monitor);
+		super (accessor, serializer, mutator, callbacks, accessor.monitor);
 		this.router = router;
 		this.buffer = this.accessor.getBuffer ();
 	}
@@ -38,12 +38,12 @@ public final class AmqpLoggingEventPublisher
 	
 	public AmqpLoggingEventPublisher (
 			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final AmqpLoggingEventRouter router, final LoggingEventMutator mutator, final Serializer serializer,
+			final AmqpLoggingEventRouter router, final Serializer serializer, final LoggingEventMutator mutator,
 			final Callbacks callbacks)
 	{
 		this (
-				new AmqpRawPublisher (host, port, virtualHost, username, password, null, callbacks, null), router, mutator,
-				serializer, callbacks);
+				new AmqpRawPublisher (host, port, virtualHost, username, password, null, callbacks, null), router,
+				serializer, mutator, callbacks);
 	}
 	
 	public final boolean isDrained ()

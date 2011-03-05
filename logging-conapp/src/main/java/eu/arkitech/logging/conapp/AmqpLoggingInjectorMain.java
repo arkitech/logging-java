@@ -1,5 +1,5 @@
 
-package eu.arkitech.logback.amqp.consumer;
+package eu.arkitech.logging.conapp;
 
 
 import java.io.File;
@@ -13,6 +13,7 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.joran.action.Action;
 import ch.qos.logback.core.joran.spi.Pattern;
 import ch.qos.logback.core.joran.spi.RuleStore;
+import eu.arkitech.logback.amqp.consumer.AmqpLoggingInjector;
 import eu.arkitech.logback.common.RandomGenerator;
 import org.slf4j.LoggerFactory;
 

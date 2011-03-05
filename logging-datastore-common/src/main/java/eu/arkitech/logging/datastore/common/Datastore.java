@@ -16,7 +16,7 @@ public interface Datastore
 			final ILoggingEvent reference, final int beforeCount, final int afterCount, final LoggingEventFilter filter);
 	
 	public abstract Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long intervalMs, final LoggingEventFilter filter);
+			final long afterTimestamp, final long interval, final LoggingEventFilter filter);
 	
 	public abstract ILoggingEvent select (final String key);
 	

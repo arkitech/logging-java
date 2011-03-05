@@ -86,6 +86,12 @@ public final class LuceneDatastore
 		synchronized (this.monitor) {
 			if (this.state != State.Closed)
 				throw (new IllegalStateException ("lucene datastore is already opened"));
+			Runtime.getRuntime ().addShutdownHook (new Thread () {
+				public final void run ()
+				{
+					LuceneDatastore.this.close ();
+				}
+			});
 			boolean succeeded = this.bdb.open ();
 			if (succeeded)
 				succeeded = this.index.open ();
@@ -116,9 +122,9 @@ public final class LuceneDatastore
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long intervalMs, final LoggingEventFilter filter)
+			final long afterTimestamp, final long interval, final LoggingEventFilter filter)
 	{
-		return (this.bdb.select (afterTimestamp, intervalMs, filter));
+		return (this.bdb.select (afterTimestamp, interval, filter));
 	}
 	
 	public final ILoggingEvent select (final String key)
