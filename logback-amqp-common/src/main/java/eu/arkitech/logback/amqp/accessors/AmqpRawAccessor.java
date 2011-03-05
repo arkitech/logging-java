@@ -5,28 +5,31 @@ package eu.arkitech.logback.amqp.accessors;
 import java.io.IOException;
 
 import ch.qos.logback.classic.Level;
+import com.google.common.base.Preconditions;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
-import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.Worker;
 
 
 public abstract class AmqpRawAccessor
 		extends Worker
 {
-	protected AmqpRawAccessor (final String host, final Integer port, final String virtualHost, final String username, final String password, final Callbacks callbacks, final Object monitor)
+	protected AmqpRawAccessor (final AmqpRawAccessorConfiguration configuration)
 	{
-		super (callbacks, monitor);
-		synchronized (this.monitor) {
-			this.host = ((host != null) && !host.isEmpty ()) ? host : AmqpRawAccessor.defaultHost;
-			this.port = ((port != null) && (port != 0)) ? port : AmqpRawAccessor.defaultPort;
-			this.virtualHost = ((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : AmqpRawAccessor.defaultVirtualHost;
-			this.username = ((username != null) && !username.isEmpty ()) ? username : AmqpRawAccessor.defaultUsername;
-			this.password = ((password != null) && !password.isEmpty ()) ? password : AmqpRawAccessor.defaultPassword;
-		}
+		super (configuration);
+		this.host = Preconditions.checkNotNull (((configuration.host != null) && !configuration.host.isEmpty ()) ? configuration.host : AmqpRawAccessorConfiguration.defaultHost);
+		Preconditions.checkArgument (!this.host.isEmpty ());
+		this.port = Preconditions.checkNotNull (((configuration.port != null) && (configuration.port.intValue () != 0)) ? configuration.port : AmqpRawAccessorConfiguration.defaultPort).intValue ();
+		Preconditions.checkArgument (this.port > 0);
+		this.virtualHost = Preconditions.checkNotNull (((configuration.virtualHost != null) && !configuration.virtualHost.isEmpty ()) ? configuration.virtualHost : AmqpRawAccessorConfiguration.defaultVirtualHost);
+		Preconditions.checkArgument (!this.virtualHost.isEmpty ());
+		this.username = Preconditions.checkNotNull (((configuration.username != null) && !configuration.username.isEmpty ()) ? configuration.username : AmqpRawAccessorConfiguration.defaultUsername);
+		Preconditions.checkArgument (!this.username.isEmpty ());
+		this.password = Preconditions.checkNotNull (((configuration.password != null) && !configuration.password.isEmpty ()) ? configuration.password : AmqpRawAccessorConfiguration.defaultPassword);
+		Preconditions.checkArgument (!this.password.isEmpty ());
 	}
 	
 	public final boolean isConnected ()
@@ -150,10 +153,4 @@ public abstract class AmqpRawAccessor
 	protected final String virtualHost;
 	private Channel channel;
 	private Connection connection;
-	
-	public static final String defaultHost = "127.0.0.1";
-	public static final String defaultPassword = "guest";
-	public static final int defaultPort = 5672;
-	public static final String defaultUsername = "guest";
-	public static final String defaultVirtualHost = "/";
 }

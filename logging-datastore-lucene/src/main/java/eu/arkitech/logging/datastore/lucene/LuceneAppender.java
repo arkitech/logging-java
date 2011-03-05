@@ -5,11 +5,11 @@ package eu.arkitech.logging.datastore.lucene;
 import java.io.File;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import eu.arkitech.logback.common.DefaultSerializerAppenderSink;
+import eu.arkitech.logback.common.DefaultSerializerAppender;
 
 
 public class LuceneAppender
-		extends DefaultSerializerAppenderSink
+		extends DefaultSerializerAppender
 {
 	public LuceneAppender ()
 	{
@@ -34,7 +34,7 @@ public class LuceneAppender
 	
 	protected LuceneDatastoreConfiguration buildConfiguration ()
 	{
-		return (new LuceneDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks));
+		return (new LuceneDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks, null));
 	}
 	
 	@Override

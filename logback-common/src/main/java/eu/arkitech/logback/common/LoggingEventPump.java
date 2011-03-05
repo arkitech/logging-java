@@ -10,19 +10,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 public final class LoggingEventPump
 		extends Worker
 {
-	public LoggingEventPump (final LoggingEventSource source, final LoggingEventSink sink)
+	public LoggingEventPump (final WorkerConfiguration configuration, final LoggingEventSource source, final LoggingEventSink sink)
 	{
-		this (source, sink, null, null);
-	}
-	
-	public LoggingEventPump (final LoggingEventSource source, final LoggingEventSink sink, final Callbacks callbacks)
-	{
-		this (source, sink, callbacks, null);
-	}
-	
-	public LoggingEventPump (final LoggingEventSource source, final LoggingEventSink sink, final Callbacks callbacks, final Object monitor)
-	{
-		super (callbacks, monitor);
+		super (configuration);
 		this.source = source;
 		this.sink = sink;
 		this.waitTimeout = LoggingEventPump.defaultWaitTimeout;

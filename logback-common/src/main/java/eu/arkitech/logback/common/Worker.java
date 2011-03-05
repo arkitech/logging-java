@@ -3,21 +3,21 @@ package eu.arkitech.logback.common;
 
 
 import ch.qos.logback.classic.Level;
+import com.google.common.base.Preconditions;
 import eu.arkitech.logback.common.WorkerThread.State;
 
 
 public abstract class Worker
 {
-	protected Worker (final Callbacks callbacks, final Object monitor)
+	protected Worker (final WorkerConfiguration configuration)
 	{
 		super ();
-		final Object monitor_ = (monitor != null) ? monitor : new Object ();
-		synchronized (monitor_) {
-			this.monitor = monitor_;
-			this.callbacks = callbacks;
-			this.waitTimeout = Worker.defaultWaitTimeout;
-			this.thread = new ShovelThread ();
-		}
+		Preconditions.checkNotNull (configuration);
+		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
+		this.monitor = monitor;
+		this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
+		this.waitTimeout = WorkerConfiguration.defaultWaitTimeout;
+		this.thread = new InternalThread ();
 	}
 	
 	public final boolean awaitStop ()
@@ -76,17 +76,15 @@ public abstract class Worker
 		return (this.thread.shouldStopSoft ());
 	}
 	
-	public final Object monitor;
 	protected final Callbacks callbacks;
+	protected final Object monitor;
 	protected final int waitTimeout;
-	private final ShovelThread thread;
+	private final InternalThread thread;
 	
-	public static final int defaultWaitTimeout = 500;
-	
-	private final class ShovelThread
+	private final class InternalThread
 			extends WorkerThread
 	{
-		protected ShovelThread ()
+		protected InternalThread ()
 		{
 			super (String.format ("%s@%s", Worker.this.getClass ().getName (), System.identityHashCode (Worker.this)));
 		}

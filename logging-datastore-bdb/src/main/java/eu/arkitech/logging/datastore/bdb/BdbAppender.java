@@ -5,11 +5,11 @@ package eu.arkitech.logging.datastore.bdb;
 import java.io.File;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import eu.arkitech.logback.common.DefaultSerializerAppenderSink;
+import eu.arkitech.logback.common.DefaultSerializerAppender;
 
 
 public class BdbAppender
-		extends DefaultSerializerAppenderSink
+		extends DefaultSerializerAppender
 {
 	public BdbAppender ()
 	{
@@ -34,7 +34,7 @@ public class BdbAppender
 	
 	protected BdbDatastoreConfiguration buildConfiguration ()
 	{
-		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks));
+		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks, null));
 	}
 	
 	@Override

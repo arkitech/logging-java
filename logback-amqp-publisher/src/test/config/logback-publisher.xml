@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration debug="false">
+	
+	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+	
+	<appender name="amqp" class="eu.arkitech.logback.amqp.appender.AmqpPublisherAppender">
+		<host>127.0.0.1</host>
+		<port>5672</port>
+		<virtualHost>/</virtualHost>
+		<username>guest</username>
+		<password>guest</password>
+		<exchangePattern>logging%nopex</exchangePattern>
+		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
+	</appender>
+	
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{HH:mm:ss.SSS}] [%level] [%logger] %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<root level="trace">
+		<appender-ref ref="console" />
+		<!-- <appender-ref ref="amqp" /> -->
+	</root>
+	
+</configuration>

@@ -6,31 +6,28 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import ch.qos.logback.classic.Level;
+import com.google.common.base.Preconditions;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
-import eu.arkitech.logback.common.Callbacks;
 
 
 public final class AmqpRawConsumer
 		extends AmqpRawAccessor
 {
-	public AmqpRawConsumer (
-			final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final BlockingQueue<AmqpMessage> buffer,
-			final Callbacks callbacks, final Object monitor)
+	public AmqpRawConsumer (final AmqpRawConsumerConfiguration configuration, final BlockingQueue<AmqpRawMessage> buffer)
 	{
-		super (host, port, virtualHost, username, password, callbacks, monitor);
-		synchronized (this.monitor) {
-			this.exchange = (exchange != null) ? exchange : AmqpRawConsumer.defaultExchange;
-			this.queue = (queue != null) ? queue : AmqpRawConsumer.defaultQueue;
-			this.routingKey = (routingKey != null) ? routingKey : AmqpRawConsumer.defaultRoutingKey;
-			this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpMessage> ();
-		}
+		super (configuration);
+		this.exchange = Preconditions.checkNotNull (((configuration.exchange != null) && !configuration.exchange.isEmpty ()) ? configuration.exchange : AmqpRawConsumerConfiguration.defaultExchange);
+		Preconditions.checkArgument (!this.exchange.isEmpty ());
+		this.queue = Preconditions.checkNotNull (((configuration.queue != null) && !configuration.queue.isEmpty ()) ? configuration.queue : AmqpRawConsumerConfiguration.defaultQueue);
+		this.routingKey = Preconditions.checkNotNull (((configuration.routingKey != null) && !configuration.routingKey.isEmpty ()) ? configuration.routingKey : AmqpRawConsumerConfiguration.defaultRoutingKey);
+		this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpRawMessage> ();
 	}
 	
-	public final BlockingQueue<AmqpMessage> getBuffer ()
+	public final BlockingQueue<AmqpRawMessage> getBuffer ()
 	{
 		return (this.buffer);
 	}
@@ -99,7 +96,7 @@ public final class AmqpRawConsumer
 	
 	private final void consume (final Envelope envelope, final BasicProperties properties, final byte[] content)
 	{
-		final AmqpMessage message = new AmqpMessage (envelope.getExchange (), envelope.getRoutingKey (), properties.getContentType (), properties.getContentEncoding (), content);
+		final AmqpRawMessage message = new AmqpRawMessage (envelope.getExchange (), envelope.getRoutingKey (), properties.getContentType (), properties.getContentEncoding (), content);
 		if (!this.buffer.offer (message))
 			this.callbacks.handleLogEvent (Level.ERROR, null, "amqp consumer buffer overrun; ignoring!");
 	}
@@ -160,15 +157,11 @@ public final class AmqpRawConsumer
 		}
 	}
 	
-	private final BlockingQueue<AmqpMessage> buffer;
+	private final BlockingQueue<AmqpRawMessage> buffer;
 	private final String exchange;
 	private final String queue;
 	private String queue1;
 	private final String routingKey;
-	
-	public static final String defaultExchange = "logging";
-	public static final String defaultQueue = "";
-	public static final String defaultRoutingKey = "#";
 	
 	private final class ConsumerCallback
 			implements

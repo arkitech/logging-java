@@ -8,12 +8,15 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import eu.arkitech.logback.common.Callbacks;
 import eu.arkitech.logback.common.CompressedBinarySerializer;
+import eu.arkitech.logback.common.Configuration;
 import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.Serializer;
 
 
-public final class BdbDatastoreConfiguration
+public class BdbDatastoreConfiguration
+		implements
+			Configuration
 {
 	public BdbDatastoreConfiguration ()
 	{
@@ -51,12 +54,7 @@ public final class BdbDatastoreConfiguration
 	
 	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks);
-	}
-	
-	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, serializer, loadMutator, storeMutator, callbacks, null);
+		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks, null);
 	}
 	
 	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks, final Object monitor)

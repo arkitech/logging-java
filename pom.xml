@@ -9,13 +9,13 @@
 	<modules>
 		<module>logback-common</module>
 		<module>logback-amqp-common</module>
-		<module>logback-amqp-appender</module>
+		<module>logback-amqp-publisher</module>
 		<module>logback-amqp-consumer</module>
 		<module>logging-datastore-common</module>
 		<module>logging-datastore-bdb</module>
 		<module>logging-datastore-lucene</module>
-		<module>logging-webapp-common</module>
 		<module>logging-conapp</module>
+		<module>logging-webapp-common</module>
 		<module>logging-webapp</module>
 	</modules>
 	<dependencies>
@@ -28,6 +28,11 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>0.9.28</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava-base</artifactId>
+			<version>r03</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

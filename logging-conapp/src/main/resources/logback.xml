@@ -4,7 +4,7 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpLoggingInjector" actionClass="eu.arkitech.logback.amqp.consumer.AmqpLoggingInjector$CreateAction" />
+	<newRule pattern="/configuration/amqpLoggingInjector" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
 	
 	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
 	

@@ -7,17 +7,12 @@
 		<artifactId>logging-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logging-datastore-bdb</artifactId>
+	<artifactId>logback-amqp-publisher</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>eu.arkitech</groupId>
-			<artifactId>logging-datastore-common</artifactId>
+			<artifactId>logback-amqp-common</artifactId>
 			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>berkeleydb</groupId>
-			<artifactId>je</artifactId>
-			<version>3.2.76</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -9,21 +9,18 @@ import java.util.concurrent.TimeUnit;
 import ch.qos.logback.classic.Level;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import eu.arkitech.logback.common.Callbacks;
 
 
 public final class AmqpRawPublisher
 		extends AmqpRawAccessor
 {
-	public AmqpRawPublisher (final String host, final Integer port, final String virtualHost, final String username, final String password, final BlockingDeque<AmqpMessage> buffer, final Callbacks callbacks, final Object monitor)
+	public AmqpRawPublisher (final AmqpRawPublisherConfiguration configuration, final BlockingDeque<AmqpRawMessage> buffer)
 	{
-		super (host, port, virtualHost, username, password, callbacks, monitor);
-		synchronized (this.monitor) {
-			this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpMessage> ();
-		}
+		super (configuration);
+		this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpRawMessage> ();
 	}
 	
-	public final BlockingDeque<AmqpMessage> getBuffer ()
+	public final BlockingDeque<AmqpRawMessage> getBuffer ()
 	{
 		return (this.buffer);
 	}
@@ -51,7 +48,7 @@ public final class AmqpRawPublisher
 					if (this.shouldReconnect ())
 						break;
 				}
-				final AmqpMessage message;
+				final AmqpRawMessage message;
 				try {
 					message = this.buffer.poll (this.waitTimeout, TimeUnit.MILLISECONDS);
 				} catch (final InterruptedException exception) {
@@ -75,7 +72,7 @@ public final class AmqpRawPublisher
 		return (this.buffer.isEmpty () && super.shouldStopSoft ());
 	}
 	
-	private final boolean publish (final AmqpMessage message)
+	private final boolean publish (final AmqpRawMessage message)
 	{
 		final Channel channel = this.getChannel ();
 		final AMQP.BasicProperties properties = new AMQP.BasicProperties ();
@@ -92,5 +89,5 @@ public final class AmqpRawPublisher
 		return (true);
 	}
 	
-	private final BlockingDeque<AmqpMessage> buffer;
+	private final BlockingDeque<AmqpRawMessage> buffer;
 }
