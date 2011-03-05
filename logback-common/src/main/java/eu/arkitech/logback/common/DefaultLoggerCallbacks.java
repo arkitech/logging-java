@@ -32,13 +32,14 @@ public class DefaultLoggerCallbacks
 		this (LoggerFactory.getLogger (target.getClass ()));
 	}
 	
+	@Override
 	public void handleException (final Throwable exception, final String messageFormat, final Object ... messageArguments)
 	{
 		this.handleLogEvent (Level.ERROR, exception, messageFormat, messageArguments);
 	}
 	
-	public void handleLogEvent (
-			final Level level, final Throwable exception, final String messageFormat, final Object ... messageArguments)
+	@Override
+	public void handleLogEvent (final Level level, final Throwable exception, final String messageFormat, final Object ... messageArguments)
 	{
 		final String message = String.format (messageFormat, messageArguments);
 		switch (level.levelInt) {

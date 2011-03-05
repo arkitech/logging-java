@@ -8,6 +8,7 @@ import eu.arkitech.logback.common.BlockingQueueAppender;
 public class EventLogAppender
 		extends BlockingQueueAppender
 {
+	@Override
 	public void start ()
 	{
 		if (this.isStarted ())
@@ -18,6 +19,7 @@ public class EventLogAppender
 		this.context.putObject (this.name, this);
 	}
 	
+	@Override
 	public void stop ()
 	{
 		if (!this.isStarted ())

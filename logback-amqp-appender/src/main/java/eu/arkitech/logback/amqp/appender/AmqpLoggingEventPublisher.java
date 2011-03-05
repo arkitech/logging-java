@@ -21,42 +21,38 @@ public final class AmqpLoggingEventPublisher
 		implements
 			LoggingEventSink
 {
-	public AmqpLoggingEventPublisher (
-			final AmqpRawPublisher accessor, final AmqpLoggingEventRouter router, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks)
+	public AmqpLoggingEventPublisher (final AmqpRawPublisher accessor, final AmqpLoggingEventRouter router, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks)
 	{
 		super (accessor, serializer, mutator, callbacks, accessor.monitor);
 		this.router = router;
 		this.buffer = this.accessor.getBuffer ();
 	}
 	
-	public AmqpLoggingEventPublisher (
-			final String host, final Integer port, final String virtualHost, final String username, final String password)
+	public AmqpLoggingEventPublisher (final String host, final Integer port, final String virtualHost, final String username, final String password)
 	{
 		this (host, port, virtualHost, username, password, null, null, null, null);
 	}
 	
 	public AmqpLoggingEventPublisher (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final AmqpLoggingEventRouter router, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks)
+			final String host, final Integer port, final String virtualHost, final String username, final String password, final AmqpLoggingEventRouter router, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks)
 	{
-		this (
-				new AmqpRawPublisher (host, port, virtualHost, username, password, null, callbacks, null), router,
-				serializer, mutator, callbacks);
+		this (new AmqpRawPublisher (host, port, virtualHost, username, password, null, callbacks, null), router, serializer, mutator, callbacks);
 	}
 	
+	@Override
 	public final boolean isDrained ()
 	{
 		return (this.buffer.isEmpty ());
 	}
 	
+	@Override
 	public final boolean push (final ILoggingEvent event)
 			throws InterruptedException
 	{
 		return (this.push (event, Long.MAX_VALUE, TimeUnit.DAYS));
 	}
 	
+	@Override
 	public final boolean push (final ILoggingEvent originalEvent, final long timeout, final TimeUnit timeoutUnit)
 			throws InterruptedException
 	{
@@ -73,6 +69,7 @@ public final class AmqpLoggingEventPublisher
 		return (true);
 	}
 	
+	@Override
 	protected void executeLoop ()
 	{
 		while (true) {
@@ -83,11 +80,13 @@ public final class AmqpLoggingEventPublisher
 		}
 	}
 	
+	@Override
 	protected void finalizeLoop ()
 	{
 		this.accessor.awaitStop ();
 	}
 	
+	@Override
 	protected void initializeLoop ()
 	{
 		this.accessor.start ();
@@ -102,9 +101,7 @@ public final class AmqpLoggingEventPublisher
 			else
 				exchange = AmqpLoggingEventPublisher.defaultExchange;
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception,
-					"amqp publisher sink encountered an error while generating the exchange for the event; aborting!");
+			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while generating the exchange for the event; aborting!");
 			return (null);
 		}
 		final String routingKey;
@@ -112,13 +109,9 @@ public final class AmqpLoggingEventPublisher
 			if (this.router != null)
 				routingKey = this.router.generateRoutingKey (event);
 			else
-				routingKey =
-						String.format (
-								AmqpLoggingEventPublisher.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
+				routingKey = String.format (AmqpLoggingEventPublisher.defaultRoutingKeyFormat, event.getLevel ().levelStr.toLowerCase ());
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception,
-					"amqp publisher sink encountered an error while generating the routing key for the event; aborting!");
+			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while generating the routing key for the event; aborting!");
 			return (null);
 		}
 		return (this.encodeMessage (event, exchange, routingKey));

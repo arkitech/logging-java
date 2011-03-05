@@ -38,6 +38,7 @@ public class EventLogLayout
 		return buffer.toString ();
 	}
 	
+	@Override
 	public String doLayout (final ILoggingEvent event)
 	{
 		final StringBuilder buffer = new StringBuilder ();
@@ -45,16 +46,19 @@ public class EventLogLayout
 		return buffer.toString ();
 	}
 	
+	@Override
 	public String getContentType ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
 	
+	@Override
 	public String getFileFooter ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
 	
+	@Override
 	public String getFileHeader ()
 	{
 		throw (new UnsupportedOperationException ());
@@ -65,16 +69,19 @@ public class EventLogLayout
 		return (this.pattern);
 	}
 	
+	@Override
 	public String getPresentationFooter ()
 	{
 		return ("</table>\n");
 	}
 	
+	@Override
 	public String getPresentationHeader ()
 	{
 		return ("<table class=\"EventLog\">\n");
 	}
 	
+	@Override
 	public boolean isStarted ()
 	{
 		return (this.started);
@@ -85,12 +92,14 @@ public class EventLogLayout
 		this.pattern = pattern;
 	}
 	
+	@Override
 	public void start ()
 	{
 		this.started = true;
 		this.buildConverters ();
 	}
 	
+	@Override
 	public void stop ()
 	{
 		this.started = false;
@@ -109,8 +118,7 @@ public class EventLogLayout
 					converterMap.putAll (map);
 			}
 			{
-				@SuppressWarnings ({"unchecked", "rawtypes"}) final Map<String, String> map =
-						(Map) this.context.getObject (CoreConstants.PATTERN_RULE_REGISTRY);
+				@SuppressWarnings ({"unchecked", "rawtypes"}) final Map<String, String> map = (Map) this.context.getObject (CoreConstants.PATTERN_RULE_REGISTRY);
 				if (map != null)
 					converterMap.putAll (map);
 			}
@@ -120,10 +128,7 @@ public class EventLogLayout
 			convertersHead = parser.compile (parserNodesHead, converterMap);
 			ConverterUtil.startConverters (convertersHead);
 		} catch (final Throwable exception) {
-			this.addError (
-					String.format (
-							"logback event viewer layout encountered an error while parsing the pattern `%s`", this.pattern),
-					exception);
+			this.addError (String.format ("logback event viewer layout encountered an error while parsing the pattern `%s`", this.pattern), exception);
 			return;
 		}
 		this.convertersHead = convertersHead;
@@ -156,9 +161,7 @@ public class EventLogLayout
 		buffer.append ("<tr class=\"Event " + event.getLevel ().levelStr + "\">\n");
 		Converter<ILoggingEvent> converter = this.convertersHead;
 		while (converter != null) {
-			buffer
-					.append ("<td class=\"Event ").append (this.getConverterName (converter).replace ("\"", "\\\""))
-					.append ("\">");
+			buffer.append ("<td class=\"Event ").append (this.getConverterName (converter).replace ("\"", "\\\"")).append ("\">");
 			converter.write (buffer, event);
 			buffer.append ("</td>\n");
 			converter = converter.getNext ();
@@ -178,13 +181,9 @@ public class EventLogLayout
 		while (throwable != null) {
 			buffer.append ("<li class=\"Exception\">\n");
 			buffer.append ("<p class=\"Exception_Header\">\n");
-			buffer
-					.append ("<span class=\"Exception_Class\">").append (Transform.escapeTags (throwable.getClassName ()))
-					.append ("</span>");
+			buffer.append ("<span class=\"Exception_Class\">").append (Transform.escapeTags (throwable.getClassName ())).append ("</span>");
 			buffer.append ("<span class=\"Exception_ClassMessageSplit\">&nbsp;::&nbsp;</span>");
-			buffer
-					.append ("<span class=\"Exception_Message\">").append (Transform.escapeTags (throwable.getMessage ()))
-					.append ("</span>");
+			buffer.append ("<span class=\"Exception_Message\">").append (Transform.escapeTags (throwable.getMessage ())).append ("</span>");
 			buffer.append ("</p>\n");
 			final StackTraceElementProxy[] frames = throwable.getStackTraceElementProxyArray ();
 			final int commonFramesCount = throwable.getCommonFrames ();
@@ -193,22 +192,15 @@ public class EventLogLayout
 			for (int frameIndex = 0; frameIndex < limitFrameIndex; frameIndex++) {
 				final StackTraceElement frame = frames[frameIndex].getStackTraceElement ();
 				buffer.append ("<li class=\"Exception_StackFrame\">");
-				buffer
-						.append ("<span class=\"Exception_StackFrame_Class\">")
-						.append (Transform.escapeTags (frame.getClassName ())).append ("</span>");
+				buffer.append ("<span class=\"Exception_StackFrame_Class\">").append (Transform.escapeTags (frame.getClassName ())).append ("</span>");
 				buffer.append ("<span class=\"Exception_StackFrame_ClassMethodSplit\">&nbsp;::&nbsp;</span>");
-				buffer
-						.append ("<span class=\"Exception_StackFrame_Method\">")
-						.append (Transform.escapeTags (frame.getMethodName ())).append ("</span>");
+				buffer.append ("<span class=\"Exception_StackFrame_Method\">").append (Transform.escapeTags (frame.getMethodName ())).append ("</span>");
 				buffer.append ("<span class=\"Exception_StackFrame_MethodLineSplit\">&nbsp;::&nbsp;</span>");
-				buffer
-						.append ("<span class=\"Exception_StackFrame_Method\">").append (frame.getLineNumber ())
-						.append ("</span>");
+				buffer.append ("<span class=\"Exception_StackFrame_Method\">").append (frame.getLineNumber ()).append ("</span>");
 				buffer.append ("</li>\n");
 			}
 			if (commonFramesCount > 0)
-				buffer
-						.append ("<li class=\"Exception_StackFrame_Common\"><span class=\"Exception_StackFrame_Common\">...</span></li>\n");
+				buffer.append ("<li class=\"Exception_StackFrame_Common\"><span class=\"Exception_StackFrame_Common\">...</span></li>\n");
 			buffer.append ("</ul>\n");
 			buffer.append ("</li>\n");
 			throwable = throwable.getCause ();

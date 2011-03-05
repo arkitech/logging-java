@@ -28,6 +28,7 @@ public class EventLogServlet
 		super ();
 	}
 	
+	@Override
 	public void destroy ()
 	{
 		super.destroy ();
@@ -36,13 +37,13 @@ public class EventLogServlet
 		this.layout = null;
 	}
 	
+	@Override
 	public void init (final ServletConfig configuration)
 			throws ServletException
 	{
 		final String appenderName = configuration.getInitParameter (EventLogServlet.appenderParameterName);
 		if ((appenderName == null) || appenderName.isEmpty ())
-			throw (new ServletException (String.format (
-					"logback event viewer `%s` parameter is not set; aborting!", EventLogServlet.appenderParameterName)));
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter is not set; aborting!", EventLogServlet.appenderParameterName)));
 		final String eventPattern = configuration.getInitParameter (EventLogServlet.eventPatternParameterName);
 		final String htmlHeadResourceName = configuration.getInitParameter (EventLogServlet.htmlHeadResourceParameterName);
 		
@@ -50,24 +51,17 @@ public class EventLogServlet
 		
 		final Object appender = this.context.getObject (appenderName);
 		if (appender == null)
-			throw (new ServletException (String.format (
-					"logback event viewer `%s` parameter value `%s` is wrong (no appender of such name found)",
-					EventLogServlet.appenderParameterName, appenderName)));
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (no appender of such name found)", EventLogServlet.appenderParameterName, appenderName)));
 		if (!(appender instanceof EventLogAppender))
-			throw (new ServletException (String.format (
-					"logback event viewer `%s` parameter value `%s` is wrong (appender has wrong class `%s`)",
-					EventLogServlet.appenderParameterName, appenderName, appender.getClass ().getName ())));
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (appender has wrong class `%s`)", EventLogServlet.appenderParameterName, appenderName, appender.getClass ().getName ())));
 		
 		final InputStream htmlHeadStream;
 		if (htmlHeadResourceName != null) {
 			htmlHeadStream = EventLogServlet.class.getClassLoader ().getResourceAsStream (htmlHeadResourceName);
 			if (htmlHeadStream == null)
-				throw (new ServletException (String.format (
-						"logback event viewer `%s` parameter value `%s` is wrong (no resource of such name found)",
-						EventLogServlet.htmlHeadResourceParameterName, htmlHeadResourceName)));
+				throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (no resource of such name found)", EventLogServlet.htmlHeadResourceParameterName, htmlHeadResourceName)));
 		} else
-			htmlHeadStream =
-					EventLogServlet.class.getClassLoader ().getResourceAsStream (EventLogServlet.defaultHtmlHeadResource);
+			htmlHeadStream = EventLogServlet.class.getClassLoader ().getResourceAsStream (EventLogServlet.defaultHtmlHeadResource);
 		final StringBuilder htmlHead;
 		if (htmlHeadStream != null) {
 			htmlHead = new StringBuilder ();
@@ -136,6 +130,7 @@ public class EventLogServlet
 		stream.close ();
 	}
 	
+	@Override
 	protected void doGet (final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException
 	{
@@ -180,16 +175,11 @@ public class EventLogServlet
 		final boolean mdcStrict = filter.mdcStrict;
 		stream.write ("<div class=\"EventFilter\">\n");
 		stream.write ("<form action=\"\" method=\"GET\">\n");
-		stream.write ("Level:&nbsp;<input type=\"text\" name=\"level\" value=\""
-				+ ((level != null) ? level.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC.Application:&nbsp;<input type=\"text\" name=\"mdc.application\" value=\""
-				+ ((mdcApplication != null) ? mdcApplication.replace ("\"", "\\\"") : "") + "\" />\n");
-		stream.write ("MDC.Component:&nbsp;<input type=\"text\" name=\"mdc.component\" value=\""
-				+ ((mdcComponent != null) ? mdcComponent.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC.Node:&nbsp;<input type=\"text\" name=\"mdc.node\" value=\""
-				+ ((mdcNode != null) ? mdcNode.replace ("\"", "\\\"") : "") + "\">\n");
-		stream.write ("MDC Strict:&nbsp;<input type=\"checkbox\" name=\"mdc_strict\" " + (mdcStrict ? " checked=\"on\"" : "")
-				+ " />\n");
+		stream.write ("Level:&nbsp;<input type=\"text\" name=\"level\" value=\"" + ((level != null) ? level.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC.Application:&nbsp;<input type=\"text\" name=\"mdc.application\" value=\"" + ((mdcApplication != null) ? mdcApplication.replace ("\"", "\\\"") : "") + "\" />\n");
+		stream.write ("MDC.Component:&nbsp;<input type=\"text\" name=\"mdc.component\" value=\"" + ((mdcComponent != null) ? mdcComponent.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC.Node:&nbsp;<input type=\"text\" name=\"mdc.node\" value=\"" + ((mdcNode != null) ? mdcNode.replace ("\"", "\\\"") : "") + "\">\n");
+		stream.write ("MDC Strict:&nbsp;<input type=\"checkbox\" name=\"mdc_strict\" " + (mdcStrict ? " checked=\"on\"" : "") + " />\n");
 		stream.write ("<input type=\"submit\" value=\"Refresh!\" />\n");
 		stream.write ("</form>");
 		stream.write ("</div>\n");
@@ -205,17 +195,13 @@ public class EventLogServlet
 		stream.close ();
 	}
 	
-	protected void doPageFooter (
-			@SuppressWarnings ("unused") final HttpServletRequest request,
-			@SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
+	protected void doPageFooter (@SuppressWarnings ("unused") final HttpServletRequest request, @SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
 	{
 		stream.write ("</body>\n");
 		stream.write ("</html>\n");
 	}
 	
-	protected void doPageHeader (
-			@SuppressWarnings ("unused") final HttpServletRequest request,
-			@SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
+	protected void doPageHeader (@SuppressWarnings ("unused") final HttpServletRequest request, @SuppressWarnings ("unused") final HttpServletResponse response, final PrintWriter stream)
 	{
 		stream.write ("<html>\n");
 		stream.write ("<head>\n");

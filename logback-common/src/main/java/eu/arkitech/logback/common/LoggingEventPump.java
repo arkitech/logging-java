@@ -20,8 +20,7 @@ public final class LoggingEventPump
 		this (source, sink, callbacks, null);
 	}
 	
-	public LoggingEventPump (
-			final LoggingEventSource source, final LoggingEventSink sink, final Callbacks callbacks, final Object monitor)
+	public LoggingEventPump (final LoggingEventSource source, final LoggingEventSink sink, final Callbacks callbacks, final Object monitor)
 	{
 		super (callbacks, monitor);
 		this.source = source;
@@ -29,6 +28,7 @@ public final class LoggingEventPump
 		this.waitTimeout = LoggingEventPump.defaultWaitTimeout;
 	}
 	
+	@Override
 	protected final void executeLoop ()
 	{
 		while (true) {
@@ -38,9 +38,7 @@ public final class LoggingEventPump
 			try {
 				event = this.source.pull (this.waitTimeout, TimeUnit.MILLISECONDS);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception,
-						"logging event pump encountered an error while pulling the event from the source; ignoring!");
+				this.callbacks.handleException (exception, "logging event pump encountered an error while pulling the event from the source; ignoring!");
 				continue;
 			}
 			if (event == null)
@@ -48,26 +46,27 @@ public final class LoggingEventPump
 			try {
 				this.sink.push (event);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "logging event pump encountered an error while pushing the event to the sink; ignoring");
+				this.callbacks.handleException (exception, "logging event pump encountered an error while pushing the event to the sink; ignoring");
 			}
 		}
 	}
 	
+	@Override
 	protected final void finalizeLoop ()
 	{}
 	
+	@Override
 	protected final void initializeLoop ()
 	{}
 	
+	@Override
 	protected final boolean shouldStopSoft ()
 	{
 		final boolean isDrained;
 		try {
 			isDrained = this.source.isDrained ();
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "loging event pump encountered an error while checking the source; ignoring!");
+			this.callbacks.handleException (exception, "loging event pump encountered an error while checking the source; ignoring!");
 			return (true);
 		}
 		return (super.shouldStopSoft () && isDrained);

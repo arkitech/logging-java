@@ -17,16 +17,13 @@ import eu.arkitech.logback.common.Worker;
 public abstract class AmqpRawAccessor
 		extends Worker
 {
-	protected AmqpRawAccessor (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final Callbacks callbacks, final Object monitor)
+	protected AmqpRawAccessor (final String host, final Integer port, final String virtualHost, final String username, final String password, final Callbacks callbacks, final Object monitor)
 	{
 		super (callbacks, monitor);
 		synchronized (this.monitor) {
 			this.host = ((host != null) && !host.isEmpty ()) ? host : AmqpRawAccessor.defaultHost;
 			this.port = ((port != null) && (port != 0)) ? port : AmqpRawAccessor.defaultPort;
-			this.virtualHost =
-					((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : AmqpRawAccessor.defaultVirtualHost;
+			this.virtualHost = ((virtualHost != null) && !virtualHost.isEmpty ()) ? virtualHost : AmqpRawAccessor.defaultVirtualHost;
 			this.username = ((username != null) && !username.isEmpty ()) ? username : AmqpRawAccessor.defaultUsername;
 			this.password = ((password != null) && !password.isEmpty ()) ? password : AmqpRawAccessor.defaultPassword;
 		}
@@ -44,9 +41,7 @@ public abstract class AmqpRawAccessor
 		synchronized (this.monitor) {
 			if (this.connection != null)
 				throw (new IllegalStateException ("amqp accessor is already connected"));
-			this.callbacks.handleLogEvent (
-					Level.INFO, null, "amqp accessor connecting to `%s@%s:%s:%s`", this.username, this.host, this.port,
-					this.virtualHost);
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor connecting to `%s@%s:%s:%s`", this.username, this.host, this.port, this.virtualHost);
 			final ConnectionFactory connectionFactory = new ConnectionFactory ();
 			connectionFactory.setHost (this.host);
 			connectionFactory.setPort (this.port);
@@ -61,19 +56,18 @@ public abstract class AmqpRawAccessor
 				return (false);
 			}
 			this.connection.addShutdownListener (new ShutdownListener () {
+				@Override
 				public void shutdownCompleted (final ShutdownSignalException exception)
 				{
 					AmqpRawAccessor.this.disconnect ();
 					if (!exception.isInitiatedByApplication ())
-						AmqpRawAccessor.this.callbacks.handleException (
-								exception, "amqp accessor encountered an shutdown error; ignoring!");
+						AmqpRawAccessor.this.callbacks.handleException (exception, "amqp accessor encountered an shutdown error; ignoring!");
 				}
 			});
 			try {
 				this.channel = this.connection.createChannel ();
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "amqp accessor encountered an error while opening the channel; aborting!");
+				this.callbacks.handleException (exception, "amqp accessor encountered an error while opening the channel; aborting!");
 				this.disconnect ();
 				return (false);
 			}
@@ -89,8 +83,7 @@ public abstract class AmqpRawAccessor
 				try {
 					this.channel.close ();
 				} catch (final IOException exception) {
-					this.callbacks.handleException (
-							exception, "amqp accessor encountered an error while closing the channel; ignoring!");
+					this.callbacks.handleException (exception, "amqp accessor encountered an error while closing the channel; ignoring!");
 				} finally {
 					this.channel = null;
 				}
@@ -98,8 +91,7 @@ public abstract class AmqpRawAccessor
 				try {
 					this.connection.close ();
 				} catch (final IOException exception) {
-					this.callbacks.handleException (
-							exception, "amqp accessor encountered an error while closing the connection; ignoring!");
+					this.callbacks.handleException (exception, "amqp accessor encountered an error while closing the connection; ignoring!");
 				} finally {
 					this.connection = null;
 				}
@@ -108,12 +100,14 @@ public abstract class AmqpRawAccessor
 		}
 	}
 	
+	@Override
 	protected final void executeLoop ()
 	{
 		this.callbacks.handleLogEvent (Level.INFO, null, "amqp accessor started");
 		this.loop ();
 	}
 	
+	@Override
 	protected final void finalizeLoop ()
 	{
 		this.disconnect ();
@@ -129,6 +123,7 @@ public abstract class AmqpRawAccessor
 		}
 	}
 	
+	@Override
 	protected final void initializeLoop ()
 	{}
 	

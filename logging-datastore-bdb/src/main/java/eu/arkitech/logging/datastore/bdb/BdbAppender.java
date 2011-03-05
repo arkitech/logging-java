@@ -21,6 +21,7 @@ public class BdbAppender
 		return (this.environmentPath);
 	}
 	
+	@Override
 	public final boolean isDrained ()
 	{
 		return (true);
@@ -33,16 +34,16 @@ public class BdbAppender
 	
 	protected BdbDatastoreConfiguration buildConfiguration ()
 	{
-		return (new BdbDatastoreConfiguration (
-				(this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer,
-				this.mutator, this.mutator, this.callbacks));
+		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks));
 	}
 	
+	@Override
 	protected final void reallyAppend (final ILoggingEvent event)
 	{
 		this.datastore.store (event);
 	}
 	
+	@Override
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
@@ -63,6 +64,7 @@ public class BdbAppender
 		}
 	}
 	
+	@Override
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
@@ -71,8 +73,7 @@ public class BdbAppender
 				if (this.datastore != null)
 					this.datastore.close ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "bdb appender encountered an error while closing the datastore; ignoring");
+				this.callbacks.handleException (exception, "bdb appender encountered an error while closing the datastore; ignoring");
 				this.datastore = null;
 			}
 			return (datastoreCloseSucceeded);

@@ -35,6 +35,7 @@ public class AmqpLoggingInjector
 		return (this.routingKey);
 	}
 	
+	@Override
 	public final boolean isDrained ()
 	{
 		synchronized (this) {
@@ -42,6 +43,7 @@ public class AmqpLoggingInjector
 		}
 	}
 	
+	@Override
 	public final boolean isRunning ()
 	{
 		synchronized (this) {
@@ -64,12 +66,14 @@ public class AmqpLoggingInjector
 		this.routingKey = routingKey;
 	}
 	
+	@Override
 	protected void reallyAppend (final ILoggingEvent event)
 	{
 		final Logger logger = (Logger) LoggerFactory.getLogger (event.getLoggerName ());
 		logger.callAppenders (event);
 	}
 	
+	@Override
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
@@ -78,10 +82,7 @@ public class AmqpLoggingInjector
 			try {
 				if ((this.consumer != null) || (this.pump != null))
 					throw (new IllegalStateException ());
-				this.consumer =
-						new AmqpLoggingEventConsumer (
-								this.host, this.port, this.virtualHost, this.username, this.password, this.exchange,
-								this.queue, this.routingKey, this.serializer, this.mutator, this.callbacks);
+				this.consumer = new AmqpLoggingEventConsumer (this.host, this.port, this.virtualHost, this.username, this.password, this.exchange, this.queue, this.routingKey, this.serializer, this.mutator, this.callbacks);
 				this.pump = new LoggingEventPump (this.consumer, this, this.callbacks);
 				consumerStartSucceeded = this.consumer.start ();
 				pumpStartSucceeded = this.pump.start ();
@@ -96,6 +97,7 @@ public class AmqpLoggingInjector
 		}
 	}
 	
+	@Override
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
@@ -105,24 +107,21 @@ public class AmqpLoggingInjector
 				if (this.consumer != null)
 					this.consumer.requestStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
 				this.consumer = null;
 			}
 			try {
 				if (this.pump != null)
 					this.pump.requestStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the pump; ignoring");
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the pump; ignoring");
 				this.pump = null;
 			}
 			try {
 				if (this.consumer != null)
 					consumerStopSucceeded = this.consumer.awaitStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
 			} finally {
 				this.consumer = null;
 			}
@@ -130,8 +129,7 @@ public class AmqpLoggingInjector
 				if (this.pump != null)
 					consumerStopSucceeded = this.pump.awaitStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while stopping the pump; ignoring");
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the pump; ignoring");
 			} finally {
 				this.pump = null;
 			}

@@ -36,24 +36,17 @@ public final class LuceneDatastoreConfiguration
 		this (environmentPath, readOnly, compressed, null);
 	}
 	
-	public LuceneDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
+	public LuceneDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed)) : null), null, null, callbacks);
+		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks);
 	}
 	
-	public LuceneDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks)
+	public LuceneDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks)
 	{
 		this (environmentPath, readOnly, serializer, loadMutator, storeMutator, callbacks, null);
 	}
 	
-	public LuceneDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks,
-			final Object monitor)
+	public LuceneDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		this.environmentPath = environmentPath;
@@ -65,8 +58,7 @@ public final class LuceneDatastoreConfiguration
 		this.monitor = monitor;
 	}
 	
-	public LuceneDatastoreConfiguration (
-			final LuceneDatastoreConfiguration override, final LuceneDatastoreConfiguration overriden)
+	public LuceneDatastoreConfiguration (final LuceneDatastoreConfiguration override, final LuceneDatastoreConfiguration overriden)
 	{
 		super ();
 		Preconditions.checkNotNull (override);

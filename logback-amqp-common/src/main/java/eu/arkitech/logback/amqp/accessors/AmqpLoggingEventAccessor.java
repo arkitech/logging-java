@@ -15,9 +15,7 @@ import eu.arkitech.logback.common.Worker;
 public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccessor>
 		extends Worker
 {
-	protected AmqpLoggingEventAccessor (
-			final _Accessor_ accessor, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks, final Object monitor)
+	protected AmqpLoggingEventAccessor (final _Accessor_ accessor, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
 	{
 		super (callbacks, monitor);
 		this.accessor = accessor;
@@ -32,8 +30,7 @@ public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccesso
 		try {
 			event = (ILoggingEvent) this.serializer.deserialize (message.content);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp consumer source encountered an error while deserializing the event; aborting!");
+			this.callbacks.handleException (exception, "amqp consumer source encountered an error while deserializing the event; aborting!");
 			return (null);
 		}
 		return (event);
@@ -45,12 +42,10 @@ public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccesso
 		try {
 			data = this.serializer.serialize (event);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp publisher sink encountered an error while serializing the event; aborting!");
+			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while serializing the event; aborting!");
 			return (null);
 		}
-		return (new AmqpMessage (
-				exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), data));
+		return (new AmqpMessage (exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), data));
 	}
 	
 	protected final ILoggingEvent prepareEvent (final ILoggingEvent originalEvent)
@@ -60,8 +55,7 @@ public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccesso
 			try {
 				clonedEvent = SLoggingEvent1.build (originalEvent);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "amqp publisher sink encountered an error while cloning the event; aborting!");
+				this.callbacks.handleException (exception, "amqp publisher sink encountered an error while cloning the event; aborting!");
 				return (null);
 			}
 		else
@@ -70,8 +64,7 @@ public abstract class AmqpLoggingEventAccessor<_Accessor_ extends AmqpRawAccesso
 			if (this.mutator != null)
 				this.mutator.mutate (clonedEvent);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp publisher sink encountered an error while mutating the event; aborting!");
+			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while mutating the event; aborting!");
 			return (null);
 		}
 		return (clonedEvent);

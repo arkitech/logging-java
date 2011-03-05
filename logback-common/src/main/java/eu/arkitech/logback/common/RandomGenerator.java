@@ -143,6 +143,7 @@ public class RandomGenerator
 	public Thread start (final long count, final long interval)
 	{
 		final Thread thread = new Thread () {
+			@Override
 			public void run ()
 			{
 				for (long index = 0; index < count; index++) {
@@ -155,8 +156,7 @@ public class RandomGenerator
 				}
 			}
 		};
-		thread.setName (String.format (
-				"%s@%x@%x", this.getClass ().getName (), System.identityHashCode (this), System.identityHashCode (thread)));
+		thread.setName (String.format ("%s@%x@%x", this.getClass ().getName (), System.identityHashCode (this), System.identityHashCode (thread)));
 		thread.setDaemon (true);
 		thread.start ();
 		return (thread);
@@ -184,6 +184,7 @@ public class RandomGenerator
 			super (RandomGenerator.class, collector, autoStart);
 		}
 		
+		@Override
 		protected void startObject ()
 		{
 			this.object.start ();

@@ -49,24 +49,17 @@ public final class BdbDatastoreConfiguration
 		this (environmentPath, readOnly, compressed, null);
 	}
 	
-	public BdbDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
 	{
-		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed)) : null), null, null, callbacks);
+		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks);
 	}
 	
-	public BdbDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks)
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks)
 	{
 		this (environmentPath, readOnly, serializer, loadMutator, storeMutator, callbacks, null);
 	}
 	
-	public BdbDatastoreConfiguration (
-			final File environmentPath, final Boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks,
-			final Object monitor)
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		this.environmentPath = environmentPath;

@@ -20,8 +20,7 @@ public class ClassNewInstanceAction<_Object_ extends ContextAware>
 		this (objectClass, null, true);
 	}
 	
-	public ClassNewInstanceAction (
-			final Class<? extends _Object_> objectClass, final List<_Object_> collector, final boolean autoStart)
+	public ClassNewInstanceAction (final Class<? extends _Object_> objectClass, final List<_Object_> collector, final boolean autoStart)
 	{
 		super ();
 		this.objectClass = objectClass;
@@ -30,6 +29,7 @@ public class ClassNewInstanceAction<_Object_ extends ContextAware>
 		this.object = null;
 	}
 	
+	@Override
 	public void begin (final InterpretationContext context, final String name, final Attributes attributes)
 			throws ActionException
 	{
@@ -44,6 +44,7 @@ public class ClassNewInstanceAction<_Object_ extends ContextAware>
 		context.pushObject (this.object);
 	}
 	
+	@Override
 	public void end (final InterpretationContext context, final String name)
 	{
 		if (this.object == null)

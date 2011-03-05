@@ -91,21 +91,25 @@ public abstract class Worker
 			super (String.format ("%s@%s", Worker.this.getClass ().getName (), System.identityHashCode (Worker.this)));
 		}
 		
+		@Override
 		protected final void executeLoop ()
 		{
 			Worker.this.executeLoop ();
 		}
 		
+		@Override
 		protected final void finalizeLoop ()
 		{
 			Worker.this.finalizeLoop ();
 		}
 		
+		@Override
 		protected final void handleException (final Throwable exception)
 		{
 			Worker.this.callbacks.handleException (exception, "worker encountered an unknown error while running; aborting");
 		}
 		
+		@Override
 		protected final void initializeLoop ()
 		{
 			Worker.this.initializeLoop ();

@@ -43,6 +43,7 @@ class EventLogFilter
 			this.mdcStrict = false;
 	}
 	
+	@Override
 	public FilterReply decide (final ILoggingEvent event)
 	{
 		if ((this.levelValue != null) && !event.getLevel ().isGreaterOrEqual (this.levelValue))

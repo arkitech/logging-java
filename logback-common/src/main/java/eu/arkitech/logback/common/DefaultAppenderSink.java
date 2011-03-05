@@ -19,28 +19,33 @@ public abstract class DefaultAppenderSink
 		this.callbacks = new DefaultContextAwareCallbacks (this);
 	}
 	
+	@Override
 	public boolean push (final ILoggingEvent event)
 	{
 		return (this.doPush (event));
 	}
 	
+	@Override
 	public boolean push (final ILoggingEvent event, final long timeout, final TimeUnit timeoutUnit)
 	{
 		return (this.doPush (event));
 	}
 	
+	@Override
 	public void start ()
 	{
 		this.reallyStart ();
 		super.start ();
 	}
 	
+	@Override
 	public void stop ()
 	{
 		this.reallyStop ();
 		super.stop ();
 	}
 	
+	@Override
 	protected void append (final ILoggingEvent event)
 	{
 		try {

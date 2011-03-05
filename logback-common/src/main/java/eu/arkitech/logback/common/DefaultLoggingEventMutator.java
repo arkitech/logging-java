@@ -45,6 +45,7 @@ public class DefaultLoggingEventMutator
 		return (this.sequence);
 	}
 	
+	@Override
 	public void mutate (final ILoggingEvent event_)
 	{
 		final SLoggingEvent1 event = (SLoggingEvent1) event_;
@@ -59,11 +60,9 @@ public class DefaultLoggingEventMutator
 			event.mdcPropertyMap = new HashMap<String, String> (event.mdcPropertyMap);
 		event.mdcPropertyMap.put (DefaultLoggingEventMutator.sequenceKey, Long.toString (sequence));
 		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.applicationKey))
-			event.mdcPropertyMap.put (DefaultLoggingEventMutator.applicationKey, this.application != null ? this.application
-					: "unknown");
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.applicationKey, this.application != null ? this.application : "unknown");
 		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.componentKey))
-			event.mdcPropertyMap.put (DefaultLoggingEventMutator.componentKey, this.component != null ? this.component
-					: "unknown");
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.componentKey, this.component != null ? this.component : "unknown");
 		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.nodeKey))
 			event.mdcPropertyMap.put (DefaultLoggingEventMutator.nodeKey, this.node != null ? this.node : "unknown");
 	}

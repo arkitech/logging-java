@@ -28,6 +28,7 @@ public class SLoggingEvent1
 			ILoggingEvent,
 			Serializable
 {
+	@Override
 	public boolean equals (final Object obj)
 	{
 		if (this == obj)
@@ -71,11 +72,13 @@ public class SLoggingEvent1
 		return true;
 	}
 	
+	@Override
 	public Object[] getArgumentArray ()
 	{
 		return this.argumentArray;
 	}
 	
+	@Override
 	public StackTraceElement[] getCallerData ()
 	{
 		return this.callerDataArray;
@@ -91,6 +94,7 @@ public class SLoggingEvent1
 		return this.loggerContextVO;
 	}
 	
+	@Override
 	public String getFormattedMessage ()
 	{
 		if (this.formattedMessage != null) {
@@ -104,61 +108,73 @@ public class SLoggingEvent1
 		return this.formattedMessage;
 	}
 	
+	@Override
 	public Level getLevel ()
 	{
 		return this.level;
 	}
 	
+	@Override
 	public LoggerContextVO getLoggerContextVO ()
 	{
 		return this.loggerContextVO;
 	}
 	
+	@Override
 	public String getLoggerName ()
 	{
 		return this.loggerName;
 	}
 	
+	@Override
 	public Marker getMarker ()
 	{
 		return this.marker;
 	}
 	
+	@Override
 	public Map<String, String> getMdc ()
 	{
 		return this.mdcPropertyMap;
 	}
 	
+	@Override
 	public Map<String, String> getMDCPropertyMap ()
 	{
 		return this.mdcPropertyMap;
 	}
 	
+	@Override
 	public String getMessage ()
 	{
 		return this.message;
 	}
 	
+	@Override
 	public String getThreadName ()
 	{
 		return this.threadName;
 	}
 	
+	@Override
 	public IThrowableProxy getThrowableProxy ()
 	{
 		return this.throwableProxy;
 	}
 	
+	@Override
 	public long getTimeStamp ()
 	{
 		return this.timeStamp;
 	}
 	
+	@Override
 	public boolean hasCallerData ()
 	{
 		return this.callerDataArray != null;
 	}
 	
+	@Override
 	public int hashCode ()
 	{
 		final int prime = 31;
@@ -169,9 +185,11 @@ public class SLoggingEvent1
 		return result;
 	}
 	
+	@Override
 	public void prepareForDeferredProcessing ()
 	{}
 	
+	@Override
 	public String toString ()
 	{
 		final StringBuilder sb = new StringBuilder ();

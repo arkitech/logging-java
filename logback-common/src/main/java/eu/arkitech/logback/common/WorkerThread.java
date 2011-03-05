@@ -27,8 +27,7 @@ public abstract class WorkerThread
 	
 	public WorkerThread (final String name, final ThreadGroup group, final Integer priority, final Long stackSize)
 	{
-		super (group, null, WorkerThread.generateName (name, 0), (stackSize != null) ? stackSize
-				: WorkerThread.defaultStackSize);
+		super (group, null, WorkerThread.generateName (name, 0), (stackSize != null) ? stackSize : WorkerThread.defaultStackSize);
 		synchronized (this) {
 			this.state = State.Created;
 			this.identifier = WorkerThread.generateIdentifier ();
@@ -42,6 +41,7 @@ public abstract class WorkerThread
 		}
 	}
 	
+	@Override
 	@SuppressWarnings ("deprecation")
 	public final int countStackFrames ()
 	{
@@ -49,38 +49,45 @@ public abstract class WorkerThread
 		return (super.countStackFrames ());
 	}
 	
+	@Override
 	@SuppressWarnings ("deprecation")
 	public final void destroy ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
 	
+	@Override
 	public final boolean equals (final Object object)
 	{
 		return (this == object);
 	}
 	
+	@Override
 	public final ClassLoader getContextClassLoader ()
 	{
 		return (super.getContextClassLoader ());
 	}
 	
+	@Override
 	public final long getId ()
 	{
 		return (super.getId ());
 	}
 	
+	@Override
 	public final StackTraceElement[] getStackTrace ()
 	{
 		// throw (new UnsupportedOperationException ());
 		return (super.getStackTrace ());
 	}
 	
+	@Override
 	public final Thread.State getState ()
 	{
 		return (super.getState ());
 	}
 	
+	@Override
 	public final UncaughtExceptionHandler getUncaughtExceptionHandler ()
 	{
 		// throw (new UnsupportedOperationException ());
@@ -92,17 +99,20 @@ public abstract class WorkerThread
 		return (this.state);
 	}
 	
+	@Override
 	public final int hashCode ()
 	{
 		return (super.hashCode ());
 	}
 	
+	@Override
 	public final void interrupt ()
 	{
 		// throw (new UnsupportedOperationException ());
 		super.interrupt ();
 	}
 	
+	@Override
 	public final boolean isInterrupted ()
 	{
 		// throw (new UnsupportedOperationException ());
@@ -137,6 +147,7 @@ public abstract class WorkerThread
 		}
 	}
 	
+	@Override
 	public final void run ()
 	{
 		if (Thread.currentThread () != this)
@@ -180,12 +191,14 @@ public abstract class WorkerThread
 		} catch (final IllegalStateException exception) {}
 	}
 	
+	@Override
 	public final void setContextClassLoader (final ClassLoader loader)
 	{
 		// throw (new UnsupportedOperationException ());
 		super.setContextClassLoader (loader);
 	}
 	
+	@Override
 	public final void setUncaughtExceptionHandler (final UncaughtExceptionHandler handler)
 	{
 		// throw (new UnsupportedOperationException ());
@@ -202,6 +215,7 @@ public abstract class WorkerThread
 		return (this.shouldStopHard () || (this.state == State.Stopping));
 	}
 	
+	@Override
 	public final synchronized void start ()
 	{
 		synchronized (this) {
@@ -220,11 +234,13 @@ public abstract class WorkerThread
 		}
 	}
 	
+	@Override
 	public final String toString ()
 	{
 		return (super.toString ());
 	}
 	
+	@Override
 	protected final Object clone ()
 			throws CloneNotSupportedException
 	{
@@ -234,6 +250,7 @@ public abstract class WorkerThread
 	protected abstract void executeLoop ()
 			throws Throwable;
 	
+	@Override
 	protected final void finalize ()
 			throws Throwable
 	{
@@ -315,6 +332,7 @@ public abstract class WorkerThread
 			implements
 				UncaughtExceptionHandler
 	{
+		@Override
 		public final void uncaughtException (final Thread thread, final Throwable exception)
 		{
 			if (thread != WorkerThread.this)
@@ -331,6 +349,7 @@ public abstract class WorkerThread
 			return (this.started);
 		}
 		
+		@Override
 		public final void run ()
 		{
 			this.started = true;

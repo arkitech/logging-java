@@ -16,30 +16,27 @@ public class CompressedBinarySerializer
 {
 	public CompressedBinarySerializer ()
 	{
-		this (
-				CompressedBinarySerializer.compressedContentType, CompressedBinarySerializer.compressedContentEncoding,
-				CompressedBinarySerializer.compressedBufferSize, CompressedBinarySerializer.compressedLevel);
+		this (CompressedBinarySerializer.compressedContentType, CompressedBinarySerializer.compressedContentEncoding, CompressedBinarySerializer.compressedBufferSize, CompressedBinarySerializer.compressedLevel);
 	}
 	
 	public CompressedBinarySerializer (final int level)
 	{
-		this (
-				CompressedBinarySerializer.compressedContentType, CompressedBinarySerializer.compressedContentEncoding,
-				CompressedBinarySerializer.compressedBufferSize, level);
+		this (CompressedBinarySerializer.compressedContentType, CompressedBinarySerializer.compressedContentEncoding, CompressedBinarySerializer.compressedBufferSize, level);
 	}
 	
-	public CompressedBinarySerializer (
-			final String contentType, final String contentEncoding, final int bufferSize, final int level)
+	public CompressedBinarySerializer (final String contentType, final String contentEncoding, final int bufferSize, final int level)
 	{
 		super (contentType, contentEncoding, bufferSize);
 		this.level = level;
 	}
 	
+	@Override
 	protected InputStream decorate (final InputStream stream)
 	{
 		return (new CompressedInputStream (stream));
 	}
 	
+	@Override
 	protected OutputStream decorate (final OutputStream stream)
 	{
 		return (new CompressedOutputStream (stream, this.level));
@@ -60,6 +57,7 @@ public class CompressedBinarySerializer
 			super (stream, new Inflater ());
 		}
 		
+		@Override
 		public void close ()
 				throws IOException
 		{
@@ -76,6 +74,7 @@ public class CompressedBinarySerializer
 			super (stream, new Deflater (level));
 		}
 		
+		@Override
 		public void close ()
 				throws IOException
 		{

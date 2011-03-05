@@ -15,9 +15,7 @@ import eu.arkitech.logback.common.Callbacks;
 public final class AmqpRawPublisher
 		extends AmqpRawAccessor
 {
-	public AmqpRawPublisher (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final BlockingDeque<AmqpMessage> buffer, final Callbacks callbacks, final Object monitor)
+	public AmqpRawPublisher (final String host, final Integer port, final String virtualHost, final String username, final String password, final BlockingDeque<AmqpMessage> buffer, final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, callbacks, monitor);
 		synchronized (this.monitor) {
@@ -30,6 +28,7 @@ public final class AmqpRawPublisher
 		return (this.buffer);
 	}
 	
+	@Override
 	protected final void loop ()
 	{
 		loop : while (true) {
@@ -70,6 +69,7 @@ public final class AmqpRawPublisher
 			this.disconnect ();
 	}
 	
+	@Override
 	protected final boolean shouldStopSoft ()
 	{
 		return (this.buffer.isEmpty () && super.shouldStopSoft ());
@@ -85,8 +85,7 @@ public final class AmqpRawPublisher
 		try {
 			channel.basicPublish (message.exchange, message.routingKey, false, false, properties, message.content);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp publisher encountered an error while publishing the message; requeueing!");
+			this.callbacks.handleException (exception, "amqp publisher encountered an error while publishing the message; requeueing!");
 			this.disconnect ();
 			return (false);
 		}

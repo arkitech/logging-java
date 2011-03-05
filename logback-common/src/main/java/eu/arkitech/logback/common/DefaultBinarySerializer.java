@@ -16,9 +16,7 @@ public class DefaultBinarySerializer
 {
 	public DefaultBinarySerializer ()
 	{
-		this (
-				DefaultBinarySerializer.defaultContentType, DefaultBinarySerializer.defaultContentEncoding,
-				DefaultBinarySerializer.defaultBufferSize);
+		this (DefaultBinarySerializer.defaultContentType, DefaultBinarySerializer.defaultContentEncoding, DefaultBinarySerializer.defaultBufferSize);
 	}
 	
 	public DefaultBinarySerializer (final String contentType, final String contentEncoding, final int bufferSize)
@@ -29,12 +27,14 @@ public class DefaultBinarySerializer
 		this.bufferSize = bufferSize;
 	}
 	
+	@Override
 	public Object deserialize (final byte[] data)
 			throws Throwable
 	{
 		return (this.deserialize (data, 0, data.length));
 	}
 	
+	@Override
 	public Object deserialize (final byte[] data, final int offset, final int size)
 			throws Throwable
 	{
@@ -51,16 +51,19 @@ public class DefaultBinarySerializer
 		return (this.bufferSize);
 	}
 	
+	@Override
 	public String getContentEncoding ()
 	{
 		return (this.contentEncoding);
 	}
 	
+	@Override
 	public String getContentType ()
 	{
 		return (this.contentType);
 	}
 	
+	@Override
 	public byte[] serialize (final Object object)
 			throws Throwable
 	{

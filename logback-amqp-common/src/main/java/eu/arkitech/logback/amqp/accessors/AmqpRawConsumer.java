@@ -18,8 +18,7 @@ public final class AmqpRawConsumer
 		extends AmqpRawAccessor
 {
 	public AmqpRawConsumer (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String exchange, final String queue, final String routingKey, final BlockingQueue<AmqpMessage> buffer,
+			final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final BlockingQueue<AmqpMessage> buffer,
 			final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, callbacks, monitor);
@@ -36,6 +35,7 @@ public final class AmqpRawConsumer
 		return (this.buffer);
 	}
 	
+	@Override
 	protected final void loop ()
 	{
 		loop : while (true) {
@@ -99,10 +99,7 @@ public final class AmqpRawConsumer
 	
 	private final void consume (final Envelope envelope, final BasicProperties properties, final byte[] content)
 	{
-		final AmqpMessage message =
-				new AmqpMessage (
-						envelope.getExchange (), envelope.getRoutingKey (), properties.getContentType (),
-						properties.getContentEncoding (), content);
+		final AmqpMessage message = new AmqpMessage (envelope.getExchange (), envelope.getRoutingKey (), properties.getContentType (), properties.getContentEncoding (), content);
 		if (!this.buffer.offer (message))
 			this.callbacks.handleLogEvent (Level.ERROR, null, "amqp consumer buffer overrun; ignoring!");
 	}
@@ -115,9 +112,7 @@ public final class AmqpRawConsumer
 			try {
 				channel.exchangeDeclare (this.exchange, "topic", true, false, null);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while declaring the exchange `%s`; aborting!",
-						this.exchange);
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while declaring the exchange `%s`; aborting!", this.exchange);
 				return (false);
 			}
 		}
@@ -136,23 +131,16 @@ public final class AmqpRawConsumer
 			try {
 				this.queue1 = channel.queueDeclare (queue, true, unique, unique, null).getQueue ();
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!", queue);
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while declaring the queue `%s`; aborting!", queue);
 				return (false);
 			}
 		}
 		{
-			this.callbacks.handleLogEvent (
-					Level.INFO, null, "amqp consumer binding the queue `%s` to exchange `%s` with routing key `%s`",
-					this.queue1, this.exchange, this.routingKey);
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp consumer binding the queue `%s` to exchange `%s` with routing key `%s`", this.queue1, this.exchange, this.routingKey);
 			try {
 				channel.queueBind (this.queue1, this.exchange, this.routingKey, null);
 			} catch (final Throwable exception) {
-				this.callbacks
-						.handleException (
-								exception,
-								"amqp consumer encountered an error while binding the queue `%s` to exchange `%s` with routing key `%s`; aborting!",
-								this.queue1, this.exchange, this.routingKey);
+				this.callbacks.handleException (exception, "amqp consumer encountered an error while binding the queue `%s` to exchange `%s` with routing key `%s`; aborting!", this.queue1, this.exchange, this.routingKey);
 				return (false);
 			}
 		}
@@ -167,8 +155,7 @@ public final class AmqpRawConsumer
 			channel.basicConsume (this.queue1, true, this.queue1, true, true, null, new ConsumerCallback ());
 			return (true);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp consumer encountered an error while registering the consummer; aborting!");
+			this.callbacks.handleException (exception, "amqp consumer encountered an error while registering the consummer; aborting!");
 			return (false);
 		}
 	}
@@ -187,21 +174,25 @@ public final class AmqpRawConsumer
 			implements
 				Consumer
 	{
+		@Override
 		public void handleCancelOk (final String consumerTag)
 		{}
 		
+		@Override
 		public void handleConsumeOk (final String consumerTag)
 		{}
 		
-		public void handleDelivery (
-				final String consumerTag, final Envelope envelope, final BasicProperties properties, final byte[] content)
+		@Override
+		public void handleDelivery (final String consumerTag, final Envelope envelope, final BasicProperties properties, final byte[] content)
 		{
 			AmqpRawConsumer.this.consume (envelope, properties, content);
 		}
 		
+		@Override
 		public void handleRecoverOk ()
 		{}
 		
+		@Override
 		public void handleShutdownSignal (final String consumerTag, final ShutdownSignalException exception)
 		{}
 	}

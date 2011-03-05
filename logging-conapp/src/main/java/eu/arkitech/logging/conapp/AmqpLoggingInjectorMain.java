@@ -29,8 +29,7 @@ public final class AmqpLoggingInjectorMain
 			throws Throwable
 	{
 		if ((arguments.length != 0) && (arguments.length != 1))
-			throw (new IllegalArgumentException (
-					"amqp consumer console application may take one argument (the logback configuration); aborting!"));
+			throw (new IllegalArgumentException ("amqp consumer console application may take one argument (the logback configuration); aborting!"));
 		
 		final File configurationPath = (arguments.length > 1) ? new File (arguments[0]) : null;
 		
@@ -39,9 +38,7 @@ public final class AmqpLoggingInjectorMain
 		if (configurationPath != null) {
 			
 			if (!configurationPath.isFile ())
-				throw (new IllegalArgumentException (String.format (
-						"specified logback configuration `%s` does not exist (or is not a file); aborting!",
-						configurationPath.getPath ())));
+				throw (new IllegalArgumentException (String.format ("specified logback configuration `%s` does not exist (or is not a file); aborting!", configurationPath.getPath ())));
 			
 			final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory ();
 			context.reset ();
@@ -94,6 +91,7 @@ public final class AmqpLoggingInjectorMain
 			this.generatorAction = new RandomGenerator.CreateAction ();
 		}
 		
+		@Override
 		public final void addInstanceRules (final RuleStore rules)
 		{
 			super.addInstanceRules (rules);
@@ -101,6 +99,7 @@ public final class AmqpLoggingInjectorMain
 			rules.addRule (new Pattern ("/configuration/randomGenerator"), this.generatorAction);
 		}
 		
+		@Override
 		public final void setContext (final Context context)
 		{
 			super.setContext (context);

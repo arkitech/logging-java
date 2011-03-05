@@ -61,8 +61,7 @@ public final class LuceneIndex
 					try {
 						this.searcher.close ();
 					} catch (final IOException exception) {
-						this.callbacks.handleException (
-								exception, "lucene index encountered a database error while closing the searcher; ignoring!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while closing the searcher; ignoring!");
 					} finally {
 						this.searcher = null;
 					}
@@ -70,8 +69,7 @@ public final class LuceneIndex
 					try {
 						this.writer.close ();
 					} catch (final IOException exception) {
-						this.callbacks.handleException (
-								exception, "lucene index encountered a database error while closing the writer; ignoring!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while closing the writer; ignoring!");
 					} finally {
 						this.writer = null;
 					}
@@ -79,10 +77,7 @@ public final class LuceneIndex
 					try {
 						this.directory.close ();
 					} catch (final IOException exception) {
-						this.callbacks
-								.handleException (
-										exception,
-										"lucene index encountered a database error while closing the directory; ignoring!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while closing the directory; ignoring!");
 					} finally {
 						this.directory = null;
 					}
@@ -90,9 +85,7 @@ public final class LuceneIndex
 					try {
 						this.fileDatabase.close ();
 					} catch (final DatabaseException exception) {
-						this.callbacks.handleException (
-								exception,
-								"lucene index encountered a database error while closing the file database; ignoring!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while closing the file database; ignoring!");
 					} finally {
 						this.fileDatabase = null;
 					}
@@ -100,9 +93,7 @@ public final class LuceneIndex
 					try {
 						this.blockDatabase.close ();
 					} catch (final DatabaseException exception) {
-						this.callbacks.handleException (
-								exception,
-								"lucene index encountered a database error while closing the block database; ignoring!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while closing the block database; ignoring!");
 					} finally {
 						this.blockDatabase = null;
 					}
@@ -110,8 +101,7 @@ public final class LuceneIndex
 				this.callbacks.handleLogEvent (Level.INFO, null, "lucene index closed");
 				return (true);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an unknown error while closing; aborting!");
+				this.callbacks.handleException (exception, "lucene index encountered an unknown error while closing; aborting!");
 				return (false);
 			} finally {
 				this.searcher = null;
@@ -132,19 +122,14 @@ public final class LuceneIndex
 				try {
 					this.fileDatabase = this.bdb.openDatabase (LuceneIndex.fileDatabaseName);
 				} catch (final DatabaseException exception) {
-					this.callbacks
-							.handleException (
-									exception,
-									"lucene index encountered a database error while opening the file database; aborting!");
+					this.callbacks.handleException (exception, "lucene index encountered a database error while opening the file database; aborting!");
 					this.close ();
 					return (false);
 				}
 				try {
 					this.blockDatabase = this.bdb.openDatabase (LuceneIndex.blockDatabaseName);
 				} catch (final DatabaseException exception) {
-					this.callbacks.handleException (
-							exception,
-							"lucene index encountered a database error while opening the block database; aborting!");
+					this.callbacks.handleException (exception, "lucene index encountered a database error while opening the block database; aborting!");
 					this.close ();
 					return (false);
 				}
@@ -153,8 +138,7 @@ public final class LuceneIndex
 					try {
 						this.writer = new IndexWriter (this.directory, this.analyzer, MaxFieldLength.UNLIMITED);
 					} catch (final IOException exception) {
-						this.callbacks.handleException (
-								exception, "lucene indexer encountered a database error while opening the writer; aborting!");
+						this.callbacks.handleException (exception, "lucene indexer encountered a database error while opening the writer; aborting!");
 						this.close ();
 						return (false);
 					}
@@ -162,8 +146,7 @@ public final class LuceneIndex
 				this.state = State.Opened;
 				return (true);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an unknown error while opening; aborting");
+				this.callbacks.handleException (exception, "lucene index encountered an unknown error while opening; aborting");
 				this.close ();
 				return (false);
 			}
@@ -188,8 +171,7 @@ public final class LuceneIndex
 					try {
 						this.searcher = new IndexSearcher (this.directory, true);
 					} catch (final IOException exception) {
-						this.callbacks.handleException (
-								exception, "lucene index encountered a database error while opening the searcher; aborting!");
+						this.callbacks.handleException (exception, "lucene index encountered a database error while opening the searcher; aborting!");
 						return (null);
 					}
 				final int count;
@@ -206,16 +188,14 @@ public final class LuceneIndex
 						final Document document = this.searcher.doc (result.doc, LuceneIndex.keyFieldSelector);
 						final String key = document.get (LuceneIndex.keyFieldName);
 						if (key == null) {
-							this.callbacks.handleLogEvent (
-									Level.ERROR, null, "lucene index can not retrieve the document key; ignoring!");
+							this.callbacks.handleLogEvent (Level.ERROR, null, "lucene index can not retrieve the document key; ignoring!");
 							continue;
 						}
 						keys[i] = key;
 						scores[i] = result.score;
 					}
 				} catch (final IOException exception) {
-					this.callbacks.handleException (
-							exception, "lucene index encountered a database error while querying the searcher; aborting!");
+					this.callbacks.handleException (exception, "lucene index encountered a database error while querying the searcher; aborting!");
 					return (null);
 				}
 				final LinkedList<LuceneQueryResult> results = new LinkedList<LuceneQueryResult> ();
@@ -223,16 +203,14 @@ public final class LuceneIndex
 					final String key = keys[i];
 					final ILoggingEvent event = this.bdb.select (key);
 					if (event == null) {
-						this.callbacks.handleLogEvent (
-								Level.ERROR, null, "lucene index can not retrieve the event; ignoring!");
+						this.callbacks.handleLogEvent (Level.ERROR, null, "lucene index can not retrieve the event; ignoring!");
 						continue;
 					}
 					results.add (new LuceneQueryResult (key, event, scores[i]));
 				}
 				return (results);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an unknown error while querying; aborting!");
+				this.callbacks.handleException (exception, "lucene index encountered an unknown error while querying; aborting!");
 				return (null);
 			}
 		}
@@ -250,16 +228,13 @@ public final class LuceneIndex
 				this.writer.addDocument (document);
 				return (true);
 			} catch (final IOException exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered a database error while storing the document; aborting!");
+				this.callbacks.handleException (exception, "lucene index encountered a database error while storing the document; aborting!");
 				return (false);
 			} catch (final InternalException exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an internal error while storing the document; aborting!");
+				this.callbacks.handleException (exception, "lucene index encountered an internal error while storing the document; aborting!");
 				return (false);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an unknown error while storing the document; aborting!");
+				this.callbacks.handleException (exception, "lucene index encountered an unknown error while storing the document; aborting!");
 				return (false);
 			}
 		}
@@ -275,12 +250,10 @@ public final class LuceneIndex
 					this.searcher = null;
 					return (true);
 				} catch (final IOException exception) {
-					this.callbacks.handleException (
-							exception, "lucene index encountered a database error while closing the searcher; aborting");
+					this.callbacks.handleException (exception, "lucene index encountered a database error while closing the searcher; aborting");
 					return (false);
 				} catch (final Throwable exception) {
-					this.callbacks.handleException (
-							exception, "lucene index encountered an unknown error while closing the searcher; aborting");
+					this.callbacks.handleException (exception, "lucene index encountered an unknown error while closing the searcher; aborting");
 					return (false);
 				}
 			else
@@ -297,12 +270,10 @@ public final class LuceneIndex
 				this.writer.commit ();
 				return (true);
 			} catch (final IOException exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered a database error while commiting the writer; aborting");
+				this.callbacks.handleException (exception, "lucene index encountered a database error while commiting the writer; aborting");
 				return (false);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "lucene index encountered an unknown error while commiting the writer; aborting");
+				this.callbacks.handleException (exception, "lucene index encountered an unknown error while commiting the writer; aborting");
 				return (false);
 			}
 		}
@@ -319,10 +290,8 @@ public final class LuceneIndex
 			document.add (new Field (LuceneIndex.messageFieldName, event.getFormattedMessage (), Store.NO, Index.ANALYZED));
 			final IThrowableProxy exception = event.getThrowableProxy ();
 			if (exception != null) {
-				document.add (new Field (
-						LuceneIndex.exceptionClassFieldName, exception.getClassName (), Store.NO, Index.ANALYZED));
-				document.add (new Field (
-						LuceneIndex.exceptionMessageFieldName, exception.getMessage (), Store.NO, Index.ANALYZED));
+				document.add (new Field (LuceneIndex.exceptionClassFieldName, exception.getClassName (), Store.NO, Index.ANALYZED));
+				document.add (new Field (LuceneIndex.exceptionMessageFieldName, exception.getMessage (), Store.NO, Index.ANALYZED));
 			}
 			return (document);
 		} catch (final Throwable exception) {
@@ -376,6 +345,7 @@ public final class LuceneIndex
 			implements
 				FieldSelector
 	{
+		@Override
 		public final FieldSelectorResult accept (final String name)
 		{
 			return (LuceneIndex.keyFieldName.equals (name) ? FieldSelectorResult.LOAD : FieldSelectorResult.NO_LOAD);

@@ -25,11 +25,13 @@ public class AmqpAppender
 		this.mutator = new DefaultLoggingEventMutator ();
 	}
 	
+	@Override
 	public String generateExchange (final ILoggingEvent event)
 	{
 		return (this.exchangeLayout.doLayout (event));
 	}
 	
+	@Override
 	public String generateRoutingKey (final ILoggingEvent event)
 	{
 		return (this.routingKeyLayout.doLayout (event));
@@ -45,6 +47,7 @@ public class AmqpAppender
 		return (this.routingKeyLayout.getPattern ());
 	}
 	
+	@Override
 	public final boolean isDrained ()
 	{
 		synchronized (this) {
@@ -52,6 +55,7 @@ public class AmqpAppender
 		}
 	}
 	
+	@Override
 	public final boolean isRunning ()
 	{
 		synchronized (this) {
@@ -59,6 +63,7 @@ public class AmqpAppender
 		}
 	}
 	
+	@Override
 	public void setContext (final Context context)
 	{
 		super.setContext (context);
@@ -76,12 +81,14 @@ public class AmqpAppender
 		this.routingKeyLayout.setPattern (pattern);
 	}
 	
+	@Override
 	protected final void reallyAppend (final ILoggingEvent event)
 			throws Throwable
 	{
 		this.publisher.push (event);
 	}
 	
+	@Override
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
@@ -89,10 +96,7 @@ public class AmqpAppender
 			try {
 				if (this.publisher != null)
 					throw (new IllegalStateException ());
-				this.publisher =
-						new AmqpLoggingEventPublisher (
-								this.host, this.port, this.virtualHost, this.username, this.password, this, this.serializer,
-								this.mutator, this.callbacks);
+				this.publisher = new AmqpLoggingEventPublisher (this.host, this.port, this.virtualHost, this.username, this.password, this, this.serializer, this.mutator, this.callbacks);
 				publisherStartSucceeded = this.publisher.start ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "amqp appender encountered an error while starting; aborting!");
@@ -109,6 +113,7 @@ public class AmqpAppender
 		}
 	}
 	
+	@Override
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
@@ -117,16 +122,14 @@ public class AmqpAppender
 				if (this.publisher != null)
 					this.publisher.requestStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp appender encountered an error while stopping the publisher; ignoring");
+				this.callbacks.handleException (exception, "amqp appender encountered an error while stopping the publisher; ignoring");
 				this.publisher = null;
 			}
 			try {
 				if (this.publisher != null)
 					publisherStopSucceeded = this.publisher.awaitStop ();
 			} catch (final Error exception) {
-				this.callbacks.handleException (
-						exception, "amqp appender encountered an error while stopping the publisher; ignoring");
+				this.callbacks.handleException (exception, "amqp appender encountered an error while stopping the publisher; ignoring");
 			} finally {
 				this.publisher = null;
 			}

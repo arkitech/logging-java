@@ -93,9 +93,7 @@ public final class LuceneDatastoreMain
 				final Iterable<ILoggingEvent> events = datastore.select (referenceEvent, 10, 10, null);
 				if (events != null)
 					for (final ILoggingEvent event : events) {
-						System.out.format (
-								"[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (),
-								event.getFormattedMessage (), ((SLoggingEvent1) event).key);
+						System.out.format ("[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), ((SLoggingEvent1) event).key);
 					}
 				else
 					logger.error ("select around timestamp failed");
@@ -104,13 +102,10 @@ public final class LuceneDatastoreMain
 		
 		if (selectAfterCount > 0) {
 			logger.info ("selecting after timestamp `{}`", selectAfterTimestamp);
-			final Iterable<ILoggingEvent> events =
-					datastore.select (selectAfterTimestamp, selectAfterInterval, selectAfterCount, null);
+			final Iterable<ILoggingEvent> events = datastore.select (selectAfterTimestamp, selectAfterInterval, selectAfterCount, null);
 			if (events != null)
 				for (final ILoggingEvent event : events) {
-					System.out.format (
-							"[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (),
-							event.getFormattedMessage (), ((SLoggingEvent1) event).key);
+					System.out.format ("[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), ((SLoggingEvent1) event).key);
 				}
 			else
 				logger.error ("select after timestamp failed");
@@ -129,9 +124,7 @@ public final class LuceneDatastoreMain
 				if (results != null)
 					for (final LuceneQueryResult result : results) {
 						final ILoggingEvent event = result.event;
-						System.out.format (
-								"%s :: [%s] [%s] [%s] %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (),
-								event.getLoggerName (), event.getFormattedMessage (), result.key);
+						System.out.format ("%s :: [%s] [%s] [%s] %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), result.key);
 					}
 				else
 					logger.error ("query failed for `{}`", queryString);

@@ -4,9 +4,7 @@ package eu.arkitech.logback.amqp.accessors;
 
 public final class AmqpMessage
 {
-	public AmqpMessage (
-			final String exchange, final String routingKey, final String contentType, final String contentEncoding,
-			final byte[] content)
+	public AmqpMessage (final String exchange, final String routingKey, final String contentType, final String contentEncoding, final byte[] content)
 	{
 		super ();
 		this.exchange = exchange;

@@ -26,22 +26,19 @@ public final class LuceneDatastore
 	public LuceneDatastore (final LuceneDatastoreConfiguration configuration_)
 	{
 		super ();
-		final LuceneDatastoreConfiguration configuration =
-				(configuration_ != null) ? configuration_ : new LuceneDatastoreConfiguration ();
+		final LuceneDatastoreConfiguration configuration = (configuration_ != null) ? configuration_ : new LuceneDatastoreConfiguration ();
 		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
 		synchronized (monitor) {
 			this.monitor = monitor;
 			this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
 			this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
-			this.bdb =
-					new BdbDatastore (new BdbDatastoreConfiguration (
-							configuration.environmentPath, this.readOnly, configuration.serializer,
-							configuration.loadMutator, configuration.storeMutator, this.callbacks, this.monitor));
+			this.bdb = new BdbDatastore (new BdbDatastoreConfiguration (configuration.environmentPath, this.readOnly, configuration.serializer, configuration.loadMutator, configuration.storeMutator, this.callbacks, this.monitor));
 			this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
 			this.state = State.Closed;
 		}
 	}
 	
+	@Override
 	public final boolean close ()
 	{
 		synchronized (this.monitor) {
@@ -56,6 +53,7 @@ public final class LuceneDatastore
 		}
 	}
 	
+	@Override
 	public final boolean open ()
 	{
 		synchronized (this.monitor) {
@@ -83,23 +81,25 @@ public final class LuceneDatastore
 		return (this.index.query (query, maxCount));
 	}
 	
-	public final Iterable<ILoggingEvent> select (
-			final ILoggingEvent referenceEvent, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
+	@Override
+	public final Iterable<ILoggingEvent> select (final ILoggingEvent referenceEvent, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
 	{
 		return (this.bdb.select (referenceEvent, beforeCount, afterCount, filter));
 	}
 	
-	public final Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter)
+	@Override
+	public final Iterable<ILoggingEvent> select (final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter)
 	{
 		return (this.bdb.select (afterTimestamp, maximumInterval, maximumCount, filter));
 	}
 	
+	@Override
 	public final ILoggingEvent select (final String key)
 	{
 		return (this.bdb.select (key));
 	}
 	
+	@Override
 	public final String store (final ILoggingEvent event)
 	{
 		final String key = this.bdb.store (event);

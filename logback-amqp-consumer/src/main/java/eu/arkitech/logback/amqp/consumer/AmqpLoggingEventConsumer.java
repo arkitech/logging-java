@@ -20,43 +20,38 @@ public final class AmqpLoggingEventConsumer
 		implements
 			LoggingEventSource
 {
-	public AmqpLoggingEventConsumer (
-			final AmqpRawConsumer accessor, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks)
+	public AmqpLoggingEventConsumer (final AmqpRawConsumer accessor, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks)
 	{
 		super (accessor, serializer, mutator, callbacks, accessor.monitor);
 		this.buffer = this.accessor.getBuffer ();
 	}
 	
-	public AmqpLoggingEventConsumer (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String exchange, final String queue, final String routingKey)
+	public AmqpLoggingEventConsumer (final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey)
 	{
 		this (host, port, virtualHost, username, password, exchange, queue, routingKey, null, null, null);
 	}
 	
 	public AmqpLoggingEventConsumer (
-			final String host, final Integer port, final String virtualHost, final String username, final String password,
-			final String exchange, final String queue, final String routingKey, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks)
+			final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final Serializer serializer, final LoggingEventMutator mutator,
+			final Callbacks callbacks)
 	{
-		this (
-				new AmqpRawConsumer (
-						host, port, virtualHost, username, password, exchange, queue, routingKey, null, callbacks, null),
-				serializer, mutator, callbacks);
+		this (new AmqpRawConsumer (host, port, virtualHost, username, password, exchange, queue, routingKey, null, callbacks, null), serializer, mutator, callbacks);
 	}
 	
+	@Override
 	public final boolean isDrained ()
 	{
 		return (this.buffer.isEmpty ());
 	}
 	
+	@Override
 	public final ILoggingEvent pull ()
 			throws InterruptedException
 	{
 		return (this.pull (Long.MAX_VALUE, TimeUnit.DAYS));
 	}
 	
+	@Override
 	public final ILoggingEvent pull (final long timeout, final TimeUnit timeoutUnit)
 			throws InterruptedException
 	{
@@ -72,6 +67,7 @@ public final class AmqpLoggingEventConsumer
 		return (clonedEvent);
 	}
 	
+	@Override
 	protected void executeLoop ()
 	{
 		while (true) {
@@ -82,11 +78,13 @@ public final class AmqpLoggingEventConsumer
 		}
 	}
 	
+	@Override
 	protected void finalizeLoop ()
 	{
 		this.accessor.awaitStop ();
 	}
 	
+	@Override
 	protected void initializeLoop ()
 	{
 		this.accessor.start ();
