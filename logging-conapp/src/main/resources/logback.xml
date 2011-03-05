@@ -44,8 +44,9 @@
 	</appender>
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{HH:mm:ss.SSS}] [%level] [%logger] %msg%n</pattern>
+			<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{HH:mm:ss.SSS}] [%level] [%logger] %msg%n%nopex</pattern>
 		</encoder>
 	</appender>
 	

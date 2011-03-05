@@ -2,17 +2,13 @@
 package eu.arkitech.logging.datastore.lucene;
 
 
-import java.io.File;
-
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.google.common.base.Preconditions;
 import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.CompressedBinarySerializer;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.DefaultLoggerCallbacks;
 import eu.arkitech.logback.common.LoggingEventFilter;
-import eu.arkitech.logback.common.LoggingEventMutator;
-import eu.arkitech.logback.common.Serializer;
 import eu.arkitech.logging.datastore.bdb.BdbDatastore;
+import eu.arkitech.logging.datastore.bdb.BdbDatastoreConfiguration;
 import eu.arkitech.logging.datastore.common.Datastore;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
@@ -22,47 +18,30 @@ public final class LuceneDatastore
 		implements
 			Datastore
 {
-	public LuceneDatastore (final File environmentPath, final boolean readOnly)
+	public LuceneDatastore ()
 	{
-		this (environmentPath, readOnly, -1);
+		this (new BdbDatastoreConfiguration ());
 	}
 	
-	public LuceneDatastore (final File environmentPath, final boolean readOnly, final Callbacks callbacks)
+	public LuceneDatastore (final BdbDatastoreConfiguration configuration)
 	{
-		this (environmentPath, readOnly, -1, callbacks);
+		this (configuration, null);
 	}
 	
-	public LuceneDatastore (final File environmentPath, final boolean readOnly, final int compressed)
-	{
-		this (environmentPath, readOnly, compressed, null);
-	}
-	
-	public LuceneDatastore (
-			final File environmentPath, final boolean readOnly, final int compressed, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, compressed == -1 ? new DefaultBinarySerializer () : new CompressedBinarySerializer (
-				compressed), null, callbacks);
-	}
-	
-	public LuceneDatastore (
-			final File environmentPath, final boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, serializer, mutator, callbacks, new Object ());
-	}
-	
-	public LuceneDatastore (
-			final File environmentPath, final boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
+	public LuceneDatastore (final BdbDatastoreConfiguration configuration_, final Callbacks callbacks)
 	{
 		super ();
-		synchronized (monitor) {
-			this.monitor = monitor;
-			this.readOnly = readOnly;
-			this.state = State.Closed;
-			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
-			this.bdb = new BdbDatastore (environmentPath, this.readOnly, serializer, mutator, this.callbacks, this.monitor);
+		final BdbDatastoreConfiguration configuration =
+				(configuration_ != null) ? configuration_ : new BdbDatastoreConfiguration ();
+		synchronized (configuration.monitor) {
+			this.monitor = Preconditions.checkNotNull (configuration.monitor);
+			this.callbacks =
+					((callbacks != null) ? callbacks : ((configuration.callbacks != null) ? configuration.callbacks
+							: new DefaultLoggerCallbacks (this)));
+			this.readOnly = configuration.readOnly;
+			this.bdb = new BdbDatastore (configuration, this.callbacks);
 			this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
+			this.state = State.Closed;
 		}
 	}
 	
@@ -122,9 +101,9 @@ public final class LuceneDatastore
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long interval, final LoggingEventFilter filter)
+			final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter)
 	{
-		return (this.bdb.select (afterTimestamp, interval, filter));
+		return (this.bdb.select (afterTimestamp, maximumInterval, maximumCount, filter));
 	}
 	
 	public final ILoggingEvent select (final String key)

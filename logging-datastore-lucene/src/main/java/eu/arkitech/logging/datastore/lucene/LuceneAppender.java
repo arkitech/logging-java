@@ -6,6 +6,7 @@ import java.io.File;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.DefaultSerializerAppenderSink;
+import eu.arkitech.logging.datastore.bdb.BdbDatastoreConfiguration;
 
 
 public class LuceneAppender
@@ -31,6 +32,13 @@ public class LuceneAppender
 		this.environmentPath = environmentPath;
 	}
 	
+	protected BdbDatastoreConfiguration buildConfiguration ()
+	{
+		return (new BdbDatastoreConfiguration (
+				(this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer,
+				this.mutator, this.mutator, this.callbacks));
+	}
+	
 	protected final void reallyAppend (final ILoggingEvent event)
 	{
 		this.datastore.store (event);
@@ -43,10 +51,7 @@ public class LuceneAppender
 			try {
 				if (this.datastore != null)
 					throw (new IllegalStateException ());
-				this.datastore =
-						new LuceneDatastore (
-								(this.environmentPath != null) ? new File (this.environmentPath) : null, false,
-								this.serializer, this.mutator, this.callbacks);
+				this.datastore = new LuceneDatastore (this.buildConfiguration ());
 				datastoreOpenSucceeded = this.datastore.open ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb appender encountered an error while starting; aborting!");

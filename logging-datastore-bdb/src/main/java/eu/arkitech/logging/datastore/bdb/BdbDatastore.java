@@ -11,7 +11,9 @@ import java.util.LinkedList;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
+import com.google.common.base.Preconditions;
 import com.sleepycat.je.Cursor;
+import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -22,8 +24,6 @@ import com.sleepycat.je.ExceptionEvent;
 import com.sleepycat.je.ExceptionListener;
 import com.sleepycat.je.OperationStatus;
 import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.CompressedBinarySerializer;
-import eu.arkitech.logback.common.DefaultBinarySerializer;
 import eu.arkitech.logback.common.DefaultLoggerCallbacks;
 import eu.arkitech.logback.common.LoggingEventFilter;
 import eu.arkitech.logback.common.LoggingEventMutator;
@@ -36,60 +36,32 @@ public final class BdbDatastore
 		implements
 			Datastore
 {
-	public BdbDatastore (final File environmentPath, final boolean readOnly)
+	public BdbDatastore ()
 	{
-		this (environmentPath, readOnly, -1);
+		this (null);
 	}
 	
-	public BdbDatastore (final File environmentPath, final boolean readOnly, final Callbacks callbacks)
+	public BdbDatastore (final BdbDatastoreConfiguration configuration)
 	{
-		this (environmentPath, readOnly, -1, callbacks);
+		this (configuration, null);
 	}
 	
-	public BdbDatastore (final File environmentPath, final boolean readOnly, final Integer compressed)
-	{
-		this (environmentPath, readOnly, compressed, null);
-	}
-	
-	public BdbDatastore (
-			final File environmentPath, final boolean readOnly, final Integer compressed, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, ((compressed != null) ? (compressed == -1 ? new DefaultBinarySerializer ()
-				: new CompressedBinarySerializer (compressed)) : null), null, callbacks);
-	}
-	
-	public BdbDatastore (
-			final File environmentPath, final boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, serializer, mutator, callbacks, new Object ());
-	}
-	
-	public BdbDatastore (
-			final File environmentPath, final boolean readOnly, final Serializer serializer,
-			final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
+	public BdbDatastore (final BdbDatastoreConfiguration configuration_, final Callbacks callbacks)
 	{
 		super ();
-		synchronized (monitor) {
-			this.monitor = monitor;
+		final BdbDatastoreConfiguration configuration =
+				(configuration_ != null) ? configuration_ : new BdbDatastoreConfiguration ();
+		synchronized (configuration.monitor) {
+			this.monitor = Preconditions.checkNotNull (configuration.monitor);
+			this.callbacks =
+					((callbacks != null) ? callbacks : ((configuration.callbacks != null) ? configuration.callbacks
+							: new DefaultLoggerCallbacks (this)));
+			this.environmentPath = Preconditions.checkNotNull (configuration.environmentPath);
+			this.readOnly = configuration.readOnly;
+			this.serializer = Preconditions.checkNotNull (configuration.serializer);
+			this.loadMutator = configuration.loadMutator;
+			this.storeMutator = configuration.storeMutator;
 			this.state = State.Closed;
-			this.environmentPath =
-					(environmentPath != null) ? environmentPath : new File (BdbDatastore.defaultEnvironmentPath);
-			this.readOnly = readOnly;
-			this.serializer = (serializer != null) ? serializer : new DefaultBinarySerializer ();
-			this.mutator = mutator;
-			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
-			this.environmentConfiguration = new EnvironmentConfig ();
-			this.environmentConfiguration.setAllowCreate (!this.readOnly);
-			this.environmentConfiguration.setReadOnly (this.readOnly);
-			this.environmentConfiguration.setTransactional (false);
-			this.environmentConfiguration.setLocking (false);
-			this.environmentConfiguration.setExceptionListener (new ExceptionHandler ());
-			this.eventDatabaseConfiguration = new DatabaseConfig ();
-			this.eventDatabaseConfiguration.setAllowCreate (!this.readOnly);
-			this.eventDatabaseConfiguration.setReadOnly (this.readOnly);
-			this.eventDatabaseConfiguration.setSortedDuplicates (false);
-			this.eventDatabaseConfiguration.setTransactional (false);
 		}
 	}
 	
@@ -98,390 +70,421 @@ public final class BdbDatastore
 		synchronized (this.monitor) {
 			if (this.state == State.Closed)
 				return (false);
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
-			if (this.eventDatabase != null)
-				try {
-					this.eventDatabase.close ();
-				} catch (final DatabaseException exception) {
-					this.callbacks.handleException (
-							exception, "bdb datastore encountered an error while closing the event database; ignoring!");
-				} finally {
-					this.eventDatabase = null;
-				}
-			if (this.environment != null)
-				try {
-					this.environment.close ();
-				} catch (final DatabaseException exception) {
-					this.callbacks.handleException (
-							exception, "bdb datastore encountered an error while closing the environment; ignoring!");
-				} finally {
-					this.environment = null;
-				}
-			this.state = State.Closed;
-			return (true);
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
+			try {
+				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closing");
+				if (this.eventDatabase != null)
+					try {
+						this.eventDatabase.close ();
+					} catch (final DatabaseException exception) {
+						this.callbacks.handleException (
+								exception,
+								"bdb datastore encountered a database error while closing the event database; ignoring!");
+					} finally {
+						this.eventDatabase = null;
+					}
+				if (this.environment != null)
+					try {
+						this.environment.close ();
+					} catch (final DatabaseException exception) {
+						this.callbacks.handleException (
+								exception,
+								"bdb datastore encountered a database error while closing the environment; ignoring!");
+					} finally {
+						this.environment = null;
+					}
+				this.state = State.Closed;
+				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closed");
+				return (true);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unknown error while closing; aborting!");
+				return (false);
+			} finally {
+				this.environment = null;
+				this.eventDatabase = null;
+			}
 		}
 	}
 	
 	public final boolean open ()
 	{
 		synchronized (this.monitor) {
-			if (this.state != State.Closed)
-				throw (new IllegalStateException ("bdb datastore is already opened"));
+			Preconditions.checkState (this.state == State.Closed, "bdb datastore is already opened");
 			try {
-				if (!this.environmentPath.exists ())
-					this.environmentPath.mkdir ();
-				if (!this.environmentPath.exists ())
-					throw (new IllegalStateException ());
-			} catch (final Error exception) {
+				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opening");
+				if (!this.environmentPath.exists ()) {
+					this.callbacks.handleLogEvent (
+							Level.WARN, null, "bdb datastore environment path does not exist; creating!");
+					if (!this.environmentPath.mkdir ()) {
+						this.callbacks.handleLogEvent (
+								Level.ERROR, null,
+								"bdb datastore environment path does not exist, but it can not be created; aborting!");
+						return (false);
+					}
+				}
+				if (!this.environmentPath.isDirectory ()) {
+					this.callbacks.handleLogEvent (
+							Level.ERROR, null, "bdb datastore environment path exists, but it is not a directory; aborting!");
+					return (false);
+				}
+				try {
+					final EnvironmentConfig configuration = new EnvironmentConfig ();
+					configuration.setAllowCreate (!this.readOnly);
+					configuration.setReadOnly (this.readOnly);
+					configuration.setTransactional (false);
+					configuration.setLocking (false);
+					configuration.setExceptionListener (new ExceptionHandler ());
+					this.environment = new Environment (this.environmentPath, configuration);
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception, "bdb datastore encountered a database error while opening the environment; aborting!");
+					this.close ();
+					return (false);
+				}
+				try {
+					final DatabaseConfig onfiguration = new DatabaseConfig ();
+					onfiguration.setAllowCreate (!this.readOnly);
+					onfiguration.setReadOnly (this.readOnly);
+					onfiguration.setSortedDuplicates (false);
+					onfiguration.setTransactional (false);
+					this.eventDatabase =
+							this.environment.openDatabase (null, BdbDatastore.defaultEventDatabaseName, onfiguration);
+				} catch (final DatabaseException exception) {
+					this.callbacks.handleException (
+							exception,
+							"bdb datastore encountered a database error while opening the event database; aborting!");
+					this.close ();
+					return (false);
+				}
+				this.state = State.Opened;
+				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opened");
+				return (true);
+			} catch (final Throwable exception) {
 				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while opening the environment; aborting!");
-			}
-			try {
-				this.environment = new Environment (this.environmentPath, this.environmentConfiguration);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while opening the environment; aborting!");
+						exception, "bdb datastore encountered an unknown error while opening; aborting!");
 				this.close ();
 				return (false);
 			}
-			try {
-				this.eventDatabase =
-						this.environment.openDatabase (null, BdbDatastore.eventDatabaseName, this.eventDatabaseConfiguration);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while opening the environment; aborting!", exception);
-				this.close ();
-				return (false);
-			}
-			this.state = State.Opened;
-			return (true);
 		}
 	}
 	
-	public final Database openDatabase (final String name, final DatabaseConfig configuration)
+	public final Database openDatabase (final String name)
 			throws DatabaseException
 	{
 		synchronized (this.monitor) {
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
-			return (this.environment.openDatabase (null, name, configuration));
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
+			final DatabaseConfig databaseConfiguration = new DatabaseConfig ();
+			databaseConfiguration.setAllowCreate (!this.readOnly);
+			databaseConfiguration.setReadOnly (this.readOnly);
+			databaseConfiguration.setSortedDuplicates (false);
+			databaseConfiguration.setTransactional (false);
+			return (this.environment.openDatabase (null, name, databaseConfiguration));
 		}
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final ILoggingEvent reference, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
+			final ILoggingEvent referenceEvent, final int beforeCount, final int afterCount, final LoggingEventFilter filter)
 	{
+		Preconditions.checkNotNull (referenceEvent);
+		Preconditions.checkArgument (beforeCount >= 0);
+		Preconditions.checkArgument (afterCount >= 0);
+		final long referenceEventTimestamp = referenceEvent.getTimeStamp ();
+		Preconditions.checkArgument (referenceEventTimestamp > 0);
+		final String referenceKey;
+		try {
+			final String referenceEventKey =
+					(referenceEvent instanceof SLoggingEvent1) ? ((SLoggingEvent1) referenceEvent).key : null;
+			referenceKey = (referenceEventKey != null) ? referenceEventKey : this.encodeMinKey (referenceEventTimestamp);
+		} catch (final InternalException exception) {
+			throw (new IllegalArgumentException (
+					"bdb datastore encountered an error while preparing the reference key", exception));
+		}
 		synchronized (this.monitor) {
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
-			if ((reference == null) || (beforeCount < 0) || (afterCount < 0))
-				throw (new IllegalArgumentException ());
-			final String relativeReferenceKey;
-			if ((reference instanceof SLoggingEvent1) && (((SLoggingEvent1) reference).key != null))
-				relativeReferenceKey = ((SLoggingEvent1) reference).key;
-			else
-				relativeReferenceKey = this.encodeMinKey (reference.getTimeStamp ());
-			if (relativeReferenceKey == null)
-				return (null);
-			final Cursor cursor;
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
 			try {
-				cursor = this.eventDatabase.openCursor (null, null);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while opening the cursor; aborting!");
-				return (null);
-			}
-			final LinkedList<ILoggingEvent> events = new LinkedList<ILoggingEvent> ();
-			try {
-				OperationStatus outcome;
-				DatabaseEntry keyEntry;
-				DatabaseEntry valueEntry;
-				final String realReferenceKey;
-				{
-					keyEntry = this.encodeKeyEntry (relativeReferenceKey);
-					valueEntry = new DatabaseEntry ();
-					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
-					if (outcome == OperationStatus.NOTFOUND)
-						return (events);
-					if (outcome != OperationStatus.SUCCESS) {
-						this.callbacks.handleException (
-								new DatabaseException (),
-								"bdb datastore encountered an error while searching the reference event; aborting!");
-						return (null);
-					}
-					realReferenceKey = this.decodeKeyEntry (keyEntry);
-					final ILoggingEvent event = this.decodeEventEntry (realReferenceKey, valueEntry);
-					if (this.filterEvent (filter, event))
-						events.add (event);
-				}
-				outer : for (int index = 0; index < beforeCount; index++) {
-					while (true) {
-						keyEntry = new DatabaseEntry ();
-						valueEntry = new DatabaseEntry ();
-						outcome = cursor.getPrev (keyEntry, valueEntry, null);
-						if (outcome == OperationStatus.NOTFOUND)
-							break outer;
-						if (outcome != OperationStatus.SUCCESS) {
-							this.callbacks
-									.handleException (
-											new DatabaseException (),
-											"bdb datastore encountered an error while searching backward from the reference event; aborting!");
-							return (null);
-						}
-						final String key = this.decodeKeyEntry (keyEntry);
-						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
-						if (this.filterEvent (filter, event)) {
-							events.addFirst (event);
-							break;
-						}
-					}
-				}
-				{
-					keyEntry = this.encodeKeyEntry (realReferenceKey);
-					valueEntry = new DatabaseEntry ();
-					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
-					if (outcome == OperationStatus.NOTFOUND)
-						return (events);
-					if (outcome != OperationStatus.SUCCESS) {
-						this.callbacks.handleException (
-								new DatabaseException (),
-								"bdb datastore encountered an error while searching the reference event; aborting!");
-						return (null);
-					}
-				}
-				outer : for (int index = 0; index < afterCount; index++) {
-					while (true) {
-						keyEntry = new DatabaseEntry ();
-						valueEntry = new DatabaseEntry ();
-						outcome = cursor.getNext (keyEntry, valueEntry, null);
-						if (outcome == OperationStatus.NOTFOUND)
-							break outer;
-						if (outcome != OperationStatus.SUCCESS) {
-							this.callbacks
-									.handleException (
-											new DatabaseException (),
-											"bdb datastore encountered an error while searching forward from the reference event; aborting!");
-							return (null);
-						}
-						final String key = this.decodeKeyEntry (keyEntry);
-						final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
-						if (this.filterEvent (filter, event)) {
-							events.addLast (event);
-							break;
-						}
-					}
-				}
-				return (events);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while searching the events; aborting!");
-				return (null);
-			} finally {
+				final Cursor cursor = this.openCursor (this.eventDatabase, null);
 				try {
-					cursor.close ();
+					final LinkedList<ILoggingEvent> events;
+					final String realReferenceKey;
+					final ILoggingEvent realReferenceEvent;
+					{
+						final KeyEventEntryPair outcome = this.searchKeyAfter (cursor, referenceKey);
+						if (outcome != null) {
+							realReferenceKey = outcome.keyEventPair.key;
+							realReferenceEvent = outcome.keyEventPair.event;
+						} else {
+							realReferenceKey = null;
+							realReferenceEvent = null;
+						}
+					}
+					if (realReferenceEvent != null) {
+						events = new LinkedList<ILoggingEvent> ();
+						if (this.filterEvent (filter, realReferenceEvent))
+							events.add (realReferenceEvent);
+						outer : for (int index = 0; index < beforeCount; index++) {
+							while (true) {
+								final KeyEventEntryPair outcome = this.searchBackward (cursor);
+								if (outcome == null)
+									break outer;
+								final ILoggingEvent event = outcome.keyEventPair.event;
+								if (this.filterEvent (filter, event)) {
+									events.addFirst (event);
+									break;
+								}
+							}
+						}
+						{
+							final KeyEventEntryPair outcome = this.searchKeyAfter (cursor, realReferenceKey);
+							if (outcome == null)
+								throw (new DatabaseException ());
+						}
+						outer : for (int index = 0; index < afterCount; index++) {
+							while (true) {
+								final KeyEventEntryPair outcome = this.searchForward (cursor);
+								if (outcome == null)
+									break outer;
+								final ILoggingEvent event = outcome.keyEventPair.event;
+								if (this.filterEvent (filter, event)) {
+									events.addLast (event);
+									break;
+								}
+							}
+						}
+					} else
+						events = null;
+					return (events);
 				} catch (final DatabaseException exception) {
 					this.callbacks.handleException (
-							exception, "bdb datastore encountered an error while closing the cursor; ignoring!");
+							exception, "bdb datastore encountered a database error while selecting the events; aborting!");
+					return (null);
+				} finally {
+					this.closeCursor (cursor);
 				}
+			} catch (final InternalException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an internal error while selecting the events; aborting!");
+				return (null);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unexpected error while selecting the events; aborting!");
+				return (null);
 			}
 		}
 	}
 	
 	public final Iterable<ILoggingEvent> select (
-			final long afterTimestamp, final long interval, final LoggingEventFilter filter)
+			final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter)
 	{
+		Preconditions.checkArgument (afterTimestamp >= 0);
+		Preconditions.checkArgument (maximumInterval > 0);
+		Preconditions.checkArgument (maximumCount > 0);
+		final long beforeTimestamp =
+				((afterTimestamp + maximumInterval) >= 0) ? (afterTimestamp + maximumInterval) : Long.MAX_VALUE;
+		final String referneceKey;
+		try {
+			referneceKey = this.encodeMinKey (afterTimestamp);
+		} catch (final InternalException exception) {
+			throw (new IllegalArgumentException (
+					"bdb datastore encountered an error while preparing the reference key", exception));
+		}
 		synchronized (this.monitor) {
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
-			if ((afterTimestamp < 0) || (interval < 0))
-				throw (new IllegalArgumentException ());
-			final long beforeTimestamp = ((afterTimestamp + interval) > 0) ? (afterTimestamp + interval) : Long.MAX_VALUE;
-			final String relativeReferenceKey = this.encodeMinKey (afterTimestamp);
-			if (relativeReferenceKey == null)
-				return (null);
-			final Cursor cursor;
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
 			try {
-				cursor = this.eventDatabase.openCursor (null, null);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while opening the cursor; aborting!");
-				return (null);
-			}
-			final LinkedList<ILoggingEvent> events = new LinkedList<ILoggingEvent> ();
-			try {
-				OperationStatus outcome;
-				DatabaseEntry keyEntry;
-				DatabaseEntry valueEntry;
-				{
-					keyEntry = this.encodeKeyEntry (relativeReferenceKey);
-					valueEntry = new DatabaseEntry ();
-					outcome = cursor.getSearchKeyRange (keyEntry, valueEntry, null);
-					if (outcome == OperationStatus.NOTFOUND)
-						return (events);
-					if (outcome != OperationStatus.SUCCESS) {
-						this.callbacks.handleException (
-								new DatabaseException (),
-								"bdb datastore encountered an error while searching the reference event; aborting!");
-						return (null);
-					}
-				}
-				while (true) {
-					keyEntry = new DatabaseEntry ();
-					valueEntry = new DatabaseEntry ();
-					outcome = cursor.getNext (keyEntry, valueEntry, null);
-					if (outcome == OperationStatus.NOTFOUND)
-						break;
-					if (outcome != OperationStatus.SUCCESS) {
-						this.callbacks
-								.handleException (
-										new DatabaseException (),
-										"bdb datastore encountered an error while searching forward from the reference event; aborting!");
-						return (null);
-					}
-					final String key = this.decodeKeyEntry (keyEntry);
-					final ILoggingEvent event = this.decodeEventEntry (key, valueEntry);
-					if (event.getTimeStamp () > beforeTimestamp)
-						break;
-					if (this.filterEvent (filter, event))
-						events.addLast (event);
-				}
-				return (events);
-			} catch (final DatabaseException exception) {
-				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while searching the events; aborting!");
-				return (null);
-			} finally {
+				final Cursor cursor = this.openCursor (this.eventDatabase, null);
 				try {
-					cursor.close ();
+					final LinkedList<ILoggingEvent> events;
+					final ILoggingEvent realReferenceEvent;
+					{
+						final KeyEventEntryPair outcome = this.searchKeyAfter (cursor, referneceKey);
+						if (outcome != null)
+							realReferenceEvent = outcome.keyEventPair.event;
+						else
+							realReferenceEvent = null;
+					}
+					if (realReferenceEvent != null) {
+						events = new LinkedList<ILoggingEvent> ();
+						if (realReferenceEvent.getTimeStamp () < beforeTimestamp) {
+							if (this.filterEvent (filter, realReferenceEvent))
+								events.add (realReferenceEvent);
+							outer : for (int index = 0; index < maximumCount; index++) {
+								while (true) {
+									final KeyEventEntryPair outcome = this.searchForward (cursor);
+									if (outcome == null)
+										break outer;
+									final ILoggingEvent event = outcome.keyEventPair.event;
+									if (event.getTimeStamp () >= beforeTimestamp)
+										break outer;
+									if (this.filterEvent (filter, event)) {
+										events.addLast (event);
+										break;
+									}
+								}
+							}
+						}
+					} else
+						events = null;
+					return (events);
 				} catch (final DatabaseException exception) {
 					this.callbacks.handleException (
-							exception, "bdb datastore encountered an error while closing the cursor; ignoring!");
+							exception, "bdb datastore encountered a database error while selecting the events; aborting!");
+					return (null);
+				} finally {
+					this.closeCursor (cursor);
 				}
+			} catch (final InternalException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an error internal while selecting the eventns; aborting!");
+				return (null);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unexpected error while selecting the events; aborting!");
+				return (null);
 			}
 		}
 	}
 	
 	public final ILoggingEvent select (final String key)
 	{
-		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
-		if (keyEntry == null)
-			return (null);
-		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		Preconditions.checkNotNull (key);
 		synchronized (this.monitor) {
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
 			try {
-				final OperationStatus outcome = this.eventDatabase.get (null, keyEntry, eventEntry, null);
-				if (outcome != OperationStatus.SUCCESS) {
-					this.callbacks.handleException (
-							new DatabaseException (),
-							"bdb datastore encountered an error while getting the event `%s`; aborting!", key);
-					return (null);
-				}
+				final KeyEventEntryPair outcome = this.searchKeyExact (this.eventDatabase, key);
+				return ((outcome != null) ? outcome.keyEventPair.event : null);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while getting the event `%s`; aborting!", key);
+						exception, "bdb datastore encountered a database error while selecting the event; aborting!");
+				return (null);
+			} catch (final InternalException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an internal error while selecting the event; aborting!");
+				return (null);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unknown error while selecting the event; aborting!");
 				return (null);
 			}
 		}
-		final ILoggingEvent event = this.decodeEventEntry (key, eventEntry);
-		if (event == null)
-			return (null);
-		return (event);
 	}
 	
 	public final String store (final ILoggingEvent originalEvent)
 	{
-		if (originalEvent == null)
-			throw (new IllegalArgumentException ());
-		if (this.readOnly)
-			throw (new IllegalStateException ());
-		final ILoggingEvent clonedEvent = this.prepareEvent (originalEvent);
-		if (clonedEvent == null)
-			return (null);
-		final DatabaseEntry eventEntry = this.encodeEventEntry (clonedEvent);
-		if (eventEntry == null)
-			return (null);
-		final String key = this.encodeKey (clonedEvent.getTimeStamp (), eventEntry);
-		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
+		Preconditions.checkNotNull (originalEvent);
+		Preconditions.checkState (!this.readOnly);
 		synchronized (this.monitor) {
-			if (this.state != State.Opened)
-				throw (new IllegalStateException ("bdb datastore is not opened"));
+			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
 			try {
-				final OperationStatus outcome = this.eventDatabase.put (null, keyEntry, eventEntry);
-				if (outcome != OperationStatus.SUCCESS) {
-					this.callbacks.handleException (
-							new DatabaseException (),
-							"bdb datastore encountered an error while storing the event `%s`; aborting!", key);
-					return (null);
-				}
+				final KeyEventEntryPair eventEntryPair = this.prepareStoreEntryPair (originalEvent);
+				final OperationStatus outcome =
+						this.eventDatabase.put (null, eventEntryPair.entryPair.key, eventEntryPair.entryPair.value);
+				if (outcome != OperationStatus.SUCCESS)
+					throw (new DatabaseException ());
+				this.environment.sync ();
+				return (eventEntryPair.keyEventPair.key);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
-						exception, "bdb datastore encountered an error while storing the event `%s`; aborting!", key);
+						exception, "bdb datastore encountered a database error while storing the event; aborting!");
+				return (null);
+			} catch (final InternalException exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an internal error while storing the event; aborting!");
+				return (null);
+			} catch (final Throwable exception) {
+				this.callbacks.handleException (
+						exception, "bdb datastore encountered an unknown error while storing the event; aborting!");
 				return (null);
 			}
 		}
-		if (originalEvent instanceof SLoggingEvent1)
-			((SLoggingEvent1) originalEvent).key = key;
-		return (key);
 	}
 	
-	private final ILoggingEvent decodeEventEntry (final String key, final DatabaseEntry entry)
+	private final void closeCursor (final Cursor cursor)
 	{
-		final Object object;
 		try {
-			object = this.serializer.deserialize (entry.getData (), entry.getOffset (), entry.getSize ());
+			cursor.close ();
+		} catch (final DatabaseException exception) {
+			this.callbacks.handleException (
+					exception, "bdb datastore encountered a database error while closing the cursor; ignoring!");
+		}
+	}
+	
+	private final ILoggingEvent decodeEventEntry (final DatabaseEntry entry)
+			throws InternalException
+	{
+		try {
+			return (ILoggingEvent.class.cast (this.serializer.deserialize (
+					entry.getData (), entry.getOffset (), entry.getSize ())));
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "bdb datastore encountered an error while deserializing the event; aborting!");
-			return (null);
+			throw (new InternalException (
+					"bdb datastore encountered an unknown error while deserializing the event", exception));
 		}
-		final ILoggingEvent event;
-		try {
-			event = ILoggingEvent.class.cast (object);
-		} catch (final ClassCastException exception) {
-			this.callbacks.handleException (
-					exception, "bdb datastore encountered ane error while deserializing the event; aborting!");
-			return (null);
-		}
-		if ((key != null) && (event instanceof SLoggingEvent1))
-			((SLoggingEvent1) event).key = key;
-		return (event);
 	}
 	
 	private final String decodeKeyEntry (final DatabaseEntry entry)
+			throws InternalException
 	{
-		return (new String (entry.getData (), entry.getOffset (), entry.getSize ()));
+		try {
+			return (new String (entry.getData (), entry.getOffset (), entry.getSize ()));
+		} catch (final Throwable exception) {
+			throw (new InternalException ("bdb datastore encountered an unknown error while deserializing the key", exception));
+		}
+	}
+	
+	private final KeyEventEntryPair decodeKeyEventEntryPair (final DatabaseEntry keyEntry, final DatabaseEntry eventEntry)
+			throws InternalException
+	{
+		final String key = this.decodeKeyEntry (keyEntry);
+		final ILoggingEvent event = this.decodeEventEntry (eventEntry);
+		return (new KeyEventEntryPair (key, event, keyEntry, eventEntry));
+	}
+	
+	private final KeyEventEntryPair decodeSearchOutcome (
+			final OperationStatus outcome, final DatabaseEntry keyEntry, final DatabaseEntry eventEntry)
+			throws DatabaseException,
+				InternalException
+	{
+		final KeyEventEntryPair pair;
+		if (outcome == OperationStatus.NOTFOUND)
+			pair = null;
+		else if (outcome != OperationStatus.SUCCESS)
+			throw (new DatabaseException ());
+		else {
+			pair = this.decodeKeyEventEntryPair (keyEntry, eventEntry);
+			this.prepareLoadEvent (pair.keyEventPair.key, pair.keyEventPair.event);
+		}
+		return (pair);
 	}
 	
 	private final DatabaseEntry encodeEventEntry (final ILoggingEvent event)
+			throws InternalException
 	{
-		final byte[] data;
 		try {
-			data = this.serializer.serialize (event);
+			return (new DatabaseEntry (this.serializer.serialize (event)));
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "bdb datastore encountered an error while serealizing the event; aborting!");
-			return (null);
+			throw (new InternalException ("bdb datastore encountered an unknown error while serializing the event", exception));
 		}
-		return (new DatabaseEntry (data));
 	}
 	
 	private final String encodeKey (final byte[] hashBytes)
+			throws InternalException
 	{
-		final StringBuilder builder = new StringBuilder ();
-		for (final byte b : hashBytes) {
-			final String s = Integer.toHexString (b & 0xff);
-			if (s.length () == 1)
-				builder.append ('0').append (s);
-			else
-				builder.append (s);
+		try {
+			final StringBuilder builder = new StringBuilder ();
+			for (final byte b : hashBytes) {
+				final String s = Integer.toHexString (b & 0xff);
+				if (s.length () == 1)
+					builder.append ('0').append (s);
+				else
+					builder.append (s);
+			}
+			return (builder.toString ());
+		} catch (final Throwable exception) {
+			throw (new InternalException ("bdb datastore encountered an unknown error while encoding the key", exception));
 		}
-		return (builder.toString ());
 	}
 	
 	private final String encodeKey (final long timestamp, final DatabaseEntry eventEntry)
+			throws InternalException
 	{
 		final byte[] data =
 				this.encodeRawKeyFromData (timestamp, eventEntry.getData (), eventEntry.getOffset (), eventEntry.getSize ());
@@ -495,17 +498,14 @@ public final class BdbDatastore
 		return (new DatabaseEntry (key.getBytes ()));
 	}
 	
-	private final String encodeMaxKey (final long timestamp)
-	{
-		return (this.encodeKey (this.encodeRawKeyFromHash (timestamp, BdbDatastore.maxHashBytes)));
-	}
-	
 	private final String encodeMinKey (final long timestamp)
+			throws InternalException
 	{
 		return (this.encodeKey (this.encodeRawKeyFromHash (timestamp, BdbDatastore.minHashBytes)));
 	}
 	
 	private final byte[] encodeRawKeyFromData (final long timestamp, final byte[] data, final int offset, final int size)
+			throws InternalException
 	{
 		final MessageDigest hasher;
 		try {
@@ -532,86 +532,174 @@ public final class BdbDatastore
 	}
 	
 	private final byte[] encodeRawKeyFromHash (final long timestamp, final byte[] hashBytes)
+			throws InternalException
 	{
-		final byte[] timestampBytes =
-				new byte[] {(byte) ((timestamp >> 56) & 0xff), (byte) ((timestamp >> 48) & 0xff),
-						(byte) ((timestamp >> 40) & 0xff), (byte) ((timestamp >> 32) & 0xff),
-						(byte) ((timestamp >> 24) & 0xff), (byte) ((timestamp >> 16) & 0xff),
-						(byte) ((timestamp >> 8) & 0xff), (byte) ((timestamp >> 0) & 0xff)};
-		final byte[] keyBytes = new byte[timestampBytes.length + hashBytes.length];
-		System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
-		System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
-		return (keyBytes);
+		try {
+			final byte[] timestampBytes =
+					new byte[] {(byte) ((timestamp >> 56) & 0xff), (byte) ((timestamp >> 48) & 0xff),
+							(byte) ((timestamp >> 40) & 0xff), (byte) ((timestamp >> 32) & 0xff),
+							(byte) ((timestamp >> 24) & 0xff), (byte) ((timestamp >> 16) & 0xff),
+							(byte) ((timestamp >> 8) & 0xff), (byte) ((timestamp >> 0) & 0xff)};
+			final byte[] keyBytes = new byte[timestampBytes.length + hashBytes.length];
+			System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
+			System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
+			return (keyBytes);
+		} catch (final Throwable exception) {
+			throw (new InternalException ("bdb datastore encountered an unknown error while encoding the key", exception));
+		}
 	}
 	
 	private final boolean filterEvent (final LoggingEventFilter filter, final ILoggingEvent event)
+			throws InternalException
 	{
-		if (filter == null)
-			return (true);
-		final FilterReply outcome;
 		try {
-			outcome = filter.filter (event);
+			return ((filter != null) ? (filter.filter (event) != FilterReply.DENY) : true);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "bdb datastore encountered an error while filtering the event; ignoring!");
-			return (false);
+			throw (new InternalException ("bdb datastore encountered an unknown error while filtering the event", exception));
 		}
-		return (outcome != FilterReply.DENY);
 	}
 	
-	private final ILoggingEvent prepareEvent (final ILoggingEvent originalEvent)
+	private final void mutateEvent (final LoggingEventMutator mutator, final ILoggingEvent event)
+			throws InternalException
 	{
-		final SLoggingEvent1 clonedEvent;
-		if (!(originalEvent instanceof SLoggingEvent1))
-			try {
-				clonedEvent = SLoggingEvent1.build (originalEvent);
-			} catch (final Throwable exception) {
-				this.callbacks.handleException (
-						exception, "amqp publisher sink encountered an error while cloning the event; aborting!");
-				return (null);
-			}
-		else
-			clonedEvent = (SLoggingEvent1) originalEvent;
 		try {
-			if (this.mutator != null)
-				this.mutator.mutate (clonedEvent);
+			if (mutator != null)
+				mutator.mutate (event);
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (
-					exception, "amqp publisher sink encountered an error while mutating the event; aborting!");
-			return (null);
+			throw (new InternalException ("bdb datastore encountered an unknown error while mutating the event", exception));
 		}
-		return (clonedEvent);
+	}
+	
+	private final Cursor openCursor (final Database database, final CursorConfig cursorConfiguration)
+			throws InternalException
+	{
+		try {
+			return (database.openCursor (null, cursorConfiguration));
+		} catch (final DatabaseException exception) {
+			throw (new InternalException ("bdb datastore encountered a database error while opening the cursor", exception));
+		}
+	}
+	
+	private final ILoggingEvent prepareEvent (
+			final String key, final LoggingEventMutator mutator, final ILoggingEvent originalEvent)
+			throws InternalException
+	{
+		try {
+			final SLoggingEvent1 clonedEvent;
+			if (!(originalEvent instanceof SLoggingEvent1))
+				clonedEvent = SLoggingEvent1.build (originalEvent);
+			else
+				clonedEvent = (SLoggingEvent1) originalEvent;
+			this.mutateEvent (mutator, clonedEvent);
+			if ((key != null) && (clonedEvent.key == null))
+				clonedEvent.key = key;
+			return (clonedEvent);
+		} catch (final Throwable exception) {
+			throw (new InternalException ("bdb datastore encountered an error while preparing the event", exception));
+		}
+	}
+	
+	private final ILoggingEvent prepareLoadEvent (final String key, final ILoggingEvent event)
+			throws InternalException
+	{
+		return (this.prepareEvent (key, this.loadMutator, event));
+	}
+	
+	private final KeyEventEntryPair prepareStoreEntryPair (final ILoggingEvent originalEvent)
+			throws InternalException
+	{
+		final ILoggingEvent clonedEvent = this.prepareStoreEvent (originalEvent);
+		final DatabaseEntry eventEntry = this.encodeEventEntry (clonedEvent);
+		final String key = this.encodeKey (clonedEvent.getTimeStamp (), eventEntry);
+		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
+		return (new KeyEventEntryPair (key, clonedEvent, keyEntry, eventEntry));
+	}
+	
+	private final ILoggingEvent prepareStoreEvent (final ILoggingEvent event)
+			throws InternalException
+	{
+		return (this.prepareEvent (null, this.storeMutator, event));
+	}
+	
+	private final KeyEventEntryPair searchBackward (final Cursor cursor)
+			throws DatabaseException,
+				InternalException
+	{
+		final DatabaseEntry keyEntry = new DatabaseEntry ();
+		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		final OperationStatus outcome = cursor.getPrev (keyEntry, eventEntry, null);
+		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
+	}
+	
+	private final KeyEventEntryPair searchForward (final Cursor cursor)
+			throws DatabaseException,
+				InternalException
+	{
+		final DatabaseEntry keyEntry = new DatabaseEntry ();
+		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		final OperationStatus outcome = cursor.getNext (keyEntry, eventEntry, null);
+		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
+	}
+	
+	private final KeyEventEntryPair searchKeyAfter (final Cursor cursor, final String key)
+			throws DatabaseException,
+				InternalException
+	{
+		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
+		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		final OperationStatus outcome = cursor.getSearchKeyRange (keyEntry, eventEntry, null);
+		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
+	}
+	
+	private final KeyEventEntryPair searchKeyExact (final Database database, final String key)
+			throws DatabaseException,
+				InternalException
+	{
+		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
+		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		final OperationStatus outcome = database.get (null, keyEntry, eventEntry, null);
+		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
 	}
 	
 	private final Callbacks callbacks;
 	private Environment environment;
-	private final EnvironmentConfig environmentConfiguration;
 	private final File environmentPath;
 	private Database eventDatabase;
-	private final DatabaseConfig eventDatabaseConfiguration;
+	private final LoggingEventMutator loadMutator;
 	private final Object monitor;
-	private final LoggingEventMutator mutator;
 	private final boolean readOnly;
 	private final Serializer serializer;
 	private State state;
+	private final LoggingEventMutator storeMutator;
 	
 	static {
+		hashAlgorithm = "MD5";
+		hashSize = 16;
 		minHashBytes = new byte[BdbDatastore.hashSize];
 		Arrays.fill (BdbDatastore.minHashBytes, (byte) 0);
-		maxHashBytes = new byte[BdbDatastore.hashSize];
-		Arrays.fill (BdbDatastore.maxHashBytes, (byte) -1);
 	}
-	public static final String defaultEnvironmentPath = "/tmp/logging-bdb-datastore";
-	public static final String eventDatabaseName = "events";
-	public static final String hashAlgorithm = "MD5";
-	public static final int hashSize = 16;
-	private static final byte[] maxHashBytes;
+	public static final String defaultEventDatabaseName = "events";
+	private static final String hashAlgorithm;
+	private static final int hashSize;
 	private static final byte[] minHashBytes;
 	
 	public static enum State
 	{
 		Closed,
 		Opened;
+	}
+	
+	private final class EntryPair
+	{
+		public EntryPair (final DatabaseEntry key, final DatabaseEntry value)
+		{
+			super ();
+			this.key = key;
+			this.value = value;
+		}
+		
+		public final DatabaseEntry key;
+		public final DatabaseEntry value;
 	}
 	
 	private final class ExceptionHandler
@@ -623,5 +711,48 @@ public final class BdbDatastore
 			BdbDatastore.this.callbacks.handleException (
 					event.getException (), "bdb encountered an unexpected error (in thread `%s`)", event.getThreadName ());
 		}
+	}
+	
+	private final class InternalException
+			extends Exception
+	{
+		public InternalException (final String message, final Throwable cause)
+		{
+			super (message, cause);
+		}
+		
+		private static final long serialVersionUID = 1L;
+	}
+	
+	private final class KeyEventEntryPair
+	{
+		public KeyEventEntryPair (final KeyEventPair keyEventPair, final EntryPair databaseEntryPair)
+		{
+			super ();
+			this.keyEventPair = keyEventPair;
+			this.entryPair = databaseEntryPair;
+		}
+		
+		public KeyEventEntryPair (
+				final String key, final ILoggingEvent event, final DatabaseEntry keyEntry, final DatabaseEntry valueEntry)
+		{
+			this (new KeyEventPair (key, event), new EntryPair (keyEntry, valueEntry));
+		}
+		
+		public final EntryPair entryPair;
+		public final KeyEventPair keyEventPair;
+	}
+	
+	private final class KeyEventPair
+	{
+		public KeyEventPair (final String key, final ILoggingEvent event)
+		{
+			super ();
+			this.key = key;
+			this.event = event;
+		}
+		
+		public final ILoggingEvent event;
+		public final String key;
 	}
 }

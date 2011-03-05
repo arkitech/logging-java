@@ -31,6 +31,13 @@ public class BdbAppender
 		this.environmentPath = environmentPath;
 	}
 	
+	protected BdbDatastoreConfiguration buildConfiguration ()
+	{
+		return (new BdbDatastoreConfiguration (
+				(this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer,
+				this.mutator, this.mutator, this.callbacks));
+	}
+	
 	protected final void reallyAppend (final ILoggingEvent event)
 	{
 		this.datastore.store (event);
@@ -43,10 +50,7 @@ public class BdbAppender
 			try {
 				if (this.datastore != null)
 					throw (new IllegalStateException ());
-				this.datastore =
-						new BdbDatastore (
-								(this.environmentPath != null) ? new File (this.environmentPath) : null, false,
-								this.serializer, this.mutator, this.callbacks);
+				this.datastore = new BdbDatastore (this.buildConfiguration ());
 				datastoreOpenSucceeded = this.datastore.open ();
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb appender encountered an error while starting; aborting!");

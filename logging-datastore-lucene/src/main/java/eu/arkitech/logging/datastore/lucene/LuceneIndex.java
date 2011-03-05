@@ -7,11 +7,10 @@ import java.util.LinkedList;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
+import com.google.common.base.Preconditions;
 import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseException;
 import eu.arkitech.logback.common.Callbacks;
-import eu.arkitech.logback.common.DefaultLoggerCallbacks;
 import eu.arkitech.logging.datastore.bdb.BdbDatastore;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -39,18 +38,13 @@ public final class LuceneIndex
 	{
 		super ();
 		synchronized (monitor) {
-			this.monitor = monitor;
+			this.monitor = Preconditions.checkNotNull (monitor);
+			this.callbacks = Preconditions.checkNotNull (callbacks);
 			this.readOnly = readOnly;
-			this.state = State.Closed;
-			this.bdb = bdb;
-			this.callbacks = (callbacks != null) ? callbacks : new DefaultLoggerCallbacks (this);
+			this.bdb = Preconditions.checkNotNull (bdb);
 			this.analyzer = new StandardAnalyzer (LuceneIndex.version);
 			this.parser = new QueryParser (LuceneIndex.version, LuceneIndex.messageFieldName, this.analyzer);
-			this.databaseConfiguration = new DatabaseConfig ();
-			this.databaseConfiguration.setAllowCreate (!this.readOnly);
-			this.databaseConfiguration.setReadOnly (this.readOnly);
-			this.databaseConfiguration.setSortedDuplicates (false);
-			this.databaseConfiguration.setTransactional (false);
+			this.state = State.Closed;
 		}
 	}
 	
@@ -117,7 +111,7 @@ public final class LuceneIndex
 			if (this.state != State.Closed)
 				throw (new IllegalStateException ("lucene indexer is already opened"));
 			try {
-				this.fileDatabase = this.bdb.openDatabase (LuceneIndex.fileDatabaseName, this.databaseConfiguration);
+				this.fileDatabase = this.bdb.openDatabase (LuceneIndex.fileDatabaseName);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
 						exception, "lucene indexer encountered an error while opening the file database; aborting!");
@@ -125,7 +119,7 @@ public final class LuceneIndex
 				return (false);
 			}
 			try {
-				this.blockDatabase = this.bdb.openDatabase (LuceneIndex.blockDatabaseName, this.databaseConfiguration);
+				this.blockDatabase = this.bdb.openDatabase (LuceneIndex.blockDatabaseName);
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (
 						exception, "lucene indexer encountered an error while opening the block database; aborting!");
@@ -272,7 +266,6 @@ public final class LuceneIndex
 	private final BdbDatastore bdb;
 	private Database blockDatabase;
 	private final Callbacks callbacks;
-	private final DatabaseConfig databaseConfiguration;
 	private JEDirectory directory;
 	private Database fileDatabase;
 	private final Object monitor;
