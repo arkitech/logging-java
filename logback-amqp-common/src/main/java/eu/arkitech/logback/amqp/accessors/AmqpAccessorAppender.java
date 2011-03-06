@@ -38,6 +38,9 @@ public abstract class AmqpAccessorAppender
 		return (this.virtualHost);
 	}
 	
+	@Override
+	public abstract boolean isDrained ();
+	
 	public abstract boolean isRunning ();
 	
 	public void setHost (final String host)

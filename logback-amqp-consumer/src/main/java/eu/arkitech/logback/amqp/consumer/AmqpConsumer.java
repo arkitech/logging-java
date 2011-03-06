@@ -3,8 +3,10 @@ package eu.arkitech.logback.amqp.consumer;
 
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.amqp.accessors.AmqpAccessor;
 import eu.arkitech.logback.amqp.accessors.AmqpRawConsumer;
@@ -25,13 +27,14 @@ public final class AmqpConsumer
 	public AmqpConsumer (final AmqpRawConsumer accessor, final AmqpConsumerConfiguration configuration)
 	{
 		super ((accessor != null) ? accessor : new AmqpRawConsumer (configuration, null), configuration);
-		this.buffer = this.accessor.getBuffer ();
+		this.rawBuffer = this.accessor.buffer;
+		this.buffer = new LinkedBlockingQueue<ILoggingEvent> ();
 	}
 	
 	@Override
 	public final boolean isDrained ()
 	{
-		return (this.buffer.isEmpty ());
+		return (this.buffer.isEmpty () && this.rawBuffer.isEmpty ());
 	}
 	
 	@Override
@@ -45,42 +48,48 @@ public final class AmqpConsumer
 	public final ILoggingEvent pull (final long timeout, final TimeUnit timeoutUnit)
 			throws InterruptedException
 	{
-		final AmqpRawMessage message = this.buffer.poll (timeout, timeoutUnit);
-		if (message == null)
-			return (null);
-		final ILoggingEvent originalEvent = this.decodeMessage (message);
-		if (originalEvent == null)
-			return (null);
-		final ILoggingEvent clonedEvent = this.prepareEvent (originalEvent);
-		if (clonedEvent == null)
-			return (null);
-		return (clonedEvent);
+		return (this.buffer.poll (timeout, timeoutUnit));
 	}
 	
 	@Override
-	protected void executeLoop ()
+	protected final void executeLoop ()
 	{
+		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp event consumer shoveling messages to events");
 		while (true) {
 			if (this.shouldStopSoft ())
-				this.accessor.requestStop ();
-			if (this.accessor.awaitStop (this.waitTimeout))
 				break;
+			this.shovelMessage ();
 		}
 	}
 	
-	@Override
-	protected void finalizeLoop ()
+	private final void shovelMessage ()
 	{
-		this.accessor.awaitStop ();
+		try {
+			final AmqpRawMessage message;
+			try {
+				message = this.rawBuffer.poll (this.waitTimeout, TimeUnit.MILLISECONDS);
+			} catch (final InterruptedException exception) {
+				return;
+			}
+			if (message == null)
+				return;
+			final ILoggingEvent originalEvent = this.decodeMessage (message);
+			final ILoggingEvent clonedEvent = this.prepareEvent (originalEvent);
+			try {
+				if (!this.buffer.offer (clonedEvent, this.waitTimeout, TimeUnit.MILLISECONDS))
+					this.callbacks.handleLogEvent (Level.ERROR, null, "amqp event consumer (event) buffer overflow; ignoring!");
+			} catch (final InterruptedException exception) {
+				return;
+			}
+		} catch (final InternalException exception) {
+			this.callbacks.handleException (exception, "amqp event consumer encountered an internal error while shoveling the message; ignoring!");
+		} catch (final Error exception) {
+			this.callbacks.handleException (exception, "amqp event consumer encountered an unknown error while shoveling the message; ignoring!");
+		}
 	}
 	
-	@Override
-	protected void initializeLoop ()
-	{
-		this.accessor.start ();
-	}
-	
-	private final BlockingQueue<AmqpRawMessage> buffer;
+	public final BlockingQueue<ILoggingEvent> buffer;
+	private final BlockingQueue<AmqpRawMessage> rawBuffer;
 	
 	public static final String defaultExchange = "logging";
 	public static final String defaultRoutingKeyFormat = "logging.event.%s";

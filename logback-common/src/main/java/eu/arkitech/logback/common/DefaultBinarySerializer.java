@@ -4,6 +4,7 @@ package eu.arkitech.logback.common;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -29,14 +30,16 @@ public class DefaultBinarySerializer
 	
 	@Override
 	public Object deserialize (final byte[] data)
-			throws Throwable
+			throws IOException,
+				ClassNotFoundException
 	{
 		return (this.deserialize (data, 0, data.length));
 	}
 	
 	@Override
 	public Object deserialize (final byte[] data, final int offset, final int size)
-			throws Throwable
+			throws IOException,
+				ClassNotFoundException
 	{
 		final ByteArrayInputStream stream = new ByteArrayInputStream (data, offset, size);
 		final InputStream decoratedStream = this.decorate (stream);
@@ -65,7 +68,7 @@ public class DefaultBinarySerializer
 	
 	@Override
 	public byte[] serialize (final Object object)
-			throws Throwable
+			throws IOException
 	{
 		final ByteArrayOutputStream stream = new ByteArrayOutputStream (this.bufferSize);
 		final OutputStream decoratedStream = this.decorate (stream);
@@ -92,14 +95,14 @@ public class DefaultBinarySerializer
 	
 	@SuppressWarnings ("unused")
 	protected InputStream decorate (final InputStream stream)
-			throws Throwable
+			throws IOException
 	{
 		return (stream);
 	}
 	
 	@SuppressWarnings ("unused")
 	protected OutputStream decorate (final OutputStream stream)
-			throws Throwable
+			throws IOException
 	{
 		return (stream);
 	}

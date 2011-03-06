@@ -50,13 +50,12 @@ public abstract class DefaultAppender
 	{
 		try {
 			this.reallyAppend (event);
-		} catch (final Throwable exception) {
+		} catch (final Error exception) {
 			this.callbacks.handleException (exception, "appender encountered an error while appending the event; ignoring!");
 		}
 	}
 	
-	protected abstract void reallyAppend (final ILoggingEvent event)
-			throws Throwable;
+	protected abstract void reallyAppend (final ILoggingEvent event);
 	
 	protected abstract boolean reallyStart ();
 	

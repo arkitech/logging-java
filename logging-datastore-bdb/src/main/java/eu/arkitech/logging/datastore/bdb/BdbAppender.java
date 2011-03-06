@@ -47,20 +47,21 @@ public class BdbAppender
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
-			final boolean datastoreOpenSucceeded;
 			try {
 				if (this.datastore != null)
 					throw (new IllegalStateException ());
 				this.datastore = new BdbDatastore (this.buildConfiguration ());
-				datastoreOpenSucceeded = this.datastore.open ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "bdb appender encountered an error while starting; aborting!");
-				try {
+				final boolean succeeded = this.datastore.open ();
+				if (!succeeded) {
 					this.reallyStop ();
-				} catch (final Error exception1) {}
-				throw (exception);
+					return (false);
+				}
+				return (succeeded);
+			} catch (final Error exception) {
+				this.callbacks.handleException (exception, "bdb datastore appender encountered an unknown error while starting; aborting!");
+				this.reallyStop ();
+				return (false);
 			}
-			return (datastoreOpenSucceeded);
 		}
 	}
 	
@@ -68,15 +69,18 @@ public class BdbAppender
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
-			final boolean datastoreCloseSucceeded = false;
 			try {
-				if (this.datastore != null)
+				if (this.datastore != null) {
 					this.datastore.close ();
+					this.datastore = null;
+				}
+				return (true);
 			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "bdb appender encountered an error while closing the datastore; ignoring");
+				this.callbacks.handleException (exception, "bdb datastore appender encountered an unknown error while stopping; ignoring");
+				return (false);
+			} finally {
 				this.datastore = null;
 			}
-			return (datastoreCloseSucceeded);
 		}
 	}
 	

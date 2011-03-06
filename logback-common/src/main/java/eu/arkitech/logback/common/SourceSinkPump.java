@@ -4,18 +4,18 @@ package eu.arkitech.logback.common;
 
 import java.util.concurrent.TimeUnit;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 
-public final class LoggingEventPump
+public final class SourceSinkPump
 		extends Worker
 {
-	public LoggingEventPump (final WorkerConfiguration configuration, final LoggingEventSource source, final LoggingEventSink sink)
+	public SourceSinkPump (final WorkerConfiguration configuration, final LoggingEventSource source, final LoggingEventSink sink)
 	{
 		super (configuration);
 		this.source = source;
 		this.sink = sink;
-		this.waitTimeout = LoggingEventPump.defaultWaitTimeout;
 	}
 	
 	@Override
@@ -28,7 +28,7 @@ public final class LoggingEventPump
 			try {
 				event = this.source.pull (this.waitTimeout, TimeUnit.MILLISECONDS);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (exception, "logging event pump encountered an error while pulling the event from the source; ignoring!");
+				this.callbacks.handleException (exception, "event pump encountered an unknown error while pulling the event from the source; ignoring!");
 				continue;
 			}
 			if (event == null)
@@ -36,35 +36,34 @@ public final class LoggingEventPump
 			try {
 				this.sink.push (event);
 			} catch (final Throwable exception) {
-				this.callbacks.handleException (exception, "logging event pump encountered an error while pushing the event to the sink; ignoring");
+				this.callbacks.handleException (exception, "event pump encountered an unknown error while pushing the event to the sink; ignoring!");
 			}
 		}
 	}
 	
 	@Override
 	protected final void finalizeLoop ()
-	{}
+	{
+		this.callbacks.handleLogEvent (Level.DEBUG, null, "event pump stopped");
+	}
 	
 	@Override
 	protected final void initializeLoop ()
-	{}
+	{
+		this.callbacks.handleLogEvent (Level.DEBUG, null, "event pump started");
+	}
 	
 	@Override
 	protected final boolean shouldStopSoft ()
 	{
-		final boolean isDrained;
 		try {
-			isDrained = this.source.isDrained ();
+			return (this.source.isDrained () && super.shouldStopSoft ());
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "loging event pump encountered an error while checking the source; ignoring!");
+			this.callbacks.handleException (exception, "event pump encountered an unknown error while checking the source; ignoring!");
 			return (true);
 		}
-		return (super.shouldStopSoft () && isDrained);
 	}
 	
 	private final LoggingEventSink sink;
 	private final LoggingEventSource source;
-	private final long waitTimeout;
-	
-	public static final long defaultWaitTimeout = 1000;
 }

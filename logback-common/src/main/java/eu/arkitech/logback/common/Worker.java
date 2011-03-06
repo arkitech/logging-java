@@ -28,6 +28,7 @@ public abstract class Worker
 	public final boolean awaitStop (final long timeout)
 	{
 		try {
+			this.callbacks.handleLogEvent (Level.DEBUG, null, "worker awaiting stop");
 			this.thread.join (timeout);
 		} catch (final InterruptedException exception) {}
 		return (!this.isRunning ());
@@ -43,21 +44,21 @@ public abstract class Worker
 		return (this.thread.isRunning ());
 	}
 	
-	public final void requestStop ()
+	public final boolean requestStop ()
 	{
 		synchronized (this.monitor) {
-			this.callbacks.handleLogEvent (Level.INFO, null, "worker stopping");
-			this.thread.requestStop ();
+			this.callbacks.handleLogEvent (Level.DEBUG, null, "worker requesting stop");
+			return (this.thread.requestStop ());
 		}
 	}
 	
 	public final boolean start ()
 	{
 		synchronized (this.monitor) {
-			this.callbacks.handleLogEvent (Level.INFO, null, "worker starting");
+			this.callbacks.handleLogEvent (Level.DEBUG, null, "worker starting");
 			this.thread.start ();
 		}
-		return (this.thread.isRunning ());
+		return (this.isRunning ());
 	}
 	
 	protected abstract void executeLoop ();
@@ -104,7 +105,7 @@ public abstract class Worker
 		@Override
 		protected final void handleException (final Throwable exception)
 		{
-			Worker.this.callbacks.handleException (exception, "worker encountered an unknown error while running; aborting");
+			Worker.this.callbacks.handleException (exception, "worker encountered an unknown error while running");
 		}
 		
 		@Override

@@ -4,11 +4,13 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpLoggingInjector" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
+	<newRule pattern="/configuration/eventLogAppender" actionClass="eu.arkitech.logback.webapp.EventLogAppender$CreateAction" />
+	
+	<newRule pattern="/configuration/amqpConsumer" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
 	
 	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
 	
-	<amqpLoggingInjector>
+	<amqpConsumer>
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
 		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
@@ -17,16 +19,16 @@
 		<exchange>${arkitech.logging.amqp.exchange:-logging}</exchange>
 		<queue>${arkitech.logging.amqp.queue:-}</queue>
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
-	</amqpLoggingInjector>
+	</amqpConsumer>
 	
 	<!--
-	<randomGenerator>
+	<randomGenerator name="generator">
 		<count>1000</count>
 		<interval>250</interval>
 	</randomGenerator>
 	-->
 	
-	<appender name="webapp" class="eu.arkitech.logback.webapp.EventLogAppender" />
+	<eventLogAppender name="webapp" />
 	
 	<root level="trace">
 		<appender-ref ref="webapp" />

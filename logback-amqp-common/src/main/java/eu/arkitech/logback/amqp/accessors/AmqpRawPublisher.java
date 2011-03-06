@@ -2,6 +2,7 @@
 package eu.arkitech.logback.amqp.accessors;
 
 
+import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -20,27 +21,31 @@ public final class AmqpRawPublisher
 		this.buffer = (buffer != null) ? buffer : new LinkedBlockingDeque<AmqpRawMessage> ();
 	}
 	
-	public final BlockingDeque<AmqpRawMessage> getBuffer ()
+	@Override
+	public final boolean isDrained ()
 	{
-		return (this.buffer);
+		return (this.buffer.isEmpty ());
 	}
 	
 	@Override
-	protected final void loop ()
+	protected final void executeLoop ()
 	{
 		loop : while (true) {
 			while (true) {
 				synchronized (this.monitor) {
 					if (this.shouldStopSoft ())
 						break loop;
+					if (!this.shouldReconnect ())
+						break;
 					if (this.reconnect ())
 						break;
 				}
 				try {
 					Thread.sleep (this.waitTimeout);
 				} catch (final InterruptedException exception) {}
+				continue loop;
 			}
-			this.callbacks.handleLogEvent (Level.INFO, null, "amqp publisher shoveling outbound messages");
+			this.callbacks.handleLogEvent (Level.INFO, null, "amqp message publisher shoveling outbound messages to broker");
 			while (true) {
 				synchronized (this.monitor) {
 					if (this.shouldStopSoft ())
@@ -48,46 +53,59 @@ public final class AmqpRawPublisher
 					if (this.shouldReconnect ())
 						break;
 				}
-				final AmqpRawMessage message;
-				try {
-					message = this.buffer.poll (this.waitTimeout, TimeUnit.MILLISECONDS);
-				} catch (final InterruptedException exception) {
-					continue;
-				}
-				if (message == null)
-					continue;
-				synchronized (this.monitor) {
-					if (!this.publish (message))
-						this.buffer.addFirst (message);
-				}
+				this.shovelMessage ();
 			}
 		}
-		if (this.isConnected ())
-			this.disconnect ();
+		this.disconnect ();
 	}
 	
-	@Override
-	protected final boolean shouldStopSoft ()
+	private final boolean publishMessage (final AmqpRawMessage message)
 	{
-		return (this.buffer.isEmpty () && super.shouldStopSoft ());
-	}
-	
-	private final boolean publish (final AmqpRawMessage message)
-	{
-		final Channel channel = this.getChannel ();
-		final AMQP.BasicProperties properties = new AMQP.BasicProperties ();
-		properties.setContentType (message.contentType);
-		properties.setContentEncoding (message.contentEncoding);
-		properties.setDeliveryMode (2);
+		final AMQP.BasicProperties properties;
 		try {
-			channel.basicPublish (message.exchange, message.routingKey, false, false, properties, message.content);
-		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "amqp publisher encountered an error while publishing the message; requeueing!");
-			this.disconnect ();
+			properties = new AMQP.BasicProperties ();
+			properties.setContentType (message.contentType);
+			properties.setContentEncoding (message.contentEncoding);
+			properties.setDeliveryMode (2);
+		} catch (final Error exception) {
+			this.callbacks.handleException (exception, "amqp message publisher encountered an unknown error while preparing the message; aborting!");
 			return (false);
 		}
-		return (true);
+		synchronized (this.monitor) {
+			try {
+				final Channel channel = this.getChannel ();
+				channel.basicPublish (message.exchange, message.routingKey, false, false, properties, message.content);
+				return (true);
+			} catch (final IOException exception) {
+				this.callbacks.handleException (exception, "amqp message publisher encountered a network error while publishing the message; aborting and disconnecting!");
+				this.disconnect ();
+				return (false);
+			} catch (final Error exception) {
+				this.callbacks.handleException (exception, "amqp message publisher encountered an unknown error while publishing the message; aborting and disconnecting!");
+				this.disconnect ();
+				return (false);
+			}
+		}
 	}
 	
-	private final BlockingDeque<AmqpRawMessage> buffer;
+	private final void shovelMessage ()
+	{
+		try {
+			final AmqpRawMessage message;
+			try {
+				message = this.buffer.poll (this.waitTimeout, TimeUnit.MILLISECONDS);
+			} catch (final InterruptedException exception) {
+				return;
+			}
+			if (message == null)
+				return;
+			if (!this.publishMessage (message))
+				if (!this.buffer.offerFirst (message))
+					this.callbacks.handleLogEvent (Level.WARN, null, "amqp message publisher (message) buffer overflow; ignoring!");
+		} catch (final Error exception) {
+			this.callbacks.handleException (exception, "amqp message publisher encountered an unknown error while shoveling the message; ignoring!");
+		}
+	}
+	
+	public final BlockingDeque<AmqpRawMessage> buffer;
 }

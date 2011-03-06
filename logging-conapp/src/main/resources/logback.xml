@@ -4,29 +4,22 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<newRule pattern="/configuration/amqpLoggingInjector" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
+	<newRule pattern="/configuration/amqpConsumer" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
 	
-	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
-	
-	<amqpLoggingInjector>
+	<amqpConsumer name="amqp-consumer">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
 		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
 		<username>${arkitech.logging.amqp.username:-guest}</username>
 		<password>${arkitech.logging.amqp.password:-guest}</password>
 		<exchange>${arkitech.logging.amqp.exchange:-logging}</exchange>
-		<queue>${arkitech.logging.amqp.queue:-}</queue>
+		<queue>${arkitech.logging.amqp.queue:-logging.conapp}</queue>
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
-	</amqpLoggingInjector>
+	</amqpConsumer>
 	
 	<appender name="lucene" class="eu.arkitech.logging.datastore.lucene.LuceneAppender">
 		<environmentPath>${arkitech.logging.bdb.environment.path:-/tmp/arkitech-logging-datastore}</environmentPath>
 	</appender>
-	
-	<randomGenerator>
-		<count>1000</count>
-		<interval>250</interval>
-	</randomGenerator>
 	
 	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">
 		<discriminator>

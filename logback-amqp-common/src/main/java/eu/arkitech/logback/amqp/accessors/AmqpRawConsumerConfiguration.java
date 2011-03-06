@@ -22,8 +22,7 @@ public class AmqpRawConsumerConfiguration
 		this.routingKey = Objects.firstNonNull (override.routingKey, overriden.routingKey);
 	}
 	
-	public AmqpRawConsumerConfiguration (
-			final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final Callbacks callbacks, final Object monitor)
+	public AmqpRawConsumerConfiguration (final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, callbacks, monitor);
 		this.exchange = exchange;
@@ -36,6 +35,5 @@ public class AmqpRawConsumerConfiguration
 	public final String routingKey;
 	
 	public static final String defaultExchange = "logging";
-	public static final String defaultQueue = "";
 	public static final String defaultRoutingKey = "#";
 }

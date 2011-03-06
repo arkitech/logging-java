@@ -18,15 +18,15 @@ import eu.arkitech.logback.common.RandomGenerator;
 import org.slf4j.LoggerFactory;
 
 
-public final class Main
+public final class ConappMain
 {
-	private Main ()
+	private ConappMain ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
 	
 	public static final void main (final String[] arguments)
-			throws Throwable
+			throws Exception
 	{
 		if ((arguments.length != 0) && (arguments.length != 1))
 			throw (new IllegalArgumentException ("amqp consumer console application may take one argument (the logback configuration); aborting!"));
@@ -69,7 +69,7 @@ public final class Main
 			if (!stillRunning)
 				break;
 			try {
-				Thread.sleep (Main.defaultWaitTimeout);
+				Thread.sleep (ConappMain.defaultWaitTimeout);
 			} catch (final InterruptedException exception) {
 				break;
 			}
@@ -86,27 +86,27 @@ public final class Main
 		public Configurator (final List<AmqpConsumerAppender> agents)
 		{
 			super ();
-			this.injectorAction = new AmqpConsumerAppender.CreateAction (agents, false);
-			this.injectorAction.setContext (this.getContext ());
-			this.generatorAction = new RandomGenerator.CreateAction ();
+			this.amqpConsumerAction = new AmqpConsumerAppender.CreateAction (agents, true, false);
+			this.amqpConsumerAction.setContext (this.getContext ());
+			this.randomGeneratorAction = new RandomGenerator.CreateAction ();
 		}
 		
 		@Override
 		public final void addInstanceRules (final RuleStore rules)
 		{
 			super.addInstanceRules (rules);
-			rules.addRule (new Pattern ("/configuration/amqpLoggingInjector"), this.injectorAction);
-			rules.addRule (new Pattern ("/configuration/randomGenerator"), this.generatorAction);
+			rules.addRule (new Pattern ("/configuration/amqpConsumer"), this.amqpConsumerAction);
+			rules.addRule (new Pattern ("/configuration/randomGenerator"), this.randomGeneratorAction);
 		}
 		
 		@Override
 		public final void setContext (final Context context)
 		{
 			super.setContext (context);
-			this.injectorAction.setContext (context);
+			this.amqpConsumerAction.setContext (context);
 		}
 		
-		private final Action generatorAction;
-		private final Action injectorAction;
+		private final Action amqpConsumerAction;
+		private final Action randomGeneratorAction;
 	}
 }

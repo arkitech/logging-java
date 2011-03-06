@@ -1,5 +1,5 @@
 
-package eu.arkitech.logback.amqp.appender;
+package eu.arkitech.logback.amqp.publisher;
 
 
 import ch.qos.logback.classic.PatternLayout;
@@ -88,33 +88,41 @@ public class AmqpPublisherAppender
 	
 	@Override
 	protected final void reallyAppend (final ILoggingEvent event)
-			throws Throwable
 	{
-		this.publisher.push (event);
+		try {
+			this.publisher.push (event);
+		} catch (final InterruptedException exception) {
+			this.callbacks.handleException (exception, "amqp publisher appender encountered an interruption error while pushing the message; ignoring!");
+		}
 	}
 	
 	@Override
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
-			final boolean publisherStartSucceeded;
 			try {
 				if (this.publisher != null)
 					throw (new IllegalStateException ());
 				this.publisher = new AmqpPublisher (this.buildConfiguration ());
-				publisherStartSucceeded = this.publisher.start ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp appender encountered an error while starting; aborting!");
-				try {
+				boolean succeeded = this.publisher.start ();
+				if (succeeded)
+					try {
+						this.exchangeLayout.start ();
+						this.routingKeyLayout.start ();
+					} catch (final Error exception) {
+						this.callbacks.handleException (exception, "amqp publisher appender encountered an unknown error while starting layouts; aborting!");
+						succeeded = false;
+					}
+				if (!succeeded) {
 					this.reallyStop ();
-				} catch (final Error exception1) {}
-				throw (exception);
+					return (false);
+				}
+				return (succeeded);
+			} catch (final Error exception) {
+				this.callbacks.handleException (exception, "amqp publisher appender encountered an unknown error while starting; aborting!");
+				this.reallyStop ();
+				return (false);
 			}
-			if (publisherStartSucceeded) {
-				this.exchangeLayout.start ();
-				this.routingKeyLayout.start ();
-			}
-			return (publisherStartSucceeded);
 		}
 	}
 	
@@ -122,27 +130,28 @@ public class AmqpPublisherAppender
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
-			boolean publisherStopSucceeded = false;
 			try {
 				if (this.publisher != null)
 					this.publisher.requestStop ();
+				boolean succeeded = true;
+				if (this.publisher != null) {
+					succeeded = this.publisher.awaitStop ();
+					this.publisher = null;
+				}
+				try {
+					this.exchangeLayout.stop ();
+					this.routingKeyLayout.stop ();
+				} catch (final Error exception) {
+					this.callbacks.handleException (exception, "amqp publisher appender encountered an unknown error while stopping the layouts; ignoring!");
+					succeeded = false;
+				}
+				return (succeeded);
 			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp appender encountered an error while stopping the publisher; ignoring");
-				this.publisher = null;
-			}
-			try {
-				if (this.publisher != null)
-					publisherStopSucceeded = this.publisher.awaitStop ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp appender encountered an error while stopping the publisher; ignoring");
+				this.callbacks.handleException (exception, "amqp publisher appender encountered an unknown error while stopping; ignoring!");
+				return (false);
 			} finally {
 				this.publisher = null;
 			}
-			if (publisherStopSucceeded) {
-				this.exchangeLayout.stop ();
-				this.routingKeyLayout.stop ();
-			}
-			return (publisherStopSucceeded);
 		}
 	}
 	

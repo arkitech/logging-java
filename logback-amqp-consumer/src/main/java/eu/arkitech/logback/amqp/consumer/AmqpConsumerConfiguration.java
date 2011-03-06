@@ -22,9 +22,7 @@ public class AmqpConsumerConfiguration
 		this.mutator = Objects.firstNonNull (override.mutator, overriden.mutator);
 	}
 	
-	protected AmqpConsumerConfiguration (
-			final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final Serializer serializer, final LoggingEventMutator mutator,
-			final Callbacks callbacks, final Object monitor)
+	protected AmqpConsumerConfiguration (final String host, final Integer port, final String virtualHost, final String username, final String password, final String exchange, final String queue, final String routingKey, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, exchange, queue, routingKey, callbacks, monitor);
 		this.serializer = serializer;

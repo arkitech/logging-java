@@ -2,6 +2,7 @@
 package eu.arkitech.logback.amqp.accessors;
 
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.google.common.base.Preconditions;
 import eu.arkitech.logback.common.LoggingEventMutator;
@@ -23,53 +24,90 @@ public abstract class AmqpAccessor<_Accessor_ extends AmqpRawAccessor>
 		this.mutator = configuration.getMutator ();
 	}
 	
+	public abstract boolean isDrained ();
+	
 	protected final ILoggingEvent decodeMessage (final AmqpRawMessage message)
+			throws InternalException
 	{
-		final ILoggingEvent event;
 		try {
-			event = (ILoggingEvent) this.serializer.deserialize (message.content);
+			return ((ILoggingEvent) this.serializer.deserialize (message.content));
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "amqp consumer source encountered an error while deserializing the event; aborting!");
-			return (null);
+			throw (new InternalException ("amqp event accessor encountered an unknown error while deserializing the event", exception));
 		}
-		return (event);
 	}
 	
 	protected final AmqpRawMessage encodeMessage (final ILoggingEvent event, final String exchange, final String routingKey)
+			throws InternalException
 	{
-		final byte[] data;
 		try {
-			data = this.serializer.serialize (event);
+			return (new AmqpRawMessage (exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), this.serializer.serialize (event)));
 		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while serializing the event; aborting!");
-			return (null);
+			throw (new InternalException ("amqp event accessor encountered an unknown error while serializing the event", exception));
 		}
-		return (new AmqpRawMessage (exchange, routingKey, this.serializer.getContentType (), this.serializer.getContentEncoding (), data));
+	}
+	
+	@Override
+	protected final void finalizeLoop ()
+	{
+		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp event accessor stopping");
+		this.accessor.requestStop ();
+		this.accessor.awaitStop ();
+		this.callbacks.handleLogEvent (Level.INFO, null, "amqp event accessor stopped");
+	}
+	
+	@Override
+	protected final void initializeLoop ()
+	{
+		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp event accessor starting");
+		this.accessor.start ();
+		this.callbacks.handleLogEvent (Level.INFO, null, "amqp event accessor started");
+	}
+	
+	protected final void mutateEvent (final ILoggingEvent event)
+			throws InternalException
+	{
+		try {
+			if (this.mutator != null)
+				this.mutator.mutate (event);
+		} catch (final Throwable exception) {
+			throw (new InternalException ("amqp event accessor encountered an unknown error while mutating the event", exception));
+		}
 	}
 	
 	protected final ILoggingEvent prepareEvent (final ILoggingEvent originalEvent)
+			throws InternalException
 	{
-		final SLoggingEvent1 clonedEvent;
-		if (!(originalEvent instanceof SLoggingEvent1))
-			try {
-				clonedEvent = SLoggingEvent1.build (originalEvent);
-			} catch (final Throwable exception) {
-				this.callbacks.handleException (exception, "amqp publisher sink encountered an error while cloning the event; aborting!");
-				return (null);
-			}
-		else
-			clonedEvent = (SLoggingEvent1) originalEvent;
 		try {
-			if (this.mutator != null)
-				this.mutator.mutate (clonedEvent);
-		} catch (final Throwable exception) {
-			this.callbacks.handleException (exception, "amqp publisher sink encountered an error while mutating the event; aborting!");
-			return (null);
+			final SLoggingEvent1 clonedEvent;
+			if (!(originalEvent instanceof SLoggingEvent1))
+				clonedEvent = SLoggingEvent1.build (originalEvent);
+			else
+				clonedEvent = (SLoggingEvent1) originalEvent;
+			this.mutateEvent (clonedEvent);
+			return (clonedEvent);
+		} catch (final Error exception) {
+			throw (new InternalException ("amqp event accessor encountered an unknown error while preparing the event", exception));
 		}
-		return (clonedEvent);
+	}
+	
+	@Override
+	protected final boolean shouldStopSoft ()
+	{
+		return (this.isDrained () && super.shouldStopSoft ());
 	}
 	
 	protected final _Accessor_ accessor;
 	protected final LoggingEventMutator mutator;
 	protected final Serializer serializer;
+	
+	protected static final class InternalException
+			extends Exception
+	{
+		public InternalException (final String message, final Throwable cause)
+		{
+			super (message, cause);
+		}
+		
+		private static final long serialVersionUID = 1L;
+	}
 }

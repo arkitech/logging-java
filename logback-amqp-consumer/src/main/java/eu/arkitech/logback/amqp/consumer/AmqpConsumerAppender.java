@@ -8,7 +8,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.amqp.accessors.AmqpAccessorAppender;
 import eu.arkitech.logback.common.ClassNewInstanceAction;
-import eu.arkitech.logback.common.LoggingEventPump;
+import eu.arkitech.logback.common.SourceSinkPump;
 import org.slf4j.LoggerFactory;
 
 
@@ -82,24 +82,26 @@ public class AmqpConsumerAppender
 	protected final boolean reallyStart ()
 	{
 		synchronized (this) {
-			final boolean consumerStartSucceeded;
-			final boolean pumpStartSucceeded;
 			try {
 				if ((this.consumer != null) || (this.pump != null))
 					throw (new IllegalStateException ());
 				final AmqpConsumerConfiguration configuration = this.buildConfiguration ();
 				this.consumer = new AmqpConsumer (configuration);
-				this.pump = new LoggingEventPump (configuration, this.consumer, this);
-				consumerStartSucceeded = this.consumer.start ();
-				pumpStartSucceeded = this.pump.start ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp consumer encountered an error while starting; aborting!");
-				try {
+				boolean succeeded = this.consumer.start ();
+				if (succeeded) {
+					this.pump = new SourceSinkPump (configuration, this.consumer, this);
+					succeeded = this.pump.start ();
+				}
+				if (!succeeded) {
 					this.reallyStop ();
-				} catch (final Error exception1) {}
-				throw (exception);
+					return (false);
+				}
+				return (succeeded);
+			} catch (final Error exception) {
+				this.callbacks.handleException (exception, "amqp consumer appender encountered an unknown error while starting; aborting!");
+				this.reallyStop ();
+				return (false);
 			}
-			return (consumerStartSucceeded && pumpStartSucceeded);
 		}
 	}
 	
@@ -107,39 +109,28 @@ public class AmqpConsumerAppender
 	protected final boolean reallyStop ()
 	{
 		synchronized (this) {
-			boolean consumerStopSucceeded = false;
-			final boolean pumpStopSucceeded = false;
 			try {
 				if (this.consumer != null)
 					this.consumer.requestStop ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
-				this.consumer = null;
-			}
-			try {
 				if (this.pump != null)
 					this.pump.requestStop ();
+				boolean succeeded = true;
+				if (this.consumer != null) {
+					succeeded &= this.consumer.awaitStop ();
+					this.consumer = null;
+				}
+				if (this.pump != null) {
+					succeeded &= this.pump.awaitStop ();
+					this.pump = null;
+				}
+				return (succeeded);
 			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the pump; ignoring");
-				this.pump = null;
-			}
-			try {
-				if (this.consumer != null)
-					consumerStopSucceeded = this.consumer.awaitStop ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the consumer; ignoring");
+				this.callbacks.handleException (exception, "amqp consumer appender encountered an unknown error while stopping; ignoring!");
+				return (false);
 			} finally {
 				this.consumer = null;
-			}
-			try {
-				if (this.pump != null)
-					consumerStopSucceeded = this.pump.awaitStop ();
-			} catch (final Error exception) {
-				this.callbacks.handleException (exception, "amqp consumer encountered an error while stopping the pump; ignoring");
-			} finally {
 				this.pump = null;
 			}
-			return (consumerStopSucceeded && pumpStopSucceeded);
 		}
 	}
 	
@@ -147,21 +138,22 @@ public class AmqpConsumerAppender
 	protected String queue;
 	protected String routingKey;
 	private AmqpConsumer consumer;
-	private LoggingEventPump pump;
+	private SourceSinkPump pump;
 	
 	public static final class CreateAction
 			extends ClassNewInstanceAction<AmqpConsumerAppender>
 	{
 		public CreateAction ()
 		{
-			this (CreateAction.defaultCollector, CreateAction.defaultAutoStart);
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<AmqpConsumerAppender> collector, final boolean autoStart)
+		public CreateAction (final List<AmqpConsumerAppender> collector, final boolean autoRegister, final boolean autoStart)
 		{
-			super (AmqpConsumerAppender.class, collector, autoStart);
+			super (AmqpConsumerAppender.class, collector, autoRegister, autoStart);
 		}
 		
+		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
 		public static List<AmqpConsumerAppender> defaultCollector = null;
 	}

@@ -14,16 +14,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class Main
+public final class LuceneTestsMain
 {
-	private Main ()
+	private LuceneTestsMain ()
 	{
 		throw (new UnsupportedOperationException ());
 	}
 	
 	@SuppressWarnings ({"unused", "null"})
 	public static final void main (final String[] arguments)
-			throws Throwable
+			throws Exception
 	{
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
@@ -40,7 +40,7 @@ public final class Main
 		final int queryCount = 10;
 		final String queryString = "level:INFO OR level:ERROR";
 		
-		final Logger logger = LoggerFactory.getLogger (Main.class);
+		final Logger logger = LoggerFactory.getLogger (LuceneTestsMain.class);
 		
 		logger.info ("opening");
 		final File path = new File ("/tmp/arkitech-logging-datastore");

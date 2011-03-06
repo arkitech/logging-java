@@ -130,19 +130,22 @@ public abstract class WorkerThread
 		}
 	}
 	
-	public final void requestStop ()
+	public final boolean requestStop ()
 	{
 		synchronized (this) {
 			switch (this.state) {
 				case Created :
 					throw (new IllegalStateException ("worker thread is not started"));
+				case Stopped :
+					return (false);
 				case Starting :
 				case Running :
 					this.state = State.Stopping;
-					break;
+					return (true);
 				case Stopping :
-				case Stopped :
-					break;
+					return (true);
+				default:
+					throw (new IllegalStateException ("worker thread is in an unknown state"));
 			}
 		}
 	}
@@ -273,7 +276,7 @@ public abstract class WorkerThread
 		} catch (final Throwable exception1) {
 			try {
 				this.getThreadGroup ().uncaughtException (this, exception1);
-			} catch (final Throwable exception2) {}
+			} catch (final Error exception2) {}
 		}
 	}
 	
@@ -281,7 +284,7 @@ public abstract class WorkerThread
 	{
 		try {
 			this.requestStop ();
-		} catch (final Throwable exception) {
+		} catch (final Error exception) {
 			this.delegateHandleException (exception);
 		}
 		while (true) {

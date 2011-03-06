@@ -1,5 +1,5 @@
 
-package eu.arkitech.logback.amqp.appender;
+package eu.arkitech.logback.amqp.publisher;
 
 
 import com.google.common.base.Objects;
@@ -24,9 +24,7 @@ public class AmqpPublisherConfiguration
 		this.mutator = Objects.firstNonNull (override.mutator, overriden.mutator);
 	}
 	
-	protected AmqpPublisherConfiguration (
-			final String host, final Integer port, final String virtualHost, final String username, final String password, final AmqpRouter router, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks,
-			final Object monitor)
+	protected AmqpPublisherConfiguration (final String host, final Integer port, final String virtualHost, final String username, final String password, final AmqpRouter router, final Serializer serializer, final LoggingEventMutator mutator, final Callbacks callbacks, final Object monitor)
 	{
 		super (host, port, virtualHost, username, password, callbacks, monitor);
 		this.router = router;

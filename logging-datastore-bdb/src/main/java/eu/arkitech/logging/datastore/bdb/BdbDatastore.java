@@ -45,17 +45,14 @@ public final class BdbDatastore
 	{
 		super ();
 		final BdbDatastoreConfiguration configuration = (configuration_ != null) ? configuration_ : new BdbDatastoreConfiguration ();
-		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
-		synchronized (monitor) {
-			this.monitor = monitor;
-			this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
-			this.environmentPath = Preconditions.checkNotNull ((configuration.environmentPath != null) ? configuration.environmentPath : BdbDatastoreConfiguration.defaultEnvironmentPath);
-			this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
-			this.serializer = Preconditions.checkNotNull ((configuration.serializer != null) ? configuration.serializer : BdbDatastoreConfiguration.defaultSerializer);
-			this.loadMutator = (configuration.loadMutator != null) ? configuration.loadMutator : BdbDatastoreConfiguration.defaultLoadMutator;
-			this.storeMutator = (configuration.storeMutator != null) ? configuration.storeMutator : BdbDatastoreConfiguration.defaultStoreMutator;
-			this.state = State.Closed;
-		}
+		this.monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
+		this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
+		this.environmentPath = Preconditions.checkNotNull ((configuration.environmentPath != null) ? configuration.environmentPath : BdbDatastoreConfiguration.defaultEnvironmentPath);
+		this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
+		this.serializer = Preconditions.checkNotNull ((configuration.serializer != null) ? configuration.serializer : BdbDatastoreConfiguration.defaultSerializer);
+		this.loadMutator = (configuration.loadMutator != null) ? configuration.loadMutator : BdbDatastoreConfiguration.defaultLoadMutator;
+		this.storeMutator = (configuration.storeMutator != null) ? configuration.storeMutator : BdbDatastoreConfiguration.defaultStoreMutator;
+		this.state = State.Closed;
 	}
 	
 	@Override
@@ -66,7 +63,7 @@ public final class BdbDatastore
 				return (false);
 			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
 			try {
-				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closing");
+				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore closing");
 				if (this.eventDatabase != null)
 					try {
 						this.eventDatabase.close ();
@@ -86,7 +83,7 @@ public final class BdbDatastore
 				this.state = State.Closed;
 				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closed");
 				return (true);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while closing; aborting!");
 				return (false);
 			} finally {
@@ -102,7 +99,7 @@ public final class BdbDatastore
 		synchronized (this.monitor) {
 			Preconditions.checkState (this.state == State.Closed, "bdb datastore is already opened");
 			try {
-				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opening");
+				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore opening");
 				if (!this.environmentPath.exists ()) {
 					this.callbacks.handleLogEvent (Level.WARN, null, "bdb datastore environment path does not exist; creating!");
 					if (!this.environmentPath.mkdir ()) {
@@ -142,7 +139,7 @@ public final class BdbDatastore
 				this.state = State.Opened;
 				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opened");
 				return (true);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while opening; aborting!");
 				this.close ();
 				return (false);
@@ -242,7 +239,7 @@ public final class BdbDatastore
 			} catch (final InternalException exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an internal error while selecting the events; aborting!");
 				return (null);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unexpected error while selecting the events; aborting!");
 				return (null);
 			}
@@ -308,7 +305,7 @@ public final class BdbDatastore
 			} catch (final InternalException exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an error internal while selecting the events; aborting!");
 				return (null);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unexpected error while selecting the events; aborting!");
 				return (null);
 			}
@@ -330,7 +327,7 @@ public final class BdbDatastore
 			} catch (final InternalException exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an internal error while selecting the event; aborting!");
 				return (null);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while selecting the event; aborting!");
 				return (null);
 			}
@@ -357,7 +354,7 @@ public final class BdbDatastore
 			} catch (final InternalException exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an internal error while storing the event; aborting!");
 				return (null);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while storing the event; aborting!");
 				return (null);
 			}
@@ -383,7 +380,7 @@ public final class BdbDatastore
 			} catch (final DatabaseException exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered a database error while commiting the environment; aborting!");
 				return (false);
-			} catch (final Throwable exception) {
+			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while commiting the environment; aborting!");
 				return (false);
 			}
@@ -403,7 +400,7 @@ public final class BdbDatastore
 			throws InternalException
 	{
 		try {
-			return (ILoggingEvent.class.cast (this.serializer.deserialize (entry.getData (), entry.getOffset (), entry.getSize ())));
+			return ((ILoggingEvent) this.serializer.deserialize (entry.getData (), entry.getOffset (), entry.getSize ()));
 		} catch (final Throwable exception) {
 			throw (new InternalException ("bdb datastore encountered an unknown error while deserializing the event", exception));
 		}
@@ -414,7 +411,7 @@ public final class BdbDatastore
 	{
 		try {
 			return (new String (entry.getData (), entry.getOffset (), entry.getSize ()));
-		} catch (final Throwable exception) {
+		} catch (final Error exception) {
 			throw (new InternalException ("bdb datastore encountered an unknown error while deserializing the key", exception));
 		}
 	}
@@ -466,7 +463,7 @@ public final class BdbDatastore
 					builder.append (s);
 			}
 			return (builder.toString ());
-		} catch (final Throwable exception) {
+		} catch (final Error exception) {
 			throw (new InternalException ("bdb datastore encountered an unknown error while encoding the key", exception));
 		}
 	}
@@ -509,10 +506,8 @@ public final class BdbDatastore
 			this.callbacks.handleException (exception, "bdb datastore encountered an error while feedingt the hasher; aborting!");
 			return (null);
 		}
-		if (hashBytes.length != BdbDatastore.hashSize) {
-			this.callbacks.handleLogEvent (Level.ERROR, null, "bdb datastore obtained an invalid hash size; aborting!");
-			return (null);
-		}
+		if (hashBytes.length != BdbDatastore.hashSize)
+			throw (new InternalException ("bdb datastore obtained an invalid hash size"));
 		return (this.encodeRawKeyFromHash (timestamp, hashBytes));
 	}
 	
@@ -520,14 +515,12 @@ public final class BdbDatastore
 			throws InternalException
 	{
 		try {
-			final byte[] timestampBytes =
-					new byte[] {(byte) ((timestamp >> 56) & 0xff), (byte) ((timestamp >> 48) & 0xff), (byte) ((timestamp >> 40) & 0xff), (byte) ((timestamp >> 32) & 0xff), (byte) ((timestamp >> 24) & 0xff), (byte) ((timestamp >> 16) & 0xff),
-							(byte) ((timestamp >> 8) & 0xff), (byte) ((timestamp >> 0) & 0xff)};
+			final byte[] timestampBytes = new byte[] {(byte) ((timestamp >> 56) & 0xff), (byte) ((timestamp >> 48) & 0xff), (byte) ((timestamp >> 40) & 0xff), (byte) ((timestamp >> 32) & 0xff), (byte) ((timestamp >> 24) & 0xff), (byte) ((timestamp >> 16) & 0xff), (byte) ((timestamp >> 8) & 0xff), (byte) ((timestamp >> 0) & 0xff)};
 			final byte[] keyBytes = new byte[timestampBytes.length + hashBytes.length];
 			System.arraycopy (timestampBytes, 0, keyBytes, 0, timestampBytes.length);
 			System.arraycopy (hashBytes, 0, keyBytes, timestampBytes.length, hashBytes.length);
 			return (keyBytes);
-		} catch (final Throwable exception) {
+		} catch (final Error exception) {
 			throw (new InternalException ("bdb datastore encountered an unknown error while encoding the key", exception));
 		}
 	}
@@ -576,8 +569,8 @@ public final class BdbDatastore
 			if ((key != null) && (clonedEvent.key == null))
 				clonedEvent.key = key;
 			return (clonedEvent);
-		} catch (final Throwable exception) {
-			throw (new InternalException ("bdb datastore encountered an error while preparing the event", exception));
+		} catch (final Error exception) {
+			throw (new InternalException ("bdb datastore encountered an unknown error while preparing the event", exception));
 		}
 	}
 	
@@ -671,7 +664,7 @@ public final class BdbDatastore
 		Opened;
 	}
 	
-	private final class EntryPair
+	private static final class EntryPair
 	{
 		public EntryPair (final DatabaseEntry key, final DatabaseEntry value)
 		{
@@ -695,9 +688,14 @@ public final class BdbDatastore
 		}
 	}
 	
-	private final class InternalException
+	private static final class InternalException
 			extends Exception
 	{
+		public InternalException (final String message)
+		{
+			super (message);
+		}
+		
 		public InternalException (final String message, final Throwable cause)
 		{
 			super (message, cause);
@@ -706,7 +704,7 @@ public final class BdbDatastore
 		private static final long serialVersionUID = 1L;
 	}
 	
-	private final class KeyEventEntryPair
+	private static final class KeyEventEntryPair
 	{
 		public KeyEventEntryPair (final KeyEventPair keyEventPair, final EntryPair databaseEntryPair)
 		{
@@ -724,7 +722,7 @@ public final class BdbDatastore
 		public final KeyEventPair keyEventPair;
 	}
 	
-	private final class KeyEventPair
+	private static final class KeyEventPair
 	{
 		public KeyEventPair (final String key, final ILoggingEvent event)
 		{

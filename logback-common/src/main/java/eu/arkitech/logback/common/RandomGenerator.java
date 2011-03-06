@@ -176,12 +176,12 @@ public class RandomGenerator
 	{
 		public CreateAction ()
 		{
-			this (CreateAction.defaultCollector, CreateAction.defaultAutoStart);
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<RandomGenerator> collector, final boolean autoStart)
+		public CreateAction (final List<RandomGenerator> collector, final boolean autoRegister, final boolean autoStart)
 		{
-			super (RandomGenerator.class, collector, autoStart);
+			super (RandomGenerator.class, collector, autoRegister, autoStart);
 		}
 		
 		@Override
@@ -190,6 +190,7 @@ public class RandomGenerator
 			this.object.start ();
 		}
 		
+		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
 		public static List<RandomGenerator> defaultCollector = null;
 	}

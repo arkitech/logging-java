@@ -3,7 +3,7 @@ package eu.arkitech.logback.amqp.tests;
 
 
 import ch.qos.logback.classic.Logger;
-import eu.arkitech.logback.amqp.appender.AmqpPublisherAppender;
+import eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender;
 import eu.arkitech.logback.common.DefaultLoggingEventMutator;
 import eu.arkitech.logback.common.RandomGenerator;
 import org.slf4j.LoggerFactory;
@@ -16,8 +16,8 @@ import org.junit.Test;
 public final class AmqpPublisherTests
 {
 	@Test
-	public final void testAppender ()
-			throws Throwable
+	public final void testPublisherAppender ()
+			throws Exception
 	{
 		final Logger realLogger = (Logger) LoggerFactory.getLogger (AmqpPublisherTests.class.getName ());
 		
@@ -62,5 +62,5 @@ public final class AmqpPublisherTests
 	private static final int messageCount = 20;
 	private static final String testLoggerName = "__testing__.eu.ackitech.logback.amqp.logger";
 	private static final int timeout = 100;
-	private static final int timeoutTries = 100 * 1000;
+	private static final int timeoutTries = 100;
 }

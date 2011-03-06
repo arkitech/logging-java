@@ -27,15 +27,12 @@ public final class LuceneDatastore
 	{
 		super ();
 		final LuceneDatastoreConfiguration configuration = (configuration_ != null) ? configuration_ : new LuceneDatastoreConfiguration ();
-		final Object monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
-		synchronized (monitor) {
-			this.monitor = monitor;
-			this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
-			this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
-			this.bdb = new BdbDatastore (new BdbDatastoreConfiguration (configuration.environmentPath, this.readOnly, configuration.serializer, configuration.loadMutator, configuration.storeMutator, this.callbacks, this.monitor));
-			this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
-			this.state = State.Closed;
-		}
+		this.monitor = (configuration.monitor != null) ? configuration.monitor : new Object ();
+		this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
+		this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
+		this.bdb = new BdbDatastore (new BdbDatastoreConfiguration (configuration.environmentPath, this.readOnly, configuration.serializer, configuration.loadMutator, configuration.storeMutator, this.callbacks, this.monitor));
+		this.index = new LuceneIndex (this.bdb, this.readOnly, this.callbacks, this.monitor);
+		this.state = State.Closed;
 	}
 	
 	@Override

@@ -14,8 +14,8 @@ import org.junit.Test;
 public final class AmqpConsumerTests
 {
 	@Test
-	public final void testAgent ()
-			throws Throwable
+	public final void testConsumerAppender ()
+			throws Exception
 	{
 		final Logger realLogger = (Logger) LoggerFactory.getLogger (AmqpConsumerTests.class.getName ());
 		
@@ -56,5 +56,5 @@ public final class AmqpConsumerTests
 	private static final int messageCount = 20;
 	private static final String testLoggerName = "__testing__.eu.ackitech.logback.amqp.logger";
 	private static final int timeout = 100;
-	private static final int timeoutTries = 100 * 1000;
+	private static final int timeoutTries = 100;
 }
