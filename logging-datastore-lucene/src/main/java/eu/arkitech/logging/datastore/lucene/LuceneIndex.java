@@ -4,6 +4,7 @@ package eu.arkitech.logging.datastore.lucene;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Map;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -291,6 +292,10 @@ public final class LuceneIndex
 				document.add (new Field (LuceneIndex.exceptionClassFieldName, exception.getClassName (), Store.NO, Index.ANALYZED));
 				document.add (new Field (LuceneIndex.exceptionMessageFieldName, exception.getMessage (), Store.NO, Index.ANALYZED));
 			}
+			final Map<String, String> mdc = event.getMdc ();
+			if (mdc != null)
+				for (final Map.Entry<String, String> mdcAttribute : mdc.entrySet ())
+					document.add (new Field (String.format (LuceneIndex.mdcAttributeFieldNameFormat, mdcAttribute.getKey ()), mdcAttribute.getValue (), Store.NO, Index.ANALYZED));
 			return (document);
 		} catch (final Error exception) {
 			throw (new InternalException ("lucene index encountered an error while building the document", exception));
@@ -319,6 +324,7 @@ public final class LuceneIndex
 	public static final String levelFieldName = "level";
 	public static final String loggerFieldName = "logger";
 	public static final String messageFieldName = "message";
+	public static final String mdcAttributeFieldNameFormat = "mdc_%s";
 	@SuppressWarnings ("deprecation")
 	public static final Version version = Version.LUCENE_CURRENT;
 	
