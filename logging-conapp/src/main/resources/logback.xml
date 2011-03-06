@@ -30,7 +30,7 @@
 			<appender name="sifter-${application}" class="ch.qos.logback.core.FileAppender">
 				<file>${arkitech.logging.sifter.file.prefix:-/tmp/arkitech-logging-logs-}${application}.log</file>
 				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-					<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{YYYY-MM-DDTHH:mm:ss.SSS}] [%level] [%logger] %msg%n</pattern>
+					<pattern>[%mdc{application}/%mdc{component}/%mdc{node}/%mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss.SSS}/%relative] [%level] [%logger] %msg%n</pattern>
 				</encoder>
 			</appender>
 		</sift>
@@ -39,7 +39,7 @@
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
 		<target>System.err</target>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>[%mdc{application}/%mdc{component}/%mdc{node}] [%mdc{sequence}/%relative/%d{HH:mm:ss.SSS}] [%level] [%logger] %msg%n%nopex</pattern>
+			<pattern>[%-8mdc{application}:%-8mdc{component}:%-8mdc{node}/%6mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss}] [%-5level] [%logger{48}] %msg%n%nopex</pattern>
 		</encoder>
 	</appender>
 	

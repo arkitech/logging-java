@@ -17,7 +17,7 @@
 		<username>${arkitech.logging.amqp.username:-guest}</username>
 		<password>${arkitech.logging.amqp.password:-guest}</password>
 		<exchange>${arkitech.logging.amqp.exchange:-logging}</exchange>
-		<queue>${arkitech.logging.amqp.queue:-}</queue>
+		<queue>${arkitech.logging.amqp.queue:-logging.webapp}</queue>
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
 	</amqpConsumer>
 	

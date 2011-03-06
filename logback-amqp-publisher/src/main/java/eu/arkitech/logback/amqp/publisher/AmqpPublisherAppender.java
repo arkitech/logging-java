@@ -90,6 +90,7 @@ public class AmqpPublisherAppender
 	protected final void reallyAppend (final ILoggingEvent event)
 	{
 		try {
+			event.prepareForDeferredProcessing ();
 			this.publisher.push (event);
 		} catch (final InterruptedException exception) {
 			this.callbacks.handleException (exception, "amqp publisher appender encountered an interruption error while pushing the message; ignoring!");
