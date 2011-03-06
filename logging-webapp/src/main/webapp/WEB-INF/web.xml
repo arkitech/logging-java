@@ -5,7 +5,7 @@
 	
 	<servlet>
 		<servlet-name>event-log</servlet-name>
-		<servlet-class>eu.arkitech.logback.webapp.EventLogServlet</servlet-class>
+		<servlet-class>eu.arkitech.logging.webapp.EventLogServlet</servlet-class>
 		<load-on-startup>0</load-on-startup>
 		<init-param>
 			<param-name>appender</param-name>

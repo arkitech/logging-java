@@ -7,7 +7,7 @@ import java.util.List;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.amqp.accessors.AmqpAccessorAppender;
-import eu.arkitech.logback.common.ClassNewInstanceAction;
+import eu.arkitech.logback.common.AppenderNewInstanceAction;
 import eu.arkitech.logback.common.SourceSinkPump;
 import org.slf4j.LoggerFactory;
 
@@ -110,15 +110,15 @@ public class AmqpConsumerAppender
 	{
 		synchronized (this) {
 			try {
+				boolean succeeded = true;
 				if (this.consumer != null)
 					this.consumer.requestStop ();
-				if (this.pump != null)
-					this.pump.requestStop ();
-				boolean succeeded = true;
 				if (this.consumer != null) {
 					succeeded &= this.consumer.awaitStop ();
 					this.consumer = null;
 				}
+				if (this.pump != null)
+					this.pump.requestStop ();
 				if (this.pump != null) {
 					succeeded &= this.pump.awaitStop ();
 					this.pump = null;
@@ -141,7 +141,7 @@ public class AmqpConsumerAppender
 	private SourceSinkPump pump;
 	
 	public static final class CreateAction
-			extends ClassNewInstanceAction<AmqpConsumerAppender>
+			extends AppenderNewInstanceAction<AmqpConsumerAppender>
 	{
 		public CreateAction ()
 		{

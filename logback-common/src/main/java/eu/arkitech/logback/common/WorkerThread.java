@@ -2,6 +2,11 @@
 package eu.arkitech.logback.common;
 
 
+import java.util.HashSet;
+
+import com.google.common.base.Preconditions;
+
+
 public abstract class WorkerThread
 		extends Thread
 {
@@ -31,13 +36,11 @@ public abstract class WorkerThread
 		synchronized (this) {
 			this.state = State.Created;
 			this.identifier = WorkerThread.generateIdentifier ();
-			this.shutdownHandler = new ShutdownHandler ();
 			this.exceptionHandler = new ExceptionHandler ();
 			super.setName (WorkerThread.generateName (name, this.identifier));
 			super.setUncaughtExceptionHandler (this.exceptionHandler);
 			super.setDaemon (true);
 			super.setPriority ((priority != null) ? priority : WorkerThread.defaultPriority);
-			this.shutdownHandler.setName (this.getName () + "@sh");
 		}
 	}
 	
@@ -112,6 +115,11 @@ public abstract class WorkerThread
 		super.interrupt ();
 	}
 	
+	public final boolean isCurrentThread ()
+	{
+		return (this == Thread.currentThread ());
+	}
+	
 	@Override
 	public final boolean isInterrupted ()
 	{
@@ -130,7 +138,13 @@ public abstract class WorkerThread
 		}
 	}
 	
-	public final boolean requestStop ()
+	public final boolean requestStopHard ()
+	{
+		this.shouldStopHard = true;
+		return (this.requestStopSoft ());
+	}
+	
+	public final boolean requestStopSoft ()
 	{
 		synchronized (this) {
 			switch (this.state) {
@@ -153,6 +167,10 @@ public abstract class WorkerThread
 	@Override
 	public final void run ()
 	{
+		ShutdownHandler.handler.isAlive ();
+		synchronized (WorkerThread.instances) {
+			WorkerThread.instances.add (this);
+		}
 		if (Thread.currentThread () != this)
 			throw (new IllegalStateException ());
 		synchronized (this) {
@@ -189,9 +207,9 @@ public abstract class WorkerThread
 				throw (new IllegalStateException ());
 			this.state = State.Stopped;
 		}
-		try {
-			Runtime.getRuntime ().removeShutdownHook (this.shutdownHandler);
-		} catch (final IllegalStateException exception) {}
+		synchronized (WorkerThread.instances) {
+			WorkerThread.instances.remove (this);
+		}
 	}
 	
 	@Override
@@ -210,7 +228,7 @@ public abstract class WorkerThread
 	
 	public final boolean shouldStopHard ()
 	{
-		return (this.shutdownHandler.isStarted ());
+		return (this.shouldStopHard);
 	}
 	
 	public boolean shouldStopSoft ()
@@ -227,12 +245,6 @@ public abstract class WorkerThread
 			if (this.state != State.Created)
 				throw (new IllegalStateException ("worker thread is already started"));
 			this.state = State.Starting;
-			try {
-				Runtime.getRuntime ().addShutdownHook (this.shutdownHandler);
-			} catch (final IllegalStateException exception) {
-				this.delegateHandleException (exception);
-			}
-			this.shutdownHandler.setName (this.getName () + "@sh");
 			super.start ();
 		}
 	}
@@ -280,27 +292,9 @@ public abstract class WorkerThread
 		}
 	}
 	
-	private final void handleShutdown ()
-	{
-		try {
-			this.requestStop ();
-		} catch (final Error exception) {
-			this.delegateHandleException (exception);
-		}
-		while (true) {
-			try {
-				this.join ();
-			} catch (final InterruptedException exception) {
-				this.delegateHandleException (exception);
-			}
-			if (!this.isAlive ())
-				break;
-		}
-	}
-	
 	private final ExceptionHandler exceptionHandler;
 	private final long identifier;
-	private final ShutdownHandler shutdownHandler;
+	private boolean shouldStopHard;
 	private State state;
 	
 	private static final long generateIdentifier ()
@@ -319,8 +313,12 @@ public abstract class WorkerThread
 	
 	public static final int defaultPriority = Thread.MIN_PRIORITY;
 	public static final long defaultStackSize = 0;
+	public static final long stopHardEnforceTimeout = 5 * 1000;
+	public static final long stopHardRequestTimeout = 5 * 1000;
 	private static long identifierCounter = 0;
 	private static final Object identifierCounterMonitor = new Object ();
+	
+	private static final HashSet<WorkerThread> instances = new HashSet<WorkerThread> ();
 	
 	public static enum State
 	{
@@ -344,21 +342,63 @@ public abstract class WorkerThread
 		}
 	}
 	
-	private final class ShutdownHandler
+	@SuppressWarnings ("deprecation")
+	private static final class ShutdownHandler
 			extends Thread
 	{
-		public final boolean isStarted ()
+		private ShutdownHandler ()
 		{
-			return (this.started);
+			super ();
+			this.setName (ShutdownHandler.class.getName ());
+			Runtime.getRuntime ().addShutdownHook (this);
 		}
 		
 		@Override
 		public final void run ()
 		{
-			this.started = true;
-			WorkerThread.this.handleShutdown ();
+			Preconditions.checkState (ShutdownHandler.handler == this);
+			final long shutdownTimestamp = System.currentTimeMillis ();
+			final long stopHardRequestTimestamp = shutdownTimestamp + WorkerThread.stopHardRequestTimeout;
+			final long stopHardEnforceTimestamp = stopHardRequestTimestamp + WorkerThread.stopHardEnforceTimeout;
+			synchronized (WorkerThread.instances) {
+				for (final WorkerThread thread : WorkerThread.instances)
+					thread.requestStopSoft ();
+			}
+			while (true) {
+				synchronized (WorkerThread.instances) {
+					if (WorkerThread.instances.size () == 0)
+						return;
+				}
+				try {
+					Thread.sleep (ShutdownHandler.defaultWaitTimeout);
+				} catch (final InterruptedException exception) {}
+				final long currentTimestamp = System.currentTimeMillis ();
+				if (currentTimestamp >= stopHardRequestTimestamp)
+					break;
+			}
+			synchronized (WorkerThread.instances) {
+				for (final WorkerThread thread : WorkerThread.instances)
+					thread.requestStopHard ();
+			}
+			while (true) {
+				synchronized (WorkerThread.instances) {
+					if (WorkerThread.instances.size () == 0)
+						return;
+				}
+				try {
+					Thread.sleep (ShutdownHandler.defaultWaitTimeout);
+				} catch (final InterruptedException exception) {}
+				final long currentTimestamp = System.currentTimeMillis ();
+				if (currentTimestamp >= stopHardEnforceTimestamp)
+					break;
+			}
+			synchronized (WorkerThread.instances) {
+				for (final WorkerThread thread : WorkerThread.instances)
+					thread.stop ();
+			}
 		}
 		
-		private boolean started;
+		static final ShutdownHandler handler = new ShutdownHandler ();
+		private static final long defaultWaitTimeout = 100;
 	}
 }

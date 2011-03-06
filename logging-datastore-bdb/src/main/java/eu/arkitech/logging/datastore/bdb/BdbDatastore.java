@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.CursorConfig;
@@ -29,12 +30,14 @@ import eu.arkitech.logback.common.LoggingEventFilter;
 import eu.arkitech.logback.common.LoggingEventMutator;
 import eu.arkitech.logback.common.SLoggingEvent1;
 import eu.arkitech.logback.common.Serializer;
-import eu.arkitech.logging.datastore.common.Datastore;
+import eu.arkitech.logging.datastore.common.SyncableDatastoreBackgroundWorker;
+import eu.arkitech.logging.datastore.common.SyncableDatastoreBackgroundWorkerConfiguration;
+import eu.arkitech.logging.datastore.common.SyncableMutableDatastore;
 
 
 public final class BdbDatastore
 		implements
-			Datastore
+			SyncableMutableDatastore
 {
 	public BdbDatastore ()
 	{
@@ -49,6 +52,9 @@ public final class BdbDatastore
 		this.callbacks = (configuration.callbacks != null) ? configuration.callbacks : new DefaultLoggerCallbacks (this);
 		this.environmentPath = Preconditions.checkNotNull ((configuration.environmentPath != null) ? configuration.environmentPath : BdbDatastoreConfiguration.defaultEnvironmentPath);
 		this.readOnly = (configuration.readOnly != null) ? configuration.readOnly.booleanValue () : true;
+		this.syncWorkerEnabled = Preconditions.checkNotNull (Objects.firstNonNull (configuration.syncEnabled, true));
+		this.syncTimeout = Preconditions.checkNotNull (Objects.firstNonNull (configuration.syncTimeout, SyncableDatastoreBackgroundWorkerConfiguration.defaultSyncWriteTimeout));
+		Preconditions.checkArgument ((this.syncTimeout == -1) || (this.syncWorkerEnabled && (this.syncTimeout > 0)));
 		this.serializer = Preconditions.checkNotNull ((configuration.serializer != null) ? configuration.serializer : BdbDatastoreConfiguration.defaultSerializer);
 		this.loadMutator = (configuration.loadMutator != null) ? configuration.loadMutator : BdbDatastoreConfiguration.defaultLoadMutator;
 		this.storeMutator = (configuration.storeMutator != null) ? configuration.storeMutator : BdbDatastoreConfiguration.defaultStoreMutator;
@@ -58,10 +64,14 @@ public final class BdbDatastore
 	@Override
 	public final boolean close ()
 	{
+		boolean succeeded = false;
+		final SyncableDatastoreBackgroundWorker syncWorker;
 		synchronized (this.monitor) {
 			if (this.state == State.Closed)
 				return (false);
 			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
+			syncWorker = this.syncWorker;
+			this.syncWorker = null;
 			try {
 				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore closing");
 				if (this.eventDatabase != null)
@@ -82,15 +92,17 @@ public final class BdbDatastore
 					}
 				this.state = State.Closed;
 				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closed");
-				return (true);
+				succeeded = true;
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while closing; aborting!");
-				return (false);
 			} finally {
 				this.eventDatabase = null;
 				this.environment = null;
 			}
 		}
+		if (syncWorker != null)
+			syncWorker.cancel ();
+		return (succeeded);
 	}
 	
 	@Override
@@ -100,6 +112,14 @@ public final class BdbDatastore
 			Preconditions.checkState (this.state == State.Closed, "bdb datastore is already opened");
 			try {
 				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore opening");
+				if (this.syncWorkerEnabled) {
+					this.syncWorker = new SyncableDatastoreBackgroundWorker (new SyncableDatastoreBackgroundWorkerConfiguration (this, -1L, !this.readOnly ? this.syncTimeout : -1L, this.callbacks, this.monitor));
+					if (!this.syncWorker.start ()) {
+						this.callbacks.handleLogEvent (Level.ERROR, null, "bdb datastore failed to start sync thread; aborting!");
+						this.close ();
+						return (false);
+					}
+				}
 				if (!this.environmentPath.exists ()) {
 					this.callbacks.handleLogEvent (Level.WARN, null, "bdb datastore environment path does not exist; creating!");
 					if (!this.environmentPath.mkdir ()) {
@@ -369,6 +389,7 @@ public final class BdbDatastore
 		}
 	}
 	
+	@Override
 	public final boolean syncWrite ()
 	{
 		synchronized (this.monitor) {
@@ -646,6 +667,9 @@ public final class BdbDatastore
 	private final Serializer serializer;
 	private State state;
 	private final LoggingEventMutator storeMutator;
+	private final long syncTimeout;
+	private SyncableDatastoreBackgroundWorker syncWorker;
+	private final boolean syncWorkerEnabled;
 	
 	static {
 		hashAlgorithm = "MD5";

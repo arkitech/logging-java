@@ -93,7 +93,7 @@ public abstract class AmqpAccessor<_Accessor_ extends AmqpRawAccessor>
 	@Override
 	protected final boolean shouldStopSoft ()
 	{
-		return (this.isDrained () && super.shouldStopSoft ());
+		return ((this.isDrained () && super.shouldStopSoft ()) || this.shouldStopHard ());
 	}
 	
 	protected final _Accessor_ accessor;

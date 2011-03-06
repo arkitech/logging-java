@@ -14,15 +14,15 @@ import com.google.common.base.Preconditions;
 import org.xml.sax.Attributes;
 
 
-public class ClassNewInstanceAction<_Object_ extends ContextAware>
+public class ObjectNewInstanceAction<_Object_ extends ContextAware>
 		extends Action
 {
-	public ClassNewInstanceAction (final Class<? extends _Object_> objectClass)
+	public ObjectNewInstanceAction (final Class<? extends _Object_> objectClass)
 	{
 		this (objectClass, null, true, true);
 	}
 	
-	public ClassNewInstanceAction (final Class<? extends _Object_> objectClass, final List<_Object_> collector, final boolean autoRegister, final boolean autoStart)
+	public ObjectNewInstanceAction (final Class<? extends _Object_> objectClass, final List<_Object_> collector, final boolean autoRegister, final boolean autoStart)
 	{
 		super ();
 		this.objectClass = Preconditions.checkNotNull (objectClass);

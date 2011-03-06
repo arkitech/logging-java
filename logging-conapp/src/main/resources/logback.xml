@@ -6,6 +6,10 @@
 	
 	<newRule pattern="/configuration/amqpConsumer" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
 	
+	<newRule pattern="/configuration/amqpPublisher" actionClass="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender$CreateAction" />
+	
+	<newRule pattern="/configuration/luceneDatastore" actionClass="eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender$CreateAction" />
+	
 	<amqpConsumer name="amqp-consumer">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
@@ -17,10 +21,30 @@
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
 	</amqpConsumer>
 	
-	<appender name="lucene" class="eu.arkitech.logging.datastore.lucene.LuceneAppender">
+	<!--
+	<amqpPublisher name="amqp-publisher">
+		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
+		<port>${arkitech.logging.amqp.port:-5672}</port>
+		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
+		<username>${arkitech.logging.amqp.username:-guest}</username>
+		<password>${arkitech.logging.amqp.password:-guest}</password>
+		<exchangePattern>${arkitech.logging.amqp.pubExchange:-logging}%nopex</exchangePattern>
+		<routingKeyPattern>${arkitech.logging.amqp.pubRoutingKey:-logging.event.%level}%nopex</routingKeyPattern>
+	</amqpPublisher>
+	-->
+	
+	<luceneDatastore name="lucene">
 		<environmentPath>${arkitech.logging.bdb.environment.path:-/tmp/arkitech-logging-datastore}</environmentPath>
+	</luceneDatastore>
+	
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>[%-8mdc{application}:%-8mdc{component}:%-8mdc{node}/%6mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss}] [%-5level] [%logger{48}] %msg%n%nopex</pattern>
+		</encoder>
 	</appender>
 	
+	<!--
 	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">
 		<discriminator>
 			<key>application</key>
@@ -35,18 +59,15 @@
 			</appender>
 		</sift>
 	</appender>
-	
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-		<target>System.err</target>
-		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>[%-8mdc{application}:%-8mdc{component}:%-8mdc{node}/%6mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss}] [%-5level] [%logger{48}] %msg%n%nopex</pattern>
-		</encoder>
-	</appender>
+	-->
 	
 	<root level="trace">
+		<appender-ref ref="amqp-publisher" />
 		<appender-ref ref="console" />
-		<appender-ref ref="sifter" />
 		<appender-ref ref="lucene" />
+		<!--
+		<appender-ref ref="sifter" />
+		-->
 	</root>
 	
 </configuration>

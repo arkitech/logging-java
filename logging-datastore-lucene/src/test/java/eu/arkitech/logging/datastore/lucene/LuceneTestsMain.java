@@ -28,17 +28,17 @@ public final class LuceneTestsMain
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
 		
-		final boolean readOnly = false;
+		final boolean readOnly = true;
 		final int compressed = -1;
 		final int storeCount = 100;
-		final int selectKeysCount = 5;
-		final int selectReferenceBeforeCount = 2;
-		final int selectReferenceAfterCount = 2;
+		final int selectKeysCount = 0;
+		final int selectReferenceBeforeCount = 0;
+		final int selectReferenceAfterCount = 0;
 		final long selectAfterTimestamp = System.currentTimeMillis () - 10 * 1000;
 		final long selectAfterInterval = Long.MAX_VALUE;
-		final int selectAfterCount = 10;
+		final int selectAfterCount = 0;
 		final int queryCount = 10;
-		final String queryString = "level:INFO OR level:ERROR";
+		final String queryString = "mdc_application:app-1 AND level:ERROR";
 		
 		final Logger logger = LoggerFactory.getLogger (LuceneTestsMain.class);
 		
@@ -93,7 +93,7 @@ public final class LuceneTestsMain
 				final Iterable<ILoggingEvent> events = datastore.select (referenceEvent, 10, 10, null);
 				if (events != null)
 					for (final ILoggingEvent event : events) {
-						System.out.format ("[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), ((SLoggingEvent1) event).key);
+						System.out.format ("[%s] [%s] [%s] %s %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), event.getMdc (), ((SLoggingEvent1) event).key);
 					}
 				else
 					logger.error ("select around timestamp failed");
@@ -105,7 +105,7 @@ public final class LuceneTestsMain
 			final Iterable<ILoggingEvent> events = datastore.select (selectAfterTimestamp, selectAfterInterval, selectAfterCount, null);
 			if (events != null)
 				for (final ILoggingEvent event : events) {
-					System.out.format ("[%s] [%s] [%s] %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), ((SLoggingEvent1) event).key);
+					System.out.format ("[%s] [%s] [%s] %s %s | %s\n", event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), event.getMdc (), ((SLoggingEvent1) event).key);
 				}
 			else
 				logger.error ("select after timestamp failed");
@@ -124,7 +124,7 @@ public final class LuceneTestsMain
 				if (results != null)
 					for (final LuceneQueryResult result : results) {
 						final ILoggingEvent event = result.event;
-						System.out.format ("%s :: [%s] [%s] [%s] %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), result.key);
+						System.out.format ("%s :: [%s] [%s] [%s] %s %s | %s\n", result.score, event.getTimeStamp (), event.getLevel (), event.getLoggerName (), event.getFormattedMessage (), event.getMdc (), result.key);
 					}
 				else
 					logger.error ("query failed for `{}`", queryString);

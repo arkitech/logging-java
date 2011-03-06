@@ -1,17 +1,19 @@
 
-package eu.arkitech.logging.datastore.bdb;
+package eu.arkitech.logging.datastore.lucene;
 
 
 import java.io.File;
+import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import eu.arkitech.logback.common.AppenderNewInstanceAction;
 import eu.arkitech.logback.common.DefaultSerializerAppender;
 
 
-public class BdbAppender
+public class LuceneDatastoreAppender
 		extends DefaultSerializerAppender
 {
-	public BdbAppender ()
+	public LuceneDatastoreAppender ()
 	{
 		super ();
 	}
@@ -19,6 +21,11 @@ public class BdbAppender
 	public String getEnvironmentPath ()
 	{
 		return (this.environmentPath);
+	}
+	
+	public Long getSyncTimeout ()
+	{
+		return (this.syncTimeout);
 	}
 	
 	@Override
@@ -32,9 +39,14 @@ public class BdbAppender
 		this.environmentPath = environmentPath;
 	}
 	
-	protected BdbDatastoreConfiguration buildConfiguration ()
+	public void setSyncTimeout (final Long syncTimeout)
 	{
-		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, this.serializer, this.mutator, this.mutator, this.callbacks, null));
+		this.syncTimeout = syncTimeout;
+	}
+	
+	protected LuceneDatastoreConfiguration buildConfiguration ()
+	{
+		return (new LuceneDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, true, this.syncTimeout, this.serializer, this.mutator, this.mutator, this.callbacks, null));
 	}
 	
 	@Override
@@ -50,7 +62,7 @@ public class BdbAppender
 			try {
 				if (this.datastore != null)
 					throw (new IllegalStateException ());
-				this.datastore = new BdbDatastore (this.buildConfiguration ());
+				this.datastore = new LuceneDatastore (this.buildConfiguration ());
 				final boolean succeeded = this.datastore.open ();
 				if (!succeeded) {
 					this.reallyStop ();
@@ -85,5 +97,24 @@ public class BdbAppender
 	}
 	
 	protected String environmentPath;
-	private BdbDatastore datastore;
+	protected Long syncTimeout;
+	private LuceneDatastore datastore;
+	
+	public static final class CreateAction
+			extends AppenderNewInstanceAction<LuceneDatastoreAppender>
+	{
+		public CreateAction ()
+		{
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
+		}
+		
+		public CreateAction (final List<LuceneDatastoreAppender> collector, final boolean autoRegister, final boolean autoStart)
+		{
+			super (LuceneDatastoreAppender.class, collector, autoRegister, autoStart);
+		}
+		
+		public static boolean defaultAutoRegister = true;
+		public static boolean defaultAutoStart = true;
+		public static List<LuceneDatastoreAppender> defaultCollector = null;
+	}
 }

@@ -57,7 +57,7 @@ public final class SourceSinkPump
 	protected final boolean shouldStopSoft ()
 	{
 		try {
-			return (this.source.isDrained () && super.shouldStopSoft ());
+			return ((this.source.isDrained () && super.shouldStopSoft ()) || this.shouldStopHard ());
 		} catch (final Throwable exception) {
 			this.callbacks.handleException (exception, "event pump encountered an unknown error while checking the source; ignoring!");
 			return (true);

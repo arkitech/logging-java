@@ -30,6 +30,8 @@ public class BdbDatastoreConfiguration
 		Preconditions.checkNotNull (overriden);
 		this.environmentPath = Objects.firstNonNull (override.environmentPath, overriden.environmentPath);
 		this.readOnly = Objects.firstNonNull (override.readOnly, overriden.readOnly);
+		this.syncEnabled = Objects.firstNonNull (override.syncEnabled, overriden.syncEnabled);
+		this.syncTimeout = Objects.firstNonNull (override.syncTimeout, overriden.syncTimeout);
 		this.serializer = Objects.firstNonNull (override.serializer, overriden.serializer);
 		this.loadMutator = Objects.firstNonNull (override.loadMutator, overriden.loadMutator);
 		this.storeMutator = Objects.firstNonNull (override.storeMutator, overriden.storeMutator);
@@ -47,26 +49,33 @@ public class BdbDatastoreConfiguration
 		this (environmentPath, readOnly, null);
 	}
 	
-	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed)
-	{
-		this (environmentPath, readOnly, compressed, null);
-	}
-	
-	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Callbacks callbacks)
-	{
-		this (environmentPath, readOnly, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks, null);
-	}
-	
-	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks, final Object monitor)
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Boolean syncEnabled, final Long syncTimeout, final Serializer serializer, final LoggingEventMutator loadMutator, final LoggingEventMutator storeMutator, final Callbacks callbacks, final Object monitor)
 	{
 		super ();
 		this.environmentPath = environmentPath;
 		this.readOnly = readOnly;
+		this.syncEnabled = syncEnabled;
+		this.syncTimeout = syncTimeout;
 		this.serializer = serializer;
 		this.loadMutator = loadMutator;
 		this.storeMutator = storeMutator;
 		this.callbacks = callbacks;
 		this.monitor = monitor;
+	}
+	
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed)
+	{
+		this (environmentPath, readOnly, compressed, null);
+	}
+	
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Long syncTimeout)
+	{
+		this (environmentPath, readOnly, compressed, syncTimeout, null);
+	}
+	
+	public BdbDatastoreConfiguration (final File environmentPath, final Boolean readOnly, final Integer compressed, final Long syncTimeout, final Callbacks callbacks)
+	{
+		this (environmentPath, readOnly, true, syncTimeout, ((compressed != null) ? ((compressed < 0) ? new DefaultBinarySerializer () : new CompressedBinarySerializer (compressed)) : null), null, null, callbacks, null);
 	}
 	
 	public final Callbacks callbacks;
@@ -76,6 +85,8 @@ public class BdbDatastoreConfiguration
 	public final Boolean readOnly;
 	public final Serializer serializer;
 	public final LoggingEventMutator storeMutator;
+	public final Boolean syncEnabled;
+	public final Long syncTimeout;
 	
 	public static final File defaultEnvironmentPath = new File ("/tmp/logging-bdb-datastore");
 	public static final LoggingEventMutator defaultLoadMutator = null;

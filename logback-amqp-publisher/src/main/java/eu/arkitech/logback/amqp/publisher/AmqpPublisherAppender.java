@@ -2,11 +2,14 @@
 package eu.arkitech.logback.amqp.publisher;
 
 
+import java.util.List;
+
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import eu.arkitech.logback.amqp.accessors.AmqpAccessorAppender;
 import eu.arkitech.logback.amqp.accessors.AmqpRouter;
+import eu.arkitech.logback.common.AppenderNewInstanceAction;
 import eu.arkitech.logback.common.DefaultLoggingEventMutator;
 
 
@@ -132,11 +135,11 @@ public class AmqpPublisherAppender
 	{
 		synchronized (this) {
 			try {
+				boolean succeeded = true;
 				if (this.publisher != null)
 					this.publisher.requestStop ();
-				boolean succeeded = true;
 				if (this.publisher != null) {
-					succeeded = this.publisher.awaitStop ();
+					succeeded &= this.publisher.awaitStop ();
 					this.publisher = null;
 				}
 				try {
@@ -162,4 +165,22 @@ public class AmqpPublisherAppender
 	
 	public static final String defaultExchangeKeyPattern = "logging%nopex";
 	public static final String defaultRoutingKeyPattern = "logging.event.%level%nopex";
+	
+	public static final class CreateAction
+			extends AppenderNewInstanceAction<AmqpPublisherAppender>
+	{
+		public CreateAction ()
+		{
+			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
+		}
+		
+		public CreateAction (final List<AmqpPublisherAppender> collector, final boolean autoRegister, final boolean autoStart)
+		{
+			super (AmqpPublisherAppender.class, collector, autoRegister, autoStart);
+		}
+		
+		public static boolean defaultAutoRegister = true;
+		public static boolean defaultAutoStart = true;
+		public static List<AmqpPublisherAppender> defaultCollector = null;
+	}
 }

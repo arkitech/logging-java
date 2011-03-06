@@ -122,7 +122,7 @@ public abstract class AmqpRawAccessor
 	{
 		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp message accessor stopping");
 		synchronized (this.monitor) {
-			if ((this.connection == null) || (this.channel == null)) {
+			if ((this.connection != null) || (this.channel != null)) {
 				this.callbacks.handleLogEvent (Level.WARN, null, "amqp message accessor should have disconnected before ending the loop; disconnecting!");
 				this.disconnect ();
 			}

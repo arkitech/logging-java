@@ -16,6 +16,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.arkitech</groupId>
+			<artifactId>logback-amqp-publisher</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.arkitech</groupId>
 			<artifactId>logging-datastore-bdb</artifactId>
 			<version>${project.version}</version>
 		</dependency>

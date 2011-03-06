@@ -27,6 +27,7 @@ public abstract class Worker
 	
 	public final boolean awaitStop (final long timeout)
 	{
+		Preconditions.checkState (!this.isCurrentThread ());
 		try {
 			this.callbacks.handleLogEvent (Level.DEBUG, null, "worker awaiting stop");
 			this.thread.join (timeout);
@@ -48,7 +49,7 @@ public abstract class Worker
 	{
 		synchronized (this.monitor) {
 			this.callbacks.handleLogEvent (Level.DEBUG, null, "worker requesting stop");
-			return (this.thread.requestStop ());
+			return (this.thread.requestStopSoft ());
 		}
 	}
 	
@@ -66,6 +67,11 @@ public abstract class Worker
 	protected abstract void finalizeLoop ();
 	
 	protected abstract void initializeLoop ();
+	
+	protected final boolean isCurrentThread ()
+	{
+		return (this.thread.isCurrentThread ());
+	}
 	
 	protected final boolean shouldStopHard ()
 	{

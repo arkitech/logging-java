@@ -172,7 +172,7 @@ public class RandomGenerator
 	public static final long defaultInterval = 500;
 	
 	public static final class CreateAction
-			extends ClassNewInstanceAction<RandomGenerator>
+			extends ObjectNewInstanceAction<RandomGenerator>
 	{
 		public CreateAction ()
 		{

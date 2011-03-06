@@ -4,15 +4,17 @@
 	
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
-	<appender name="amqp" class="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender">
-		<host>127.0.0.1</host>
-		<port>5672</port>
-		<virtualHost>/</virtualHost>
-		<username>guest</username>
-		<password>guest</password>
+	<newRule pattern="/configuration/amqpPublisher" actionClass="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender$CreateAction" />
+	
+	<amqpPublisher name="amqp-publisher">
+		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
+		<port>${arkitech.logging.amqp.port:-5672}</port>
+		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
+		<username>${arkitech.logging.amqp.username:-guest}</username>
+		<password>${arkitech.logging.amqp.password:-guest}</password>
 		<exchangePattern>logging%nopex</exchangePattern>
 		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
-	</appender>
+	</amqpPublisher>
 	
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
 		<target>System.err</target>
@@ -23,7 +25,7 @@
 	
 	<root level="trace">
 		<appender-ref ref="console" />
-		<!-- <appender-ref ref="amqp" /> -->
+		<appender-ref ref="amqp-publisher" />
 	</root>
 	
 </configuration>

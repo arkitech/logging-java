@@ -323,8 +323,8 @@ public final class LuceneIndex
 	public static final KeyFieldSelector keyFieldSelector = new KeyFieldSelector ();
 	public static final String levelFieldName = "level";
 	public static final String loggerFieldName = "logger";
-	public static final String messageFieldName = "message";
 	public static final String mdcAttributeFieldNameFormat = "mdc_%s";
+	public static final String messageFieldName = "message";
 	@SuppressWarnings ("deprecation")
 	public static final Version version = Version.LUCENE_CURRENT;
 	

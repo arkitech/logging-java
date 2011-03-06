@@ -1,5 +1,5 @@
 
-package eu.arkitech.logback.webapp;
+package eu.arkitech.logging.webapp;
 
 
 import java.util.HashMap;
