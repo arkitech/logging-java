@@ -5,24 +5,12 @@
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
 	<newRule pattern="/configuration/amqpConsumer" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
+	<newRule pattern="/configuration/bdbDatastore" actionClass="eu.arkitech.logging.datastore.bdb.BdbDatastoreAppender$CreateAction" />
+	<newRule pattern="/configuration/luceneDatastore" actionClass="eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender$CreateAction" />
 	
-	<newRule pattern="/configuration/eventLog" actionClass="eu.arkitech.logging.webapp.EventLogAppender$CreateAction" />
-	
-	<amqpConsumer name="AmqpConsumer">
-		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
-		<port>${arkitech.logging.amqp.port:-5672}</port>
-		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
-		<username>${arkitech.logging.amqp.username:-guest}</username>
-		<password>${arkitech.logging.amqp.password:-guest}</password>
-		<exchange>${arkitech.logging.amqp.exchange:-logging}</exchange>
-		<queue>${arkitech.logging.amqp.queue:-logging.webapp}</queue>
-		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
-	</amqpConsumer>
-	
-	<eventLog name="EventLog" />
-	
-	<root level="trace">
-		<appender-ref ref="EventLog" />
-	</root>
+	<luceneDatastore name="LuceneDatastore">
+		<environmentPath>${arkitech.logging.bdb.environment.path:-/tmp/arkitech-logging-datastore}</environmentPath>
+		<readOnly>true</readOnly>
+	</luceneDatastore>
 	
 </configuration>

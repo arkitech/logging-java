@@ -8,8 +8,8 @@
 		<servlet-class>eu.arkitech.logging.webapp.EventLogServlet</servlet-class>
 		<load-on-startup>0</load-on-startup>
 		<init-param>
-			<param-name>appender</param-name>
-			<param-value>EventLog</param-value>
+			<param-name>datastore</param-name>
+			<param-value>LuceneDatastore</param-value>
 		</init-param>
 	</servlet>
 	

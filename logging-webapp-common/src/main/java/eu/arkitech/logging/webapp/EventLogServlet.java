@@ -16,7 +16,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.spi.FilterReply;
+import com.google.common.base.Strings;
+import eu.arkitech.logging.datastore.common.Datastore;
+import eu.arkitech.logging.datastore.common.DatastoreAppender;
+import eu.arkitech.logging.datastore.common.ImmutableDatastore;
 import org.slf4j.LoggerFactory;
 
 
@@ -32,7 +35,7 @@ public class EventLogServlet
 	public void destroy ()
 	{
 		super.destroy ();
-		this.appender = null;
+		this.datastore = null;
 		this.layout.stop ();
 		this.layout = null;
 	}
@@ -41,22 +44,31 @@ public class EventLogServlet
 	public void init (final ServletConfig configuration)
 			throws ServletException
 	{
-		final String appenderName = configuration.getInitParameter (EventLogServlet.appenderParameterName);
-		if ((appenderName == null) || appenderName.isEmpty ())
-			throw (new ServletException (String.format ("logback event viewer `%s` parameter is not set; aborting!", EventLogServlet.appenderParameterName)));
+		final String datastoreName = configuration.getInitParameter (EventLogServlet.datastoreParameterName);
 		final String eventPattern = configuration.getInitParameter (EventLogServlet.eventPatternParameterName);
 		final String htmlHeadResourceName = configuration.getInitParameter (EventLogServlet.htmlHeadResourceParameterName);
 		
 		this.context = (LoggerContext) LoggerFactory.getILoggerFactory ();
 		
-		final Object appender = this.context.getObject (appenderName);
-		if (appender == null)
-			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (no appender of such name found)", EventLogServlet.appenderParameterName, appenderName)));
-		if (!(appender instanceof EventLogAppender))
-			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (appender has wrong class `%s`)", EventLogServlet.appenderParameterName, appenderName, appender.getClass ().getName ())));
+		if (Strings.isNullOrEmpty (datastoreName))
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter is not set; aborting!", EventLogServlet.datastoreParameterName)));
+		final Object datastore_ = this.context.getObject (datastoreName);
+		if (datastore_ == null)
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (no datastore of such name found)", EventLogServlet.datastoreParameterName, datastoreName)));
+		final ImmutableDatastore datastore;
+		if (datastore_ instanceof ImmutableDatastore)
+			datastore = (ImmutableDatastore) datastore_;
+		else if (datastore_ instanceof DatastoreAppender) {
+			final Datastore datastore__ = ((DatastoreAppender) datastore_).getDatastore ();
+			if (datastore__ != null && datastore__ instanceof ImmutableDatastore)
+				datastore = (ImmutableDatastore) datastore__;
+			else
+				throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (datastore has wrong class `%s`)", EventLogServlet.datastoreParameterName, datastoreName, datastore_.getClass ().getName ())));
+		} else
+			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (datastore has wrong class `%s`)", EventLogServlet.datastoreParameterName, datastoreName, datastore_.getClass ().getName ())));
 		
 		final InputStream htmlHeadStream;
-		if (htmlHeadResourceName != null) {
+		if (!Strings.isNullOrEmpty (htmlHeadResourceName)) {
 			htmlHeadStream = EventLogServlet.class.getClassLoader ().getResourceAsStream (htmlHeadResourceName);
 			if (htmlHeadStream == null)
 				throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (no resource of such name found)", EventLogServlet.htmlHeadResourceParameterName, htmlHeadResourceName)));
@@ -88,7 +100,7 @@ public class EventLogServlet
 		
 		super.init ();
 		
-		this.appender = (EventLogAppender) appender;
+		this.datastore = (ImmutableDatastore) datastore;
 		
 		this.layout = new EventLogLayout ();
 		this.layout.setContext (this.context);
@@ -122,9 +134,8 @@ public class EventLogServlet
 		final EventLogFilter filter = new EventLogFilter (request);
 		stream.write (this.layout.getPresentationHeader ());
 		stream.write (this.layout.doHeaderLayout ());
-		for (final ILoggingEvent event : this.appender)
-			if (filter.decide (event) != FilterReply.DENY)
-				stream.write (this.layout.doLayout (event));
+		for (final ILoggingEvent event : this.datastore.select (System.currentTimeMillis (), Long.MIN_VALUE, 200, filter))
+			stream.write (this.layout.doLayout (event));
 		stream.write (this.layout.getPresentationFooter ());
 		this.doPageFooter (request, response, stream);
 		stream.close ();
@@ -211,12 +222,12 @@ public class EventLogServlet
 		stream.write ("<body>\n");
 	}
 	
-	private EventLogAppender appender;
 	private LoggerContext context;
+	private ImmutableDatastore datastore;
 	private String htmlHead;
 	private EventLogLayout layout;
 	
-	public static final String appenderParameterName = "appender";
+	public static final String datastoreParameterName = "datastore";
 	public static final String defaultHtmlHeadResource = "eu/arkitech/logback/webapp/event-log.html-head";
 	public static final String eventPatternParameterName = "event-pattern";
 	public static final String htmlHeadResourceParameterName = "html-head-resource";

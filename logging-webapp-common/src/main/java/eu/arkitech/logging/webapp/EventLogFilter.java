@@ -12,10 +12,13 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
+import eu.arkitech.logback.common.LoggingEventFilter;
 
 
 class EventLogFilter
 		extends Filter<ILoggingEvent>
+		implements
+			LoggingEventFilter
 {
 	public EventLogFilter (final HttpServletRequest request)
 	{
@@ -66,6 +69,12 @@ class EventLogFilter
 			}
 		}
 		return (FilterReply.ACCEPT);
+	}
+	
+	@Override
+	public FilterReply filter (final ILoggingEvent event)
+	{
+		return (this.decide (event));
 	}
 	
 	protected final Level levelValue;

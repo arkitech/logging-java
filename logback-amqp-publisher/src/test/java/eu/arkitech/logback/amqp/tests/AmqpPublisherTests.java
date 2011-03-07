@@ -59,7 +59,7 @@ public final class AmqpPublisherTests
 		testLogger.detachAppender (appender);
 	}
 	
-	private static final int messageCount = 1;
+	private static final int messageCount = 20;
 	private static final String testLoggerName = "__testing__.eu.ackitech.logback.amqp.logger";
 	private static final int timeout = 100;
 	private static final int timeoutTries = 100;
