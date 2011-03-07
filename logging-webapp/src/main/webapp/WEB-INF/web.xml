@@ -9,7 +9,7 @@
 		<load-on-startup>0</load-on-startup>
 		<init-param>
 			<param-name>appender</param-name>
-			<param-value>webapp</param-value>
+			<param-value>EventLog</param-value>
 		</init-param>
 	</servlet>
 	
