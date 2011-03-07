@@ -8,7 +8,7 @@
 	
 	<newRule pattern="/configuration/eventLog" actionClass="eu.arkitech.logging.webapp.EventLogAppender$CreateAction" />
 	
-	<amqpConsumer name="amqp-consumer">
+	<amqpConsumer name="AmqpConsumer">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
 		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
@@ -19,10 +19,10 @@
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
 	</amqpConsumer>
 	
-	<eventLog name="webapp" />
+	<eventLog name="EventLog" />
 	
 	<root level="trace">
-		<appender-ref ref="webapp" />
+		<appender-ref ref="EventLog" />
 	</root>
 	
 </configuration>

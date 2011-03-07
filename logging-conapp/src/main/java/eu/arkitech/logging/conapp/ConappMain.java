@@ -34,7 +34,7 @@ public final class ConappMain
 		if ((arguments.length != 0) && (arguments.length != 1))
 			throw (new IllegalArgumentException ("amqp consumer console application may take one argument (the logback configuration); aborting!"));
 		
-		final File configurationPath = (arguments.length > 1) ? new File (arguments[0]) : null;
+		final File configurationPath = (arguments.length >= 1) ? new File (arguments[0]) : null;
 		
 		final List<AmqpConsumerAppender> collector = Collections.synchronizedList (new LinkedList<AmqpConsumerAppender> ());
 		

@@ -8,7 +8,7 @@
 	
 	<newRule pattern="/configuration/luceneDatastore" actionClass="eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender$CreateAction" />
 	
-	<amqpConsumer name="amqp-consumer">
+	<amqpConsumer name="AmqpConsumer">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
 		<virtualHost>${arkitech.logging.amqp.virtualhost:-/}</virtualHost>
@@ -19,11 +19,11 @@
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
 	</amqpConsumer>
 	
-	<luceneDatastore name="lucene">
+	<luceneDatastore name="LuceneDatastore">
 		<environmentPath>${arkitech.logging.bdb.environment.path:-/tmp/arkitech-logging-datastore}</environmentPath>
 	</luceneDatastore>
 	
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
 		<target>System.err</target>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 			<pattern>[%-8mdc{application}:%-8mdc{component}:%-8mdc{node}/%6mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss}] [%-5level] [%logger{48}] %msg%n%nopex</pattern>
@@ -31,8 +31,8 @@
 	</appender>
 	
 	<root level="trace">
-		<appender-ref ref="console" />
-		<appender-ref ref="lucene" />
+		<appender-ref ref="LuceneDatastore" />
+		<appender-ref ref="Console" />
 	</root>
 	
 </configuration>
