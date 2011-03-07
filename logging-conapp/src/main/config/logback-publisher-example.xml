@@ -5,6 +5,7 @@
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
 	<newRule pattern="/configuration/amqpPublisher" actionClass="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender$CreateAction" />
+	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
 	
 	<amqpPublisher name="AmqpPublisher">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
@@ -15,6 +16,12 @@
 		<exchangePattern>logging%nopex</exchangePattern>
 		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
 	</amqpPublisher>
+	
+	<randomGenerator name="Generator">
+		<fqdn>__logging_tests__</fqdn>
+		<interval>1000</interval>
+		<count>3600</count>
+	</randomGenerator>
 	
 	<root level="trace">
 		<appender-ref ref="AmqpPublisher" />

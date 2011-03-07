@@ -5,10 +5,8 @@
 	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 	
 	<newRule pattern="/configuration/amqpConsumer" actionClass="eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender$CreateAction" />
-	<newRule pattern="/configuration/amqpPublisher" actionClass="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender$CreateAction" />
 	<newRule pattern="/configuration/bdbDatastore" actionClass="eu.arkitech.logging.datastore.bdb.BdbDatastoreAppender$CreateAction" />
 	<newRule pattern="/configuration/luceneDatastore" actionClass="eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender$CreateAction" />
-	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
 	
 	<amqpConsumer name="AmqpConsumer">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>

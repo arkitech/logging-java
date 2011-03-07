@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender;
+import eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender;
 import org.slf4j.LoggerFactory;
 
 
@@ -23,23 +24,30 @@ public final class ConappMain
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ("amqp consumer console application takes no arguments (use the logback system property `logback.configurationFile`); aborting!"));
 		
-		final List<AmqpConsumerAppender> collector = Collections.synchronizedList (new LinkedList<AmqpConsumerAppender> ());
-		
-		AmqpConsumerAppender.CreateAction.defaultCollector = collector;
+		final List<AmqpConsumerAppender> consumers = Collections.synchronizedList (new LinkedList<AmqpConsumerAppender> ());
+		AmqpConsumerAppender.CreateAction.defaultCollector = consumers;
 		AmqpConsumerAppender.CreateAction.defaultAutoStart = false;
+		
+		final List<AmqpPublisherAppender> publishers = Collections.synchronizedList (new LinkedList<AmqpPublisherAppender> ());
+		AmqpPublisherAppender.CreateAction.defaultCollector = publishers;
+		AmqpPublisherAppender.CreateAction.defaultAutoStart = false;
 		
 		LoggerFactory.getILoggerFactory ();
 		
-		if (collector.isEmpty ())
-			throw (new IllegalArgumentException ("no amqp logging injector defined; aborting!"));
+		if (consumers.isEmpty () && publishers.isEmpty ())
+			throw (new IllegalArgumentException ("no amqp accessors defined; aborting!"));
 		
-		for (final AmqpConsumerAppender agent : collector)
-			agent.start ();
+		for (final AmqpConsumerAppender accessor : consumers)
+			accessor.start ();
+		for (final AmqpPublisherAppender accessor : publishers)
+			accessor.start ();
 		
 		while (true) {
 			boolean stillRunning = false;
-			for (final AmqpConsumerAppender agent : collector)
-				stillRunning |= agent.isRunning ();
+			for (final AmqpConsumerAppender accessor : consumers)
+				stillRunning = accessor.isRunning ();
+			for (final AmqpPublisherAppender accessor : publishers)
+				stillRunning = accessor.isRunning ();
 			if (!stillRunning)
 				break;
 			try {
