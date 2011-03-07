@@ -34,10 +34,10 @@ public final class LuceneTestsMain
 		final int selectKeysCount = 0;
 		final int selectReferenceBeforeCount = 0;
 		final int selectReferenceAfterCount = 0;
-		final long selectAfterTimestamp = System.currentTimeMillis () - 10 * 1000;
-		final long selectAfterInterval = Long.MAX_VALUE;
-		final int selectAfterCount = 0;
-		final int queryCount = 10;
+		final long selectAfterTimestamp = System.currentTimeMillis ();
+		final long selectAfterInterval = Long.MIN_VALUE;
+		final int selectAfterCount = 10;
+		final int queryCount = 0;
 		final String queryString = "mdc_application:app-1 AND level:ERROR";
 		
 		final Logger logger = LoggerFactory.getLogger (LuceneTestsMain.class);

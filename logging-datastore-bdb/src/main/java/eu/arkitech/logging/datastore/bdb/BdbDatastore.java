@@ -270,12 +270,21 @@ public final class BdbDatastore
 	public final Iterable<ILoggingEvent> select (final long afterTimestamp, final long maximumInterval, final int maximumCount, final LoggingEventFilter filter)
 	{
 		Preconditions.checkArgument (afterTimestamp >= 0);
-		Preconditions.checkArgument (maximumInterval > 0);
+		Preconditions.checkArgument ((maximumInterval > 0) || (maximumInterval < 0));
 		Preconditions.checkArgument (maximumCount > 0);
-		final long beforeTimestamp = ((afterTimestamp + maximumInterval) >= 0) ? (afterTimestamp + maximumInterval) : Long.MAX_VALUE;
+		final long startTimestamp = afterTimestamp;
+		final long stopTimestamp;
+		final boolean forward;
+		if (maximumInterval > 0) {
+			stopTimestamp = ((afterTimestamp + maximumInterval) >= 0) ? (afterTimestamp + maximumInterval) : Long.MAX_VALUE;
+			forward = true;
+		} else {
+			stopTimestamp = ((afterTimestamp - maximumInterval) >= 0) ? (afterTimestamp - maximumInterval) : 0;
+			forward = false;
+		}
 		final String referneceKey;
 		try {
-			referneceKey = this.encodeMinKey (afterTimestamp);
+			referneceKey = this.encodeMinKey (startTimestamp);
 		} catch (final InternalException exception) {
 			throw (new IllegalArgumentException ("bdb datastore encountered an error while preparing the reference key", exception));
 		}
@@ -293,28 +302,30 @@ public final class BdbDatastore
 						else
 							realReferenceEvent = null;
 					}
+					events = new LinkedList<ILoggingEvent> ();
 					if (realReferenceEvent != null) {
-						events = new LinkedList<ILoggingEvent> ();
-						if (realReferenceEvent.getTimeStamp () < beforeTimestamp) {
+						final long realReferenceEventTimestamp = realReferenceEvent.getTimeStamp ();
+						if ((forward && (realReferenceEventTimestamp <= stopTimestamp)) || (!forward && (realReferenceEventTimestamp >= stopTimestamp)))
 							if (this.filterEvent (filter, realReferenceEvent))
 								events.add (realReferenceEvent);
-							outer : for (int index = 0; index < maximumCount; index++) {
-								while (true) {
-									final KeyEventEntryPair outcome = this.searchForward (cursor);
-									if (outcome == null)
-										break outer;
-									final ILoggingEvent event = outcome.keyEventPair.event;
-									if (event.getTimeStamp () >= beforeTimestamp)
-										break outer;
-									if (this.filterEvent (filter, event)) {
-										events.addLast (event);
-										break;
-									}
-								}
-							}
-						}
-					} else
-						events = null;
+					}
+					while (true) {
+						if (events.size () >= maximumCount)
+							break;
+						final KeyEventEntryPair outcome;
+						if (forward)
+							outcome = this.searchForward (cursor);
+						else
+							outcome = this.searchBackward (cursor);
+						if (outcome == null)
+							break;
+						final ILoggingEvent event = outcome.keyEventPair.event;
+						final long eventTimestamp = event.getTimeStamp ();
+						if ((forward && (eventTimestamp >= stopTimestamp)) || (!forward && (eventTimestamp <= stopTimestamp)))
+							break;
+						if (this.filterEvent (filter, event))
+							events.addLast (event);
+					}
 					return (events);
 				} catch (final DatabaseException exception) {
 					this.callbacks.handleException (exception, "bdb datastore encountered a database error while selecting the events; aborting!");
