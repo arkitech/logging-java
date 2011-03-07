@@ -16,15 +16,7 @@
 		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
 	</amqpPublisher>
 	
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-		<target>System.err</target>
-		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>[%-8mdc{application}:%-8mdc{component}:%-8mdc{node}/%6mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss}] [%-5level] [%logger{48}] %msg%n%nopex</pattern>
-		</encoder>
-	</appender>
-	
 	<root level="trace">
-		<appender-ref ref="console" />
 		<appender-ref ref="amqp-publisher" />
 	</root>
 	

@@ -30,9 +30,24 @@
 		</encoder>
 	</appender>
 	
+	<appender name="sifter" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<key>application</key>
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="sifter-${application}" class="ch.qos.logback.core.FileAppender">
+				<file>${arkitech.logging.sifter.file.prefix:-/tmp/arkitech-logging-logs-}${application}.log</file>
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<pattern>[%mdc{application}/%mdc{component}/%mdc{node}/%mdc{sequence}] [%d{yyyy-MM-DD/HH:mm:ss.SSS}/%relative] [%level] [%logger] %msg%n</pattern>
+				</encoder>
+			</appender>
+		</sift>
+	</appender>
+	
 	<root level="trace">
-		<appender-ref ref="console" />
 		<appender-ref ref="lucene" />
+		<appender-ref ref="sifter" />
 	</root>
 	
 </configuration>
