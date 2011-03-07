@@ -14,7 +14,10 @@ import ch.qos.logback.core.joran.action.Action;
 import ch.qos.logback.core.joran.spi.Pattern;
 import ch.qos.logback.core.joran.spi.RuleStore;
 import eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender;
+import eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender;
 import eu.arkitech.logback.common.RandomGenerator;
+import eu.arkitech.logging.datastore.bdb.BdbDatastoreAppender;
+import eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender;
 import org.slf4j.LoggerFactory;
 
 
@@ -88,7 +91,14 @@ public final class ConappMain
 			super ();
 			this.amqpConsumerAction = new AmqpConsumerAppender.CreateAction (agents, true, false);
 			this.amqpConsumerAction.setContext (this.getContext ());
-			this.randomGeneratorAction = new RandomGenerator.CreateAction ();
+			this.amqpPublisherAction = new AmqpPublisherAppender.CreateAction (null, true, true);
+			this.amqpPublisherAction.setContext (this.getContext ());
+			this.bdbDatastoreAction = new BdbDatastoreAppender.CreateAction (null, true, true);
+			this.bdbDatastoreAction.setContext (this.getContext ());
+			this.luceneDatastoreAction = new LuceneDatastoreAppender.CreateAction (null, true, true);
+			this.luceneDatastoreAction.setContext (this.getContext ());
+			this.randomGeneratorAction = new RandomGenerator.CreateAction (null, true, true);
+			this.randomGeneratorAction.setContext (this.getContext ());
 		}
 		
 		@Override
@@ -96,6 +106,9 @@ public final class ConappMain
 		{
 			super.addInstanceRules (rules);
 			rules.addRule (new Pattern ("/configuration/amqpConsumer"), this.amqpConsumerAction);
+			rules.addRule (new Pattern ("/configuration/amqpPublisher"), this.amqpPublisherAction);
+			rules.addRule (new Pattern ("/configuration/bdbDatastore"), this.bdbDatastoreAction);
+			rules.addRule (new Pattern ("/configuration/luceneDatastore"), this.luceneDatastoreAction);
 			rules.addRule (new Pattern ("/configuration/randomGenerator"), this.randomGeneratorAction);
 		}
 		
@@ -108,5 +121,8 @@ public final class ConappMain
 		
 		private final Action amqpConsumerAction;
 		private final Action randomGeneratorAction;
+		private final Action amqpPublisherAction;
+		private final Action bdbDatastoreAction;
+		private final Action luceneDatastoreAction;
 	}
 }
