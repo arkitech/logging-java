@@ -80,10 +80,10 @@ public final class SyncableDatastoreBackgroundWorker
 					}
 				}
 			}
+			try {
+				Thread.sleep (this.waitTimeout);
+			} catch (final InterruptedException exception) {}
 		}
-		try {
-			Thread.sleep (this.waitTimeout);
-		} catch (final InterruptedException exception) {}
 	}
 	
 	@Override
