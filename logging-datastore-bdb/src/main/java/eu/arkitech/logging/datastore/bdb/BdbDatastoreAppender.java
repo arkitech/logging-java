@@ -8,19 +8,35 @@ import java.util.List;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import eu.arkitech.logback.common.AppenderNewInstanceAction;
 import eu.arkitech.logback.common.DefaultSerializerAppender;
+import eu.arkitech.logging.datastore.common.Datastore;
+import eu.arkitech.logging.datastore.common.DatastoreAppender;
 
 
 public class BdbDatastoreAppender
 		extends DefaultSerializerAppender
+		implements
+			DatastoreAppender
 {
 	public BdbDatastoreAppender ()
 	{
 		super ();
+		this.readOnly = false;
+	}
+	
+	@Override
+	public Datastore getDatastore ()
+	{
+		return (this.datastore);
 	}
 	
 	public String getEnvironmentPath ()
 	{
 		return (this.environmentPath);
+	}
+	
+	public Boolean getReadOnly ()
+	{
+		return (this.readOnly);
 	}
 	
 	public Long getSyncTimeout ()
@@ -39,6 +55,11 @@ public class BdbDatastoreAppender
 		this.environmentPath = environmentPath;
 	}
 	
+	public void setReadOnly (final Boolean readOnly)
+	{
+		this.readOnly = readOnly;
+	}
+	
 	public void setSyncTimeout (final Long syncTimeout)
 	{
 		this.syncTimeout = syncTimeout;
@@ -46,7 +67,7 @@ public class BdbDatastoreAppender
 	
 	protected BdbDatastoreConfiguration buildConfiguration ()
 	{
-		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, false, true, this.syncTimeout, this.serializer, this.mutator, this.mutator, this.callbacks, null));
+		return (new BdbDatastoreConfiguration ((this.environmentPath != null) ? new File (this.environmentPath) : null, this.readOnly, true, this.syncTimeout, this.serializer, this.mutator, this.mutator, this.callbacks, null));
 	}
 	
 	@Override
@@ -97,6 +118,7 @@ public class BdbDatastoreAppender
 	}
 	
 	protected String environmentPath;
+	protected Boolean readOnly;
 	protected Long syncTimeout;
 	private BdbDatastore datastore;
 	

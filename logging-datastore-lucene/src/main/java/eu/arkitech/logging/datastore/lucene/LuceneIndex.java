@@ -50,12 +50,18 @@ public final class LuceneIndex
 	
 	public final boolean close ()
 	{
+		return (this.close (false));
+	}
+	
+	public final boolean close (final boolean silent)
+	{
 		synchronized (this.monitor) {
 			if (this.state == State.Closed)
 				return (false);
 			Preconditions.checkState (this.state == State.Opened, "lucene index is not opened");
 			try {
-				this.callbacks.handleLogEvent (Level.DEBUG, null, "lucene index closing");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.DEBUG, null, "lucene index closing");
 				if (this.searcher != null)
 					try {
 						this.searcher.close ();
@@ -97,7 +103,8 @@ public final class LuceneIndex
 						this.blockDatabase = null;
 					}
 				this.state = State.Closed;
-				this.callbacks.handleLogEvent (Level.INFO, null, "lucene index closed");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.INFO, null, "lucene index closed");
 				return (true);
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "lucene index encountered an unknown error while closing; aborting!");
@@ -114,10 +121,16 @@ public final class LuceneIndex
 	
 	public final boolean open ()
 	{
+		return (this.open (false));
+	}
+	
+	public final boolean open (final boolean silent)
+	{
 		synchronized (this.monitor) {
 			Preconditions.checkState (this.state == State.Closed, "lucene indexe is already opened");
 			try {
-				this.callbacks.handleLogEvent (Level.DEBUG, null, "lucene index opening");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.DEBUG, null, "lucene index opening");
 				try {
 					this.fileDatabase = this.bdb.openDatabase (LuceneIndex.fileDatabaseName);
 				} catch (final DatabaseException exception) {
@@ -141,7 +154,8 @@ public final class LuceneIndex
 						this.close ();
 						return (false);
 					}
-				this.callbacks.handleLogEvent (Level.INFO, null, "lucene index opened");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.INFO, null, "lucene index opened");
 				this.state = State.Opened;
 				return (true);
 			} catch (final Error exception) {

@@ -136,7 +136,10 @@ public final class LuceneDatastore
 	public final boolean syncRead ()
 	{
 		synchronized (this.monitor) {
-			return (this.bdb.syncRead () && this.index.syncRead ());
+			if (this.readOnly)
+				return (this.index.close (true) && this.bdb.close (true) && this.bdb.open (true) && this.index.open (true));
+			else
+				return (this.bdb.syncRead () && this.index.syncRead ());
 		}
 	}
 	

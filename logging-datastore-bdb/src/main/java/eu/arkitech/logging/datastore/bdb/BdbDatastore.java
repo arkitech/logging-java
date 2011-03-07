@@ -64,6 +64,11 @@ public final class BdbDatastore
 	@Override
 	public final boolean close ()
 	{
+		return (this.close (false));
+	}
+	
+	public final boolean close (final boolean silent)
+	{
 		boolean succeeded = false;
 		final SyncableDatastoreBackgroundWorker syncWorker;
 		synchronized (this.monitor) {
@@ -73,7 +78,8 @@ public final class BdbDatastore
 			syncWorker = this.syncWorker;
 			this.syncWorker = null;
 			try {
-				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore closing");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore closing");
 				if (this.eventDatabase != null)
 					try {
 						this.eventDatabase.close ();
@@ -91,7 +97,8 @@ public final class BdbDatastore
 						this.environment = null;
 					}
 				this.state = State.Closed;
-				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closed");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore closed");
 				succeeded = true;
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while closing; aborting!");
@@ -108,10 +115,16 @@ public final class BdbDatastore
 	@Override
 	public final boolean open ()
 	{
+		return (this.open (false));
+	}
+	
+	public final boolean open (final boolean silent)
+	{
 		synchronized (this.monitor) {
 			Preconditions.checkState (this.state == State.Closed, "bdb datastore is already opened");
 			try {
-				this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore opening");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.DEBUG, null, "bdb datastore opening");
 				if (this.syncWorkerEnabled) {
 					this.syncWorker = new SyncableDatastoreBackgroundWorker (new SyncableDatastoreBackgroundWorkerConfiguration (this, -1L, !this.readOnly ? this.syncTimeout : -1L, this.callbacks, this.monitor));
 					if (!this.syncWorker.start ()) {
@@ -157,7 +170,8 @@ public final class BdbDatastore
 					return (false);
 				}
 				this.state = State.Opened;
-				this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opened");
+				if (!silent)
+					this.callbacks.handleLogEvent (Level.INFO, null, "bdb datastore opened");
 				return (true);
 			} catch (final Error exception) {
 				this.callbacks.handleException (exception, "bdb datastore encountered an unknown error while opening; aborting!");
@@ -296,35 +310,40 @@ public final class BdbDatastore
 					final LinkedList<ILoggingEvent> events;
 					final ILoggingEvent realReferenceEvent;
 					{
-						final KeyEventEntryPair outcome = this.searchKeyAfter (cursor, referneceKey);
-						if (outcome != null)
-							realReferenceEvent = outcome.keyEventPair.event;
+						final KeyEventEntryPair outcomeLast = this.searchLast (cursor);
+						final KeyEventEntryPair outcomeAfter = this.searchKeyAfter (cursor, referneceKey);
+						if (outcomeAfter != null)
+							realReferenceEvent = outcomeAfter.keyEventPair.event;
+						else if (outcomeLast != null)
+							realReferenceEvent = outcomeLast.keyEventPair.event;
 						else
 							realReferenceEvent = null;
 					}
 					events = new LinkedList<ILoggingEvent> ();
 					if (realReferenceEvent != null) {
-						final long realReferenceEventTimestamp = realReferenceEvent.getTimeStamp ();
-						if ((forward && (realReferenceEventTimestamp <= stopTimestamp)) || (!forward && (realReferenceEventTimestamp >= stopTimestamp)))
-							if (this.filterEvent (filter, realReferenceEvent))
-								events.add (realReferenceEvent);
-					}
-					while (true) {
-						if (events.size () >= maximumCount)
-							break;
-						final KeyEventEntryPair outcome;
-						if (forward)
-							outcome = this.searchForward (cursor);
-						else
-							outcome = this.searchBackward (cursor);
-						if (outcome == null)
-							break;
-						final ILoggingEvent event = outcome.keyEventPair.event;
-						final long eventTimestamp = event.getTimeStamp ();
-						if ((forward && (eventTimestamp >= stopTimestamp)) || (!forward && (eventTimestamp <= stopTimestamp)))
-							break;
-						if (this.filterEvent (filter, event))
-							events.addLast (event);
+						{
+							final long realReferenceEventTimestamp = realReferenceEvent.getTimeStamp ();
+							if ((forward && (realReferenceEventTimestamp < stopTimestamp)) || (!forward && (realReferenceEventTimestamp > stopTimestamp)))
+								if (this.filterEvent (filter, realReferenceEvent))
+									events.add (realReferenceEvent);
+						}
+						while (true) {
+							if (events.size () >= maximumCount)
+								break;
+							final KeyEventEntryPair outcome;
+							if (forward)
+								outcome = this.searchForward (cursor);
+							else
+								outcome = this.searchBackward (cursor);
+							if (outcome == null)
+								break;
+							final ILoggingEvent event = outcome.keyEventPair.event;
+							final long eventTimestamp = event.getTimeStamp ();
+							if ((forward && (eventTimestamp >= stopTimestamp)) || (!forward && (eventTimestamp <= stopTimestamp)))
+								break;
+							if (this.filterEvent (filter, event))
+								events.addLast (event);
+						}
 					}
 					return (events);
 				} catch (final DatabaseException exception) {
@@ -396,7 +415,10 @@ public final class BdbDatastore
 	{
 		synchronized (this.monitor) {
 			Preconditions.checkState (this.state == State.Opened, "bdb datastore is not opened");
-			return (true);
+			if (this.readOnly)
+				return (this.close (true) && this.open (true));
+			else
+				return (true);
 		}
 	}
 	
@@ -665,6 +687,16 @@ public final class BdbDatastore
 		final DatabaseEntry keyEntry = this.encodeKeyEntry (key);
 		final DatabaseEntry eventEntry = new DatabaseEntry ();
 		final OperationStatus outcome = database.get (null, keyEntry, eventEntry, null);
+		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
+	}
+	
+	private final KeyEventEntryPair searchLast (final Cursor cursor)
+			throws DatabaseException,
+				InternalException
+	{
+		final DatabaseEntry keyEntry = new DatabaseEntry ();
+		final DatabaseEntry eventEntry = new DatabaseEntry ();
+		final OperationStatus outcome = cursor.getLast (keyEntry, eventEntry, null);
 		return (this.decodeSearchOutcome (outcome, keyEntry, eventEntry));
 	}
 	
