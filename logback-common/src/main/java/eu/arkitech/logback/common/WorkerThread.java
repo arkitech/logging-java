@@ -131,6 +131,7 @@ public abstract class WorkerThread
 	{
 		switch (this.state) {
 			case Starting :
+			case Stopping :
 			case Running :
 				return (true);
 			default:
@@ -314,7 +315,7 @@ public abstract class WorkerThread
 	public static final int defaultPriority = Thread.MIN_PRIORITY;
 	public static final long defaultStackSize = 0;
 	public static final long stopHardEnforceTimeout = 5 * 1000;
-	public static final long stopHardRequestTimeout = 5 * 1000;
+	public static final long stopHardRequestTimeout = 30 * 1000;
 	private static long identifierCounter = 0;
 	private static final Object identifierCounterMonitor = new Object ();
 	

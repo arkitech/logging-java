@@ -12,6 +12,7 @@ import eu.arkitech.logback.amqp.accessors.AmqpAccessor;
 import eu.arkitech.logback.amqp.accessors.AmqpRawConsumer;
 import eu.arkitech.logback.amqp.accessors.AmqpRawMessage;
 import eu.arkitech.logback.common.LoggingEventSource;
+import eu.arkitech.logback.common.WorkerThread.State;
 
 
 public final class AmqpConsumer
@@ -34,7 +35,7 @@ public final class AmqpConsumer
 	@Override
 	public final boolean isDrained ()
 	{
-		return (this.buffer.isEmpty () && this.rawBuffer.isEmpty ());
+		return (this.buffer.isEmpty () && this.rawBuffer.isEmpty () && !this.accessor.isRunning ());
 	}
 	
 	@Override
@@ -55,9 +56,14 @@ public final class AmqpConsumer
 	protected final void executeLoop ()
 	{
 		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp event consumer shoveling messages to events");
+		boolean accessorRequestedStop = false;
 		while (true) {
-			if (this.shouldStopSoft ())
+			if (this.shouldStopSoft () || this.shouldStopHard ())
 				break;
+			if ((this.getState () == State.Stopping) && !accessorRequestedStop) {
+				this.accessor.requestStop ();
+				accessorRequestedStop = true;
+			}
 			this.shovelMessage ();
 		}
 	}

@@ -174,13 +174,13 @@ public class AmqpPublisherAppender
 			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<AmqpPublisherAppender> collector, final boolean autoRegister, final boolean autoStart)
+		public CreateAction (final List<? super AmqpPublisherAppender> collector, final boolean autoRegister, final boolean autoStart)
 		{
 			super (AmqpPublisherAppender.class, collector, autoRegister, autoStart);
 		}
 		
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
-		public static List<AmqpPublisherAppender> defaultCollector = null;
+		public static List<? super AmqpPublisherAppender> defaultCollector = null;
 	}
 }

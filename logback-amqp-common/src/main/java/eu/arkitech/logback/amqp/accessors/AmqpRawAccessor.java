@@ -33,6 +33,11 @@ public abstract class AmqpRawAccessor
 		Preconditions.checkArgument (!this.password.isEmpty ());
 	}
 	
+	public final boolean isConnected ()
+	{
+		return (this.connection != null);
+	}
+	
 	public abstract boolean isDrained ();
 	
 	protected final boolean connect ()

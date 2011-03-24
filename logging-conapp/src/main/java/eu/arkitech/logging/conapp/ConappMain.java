@@ -6,8 +6,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import eu.arkitech.logback.amqp.accessors.AmqpAccessorAppender;
 import eu.arkitech.logback.amqp.consumer.AmqpConsumerAppender;
 import eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender;
+import eu.arkitech.logging.datastore.bdb.BdbDatastoreAppender;
+import eu.arkitech.logging.datastore.common.DatastoreAppender;
+import eu.arkitech.logging.datastore.lucene.LuceneDatastoreAppender;
 import org.slf4j.LoggerFactory;
 
 
@@ -24,30 +28,23 @@ public final class ConappMain
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ("amqp consumer console application takes no arguments (use the logback system property `logback.configurationFile`); aborting!"));
 		
-		final List<AmqpConsumerAppender> consumers = Collections.synchronizedList (new LinkedList<AmqpConsumerAppender> ());
-		AmqpConsumerAppender.CreateAction.defaultCollector = consumers;
-		AmqpConsumerAppender.CreateAction.defaultAutoStart = false;
+		final List<AmqpAccessorAppender> amqpAppenders = Collections.synchronizedList (new LinkedList<AmqpAccessorAppender> ());
+		AmqpConsumerAppender.CreateAction.defaultCollector = amqpAppenders;
+		AmqpPublisherAppender.CreateAction.defaultCollector = amqpAppenders;
 		
-		final List<AmqpPublisherAppender> publishers = Collections.synchronizedList (new LinkedList<AmqpPublisherAppender> ());
-		AmqpPublisherAppender.CreateAction.defaultCollector = publishers;
-		AmqpPublisherAppender.CreateAction.defaultAutoStart = false;
+		final List<DatastoreAppender> datastoreAppenders = Collections.synchronizedList (new LinkedList<DatastoreAppender> ());
+		BdbDatastoreAppender.CreateAction.defaultCollector = datastoreAppenders;
+		LuceneDatastoreAppender.CreateAction.defaultCollector = datastoreAppenders;
 		
 		LoggerFactory.getILoggerFactory ();
 		
-		if (consumers.isEmpty () && publishers.isEmpty ())
+		if (amqpAppenders.isEmpty ())
 			throw (new IllegalArgumentException ("no amqp accessors defined; aborting!"));
-		
-		for (final AmqpConsumerAppender accessor : consumers)
-			accessor.start ();
-		for (final AmqpPublisherAppender accessor : publishers)
-			accessor.start ();
 		
 		while (true) {
 			boolean stillRunning = false;
-			for (final AmqpConsumerAppender accessor : consumers)
-				stillRunning = accessor.isRunning ();
-			for (final AmqpPublisherAppender accessor : publishers)
-				stillRunning = accessor.isRunning ();
+			for (final AmqpAccessorAppender accessor : amqpAppenders)
+				stillRunning |= accessor.isRunning ();
 			if (!stillRunning)
 				break;
 			try {
@@ -56,6 +53,9 @@ public final class ConappMain
 				break;
 			}
 		}
+		
+		for (final DatastoreAppender appender : datastoreAppenders)
+			appender.stop ();
 		
 		System.exit (1);
 	}

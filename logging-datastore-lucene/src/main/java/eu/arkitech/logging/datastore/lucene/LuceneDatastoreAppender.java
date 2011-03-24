@@ -130,13 +130,13 @@ public class LuceneDatastoreAppender
 			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<LuceneDatastoreAppender> collector, final boolean autoRegister, final boolean autoStart)
+		public CreateAction (final List<? super LuceneDatastoreAppender> collector, final boolean autoRegister, final boolean autoStart)
 		{
 			super (LuceneDatastoreAppender.class, collector, autoRegister, autoStart);
 		}
 		
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
-		public static List<LuceneDatastoreAppender> defaultCollector = null;
+		public static List<? super LuceneDatastoreAppender> defaultCollector = null;
 	}
 }

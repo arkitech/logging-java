@@ -58,7 +58,7 @@ public final class AmqpPublisher
 	{
 		this.callbacks.handleLogEvent (Level.DEBUG, null, "amqp event publisher shoveling events to messages");
 		while (true) {
-			if (this.shouldStopSoft ())
+			if (this.shouldStopSoft () || this.shouldStopHard ())
 				break;
 			this.shovelMessage ();
 		}

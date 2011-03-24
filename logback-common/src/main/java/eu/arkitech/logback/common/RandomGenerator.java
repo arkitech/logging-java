@@ -187,7 +187,7 @@ public class RandomGenerator
 			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<RandomGenerator> collector, final boolean autoRegister, final boolean autoStart)
+		public CreateAction (final List<? super RandomGenerator> collector, final boolean autoRegister, final boolean autoStart)
 		{
 			super (RandomGenerator.class, collector, autoRegister, autoStart);
 		}
@@ -200,7 +200,7 @@ public class RandomGenerator
 		
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
-		public static List<RandomGenerator> defaultCollector = null;
+		public static List<? super RandomGenerator> defaultCollector = null;
 	}
 	
 	public static final class RandomGeneratorThread

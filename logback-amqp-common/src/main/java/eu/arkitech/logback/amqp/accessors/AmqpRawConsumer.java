@@ -33,7 +33,9 @@ public final class AmqpRawConsumer
 	@Override
 	public final boolean isDrained ()
 	{
-		return (this.buffer.isEmpty ());
+		synchronized (this.monitor) {
+			return (this.buffer.isEmpty () && !this.isConnected ());
+		}
 	}
 	
 	@Override
@@ -42,7 +44,7 @@ public final class AmqpRawConsumer
 		loop : while (true) {
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (!this.shouldReconnect ())
 						break;
@@ -56,7 +58,7 @@ public final class AmqpRawConsumer
 			}
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;
@@ -70,7 +72,7 @@ public final class AmqpRawConsumer
 			}
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;
@@ -85,7 +87,7 @@ public final class AmqpRawConsumer
 			this.callbacks.handleLogEvent (Level.INFO, null, "amqp message consumer shoveling inbound messages from broker");
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (this.shouldReconnect ())
 						continue loop;

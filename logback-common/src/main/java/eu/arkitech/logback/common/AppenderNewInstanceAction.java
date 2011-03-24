@@ -17,7 +17,7 @@ import org.xml.sax.Attributes;
 public abstract class AppenderNewInstanceAction<_Appender_ extends Appender<ILoggingEvent>>
 		extends ObjectNewInstanceAction<_Appender_>
 {
-	public AppenderNewInstanceAction (final Class<? extends _Appender_> objectClass, final List<_Appender_> collector, final boolean autoRegister, final boolean autoStart)
+	public AppenderNewInstanceAction (final Class<? extends _Appender_> objectClass, final List<? super _Appender_> collector, final boolean autoRegister, final boolean autoStart)
 	{
 		super (objectClass, collector, autoRegister, autoStart);
 		this.delegate = new AppenderAction<ILoggingEvent> ();

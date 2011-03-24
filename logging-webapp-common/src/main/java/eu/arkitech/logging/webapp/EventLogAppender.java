@@ -19,13 +19,13 @@ public class EventLogAppender
 			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<EventLogAppender> collector, final boolean autoRegister, final boolean autoStart)
+		public CreateAction (final List<? super EventLogAppender> collector, final boolean autoRegister, final boolean autoStart)
 		{
 			super (EventLogAppender.class, collector, autoRegister, autoStart);
 		}
 		
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
-		public static List<EventLogAppender> defaultCollector = null;
+		public static List<? super EventLogAppender> defaultCollector = null;
 	}
 }

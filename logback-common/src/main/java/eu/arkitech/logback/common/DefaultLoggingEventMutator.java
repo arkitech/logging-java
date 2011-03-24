@@ -6,10 +6,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 
-import com.google.common.base.Strings;
-
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 
 
 public class DefaultLoggingEventMutator

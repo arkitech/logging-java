@@ -22,7 +22,7 @@ public class ObjectNewInstanceAction<_Object_ extends ContextAware>
 		this (objectClass, null, true, true);
 	}
 	
-	public ObjectNewInstanceAction (final Class<? extends _Object_> objectClass, final List<_Object_> collector, final boolean autoRegister, final boolean autoStart)
+	public ObjectNewInstanceAction (final Class<? extends _Object_> objectClass, final List<? super _Object_> collector, final boolean autoRegister, final boolean autoStart)
 	{
 		super ();
 		this.objectClass = Preconditions.checkNotNull (objectClass);
@@ -88,7 +88,7 @@ public class ObjectNewInstanceAction<_Object_ extends ContextAware>
 	
 	protected final boolean autoRegister;
 	protected final boolean autoStart;
-	protected final List<_Object_> collector;
+	protected final List<? super _Object_> collector;
 	protected _Object_ object;
 	protected final Class<? extends _Object_> objectClass;
 	protected String objectGlobalName;

@@ -60,7 +60,7 @@ public class EventLogServlet
 			datastore = (ImmutableDatastore) datastore_;
 		else if (datastore_ instanceof DatastoreAppender) {
 			final Datastore datastore__ = ((DatastoreAppender) datastore_).getDatastore ();
-			if (datastore__ != null && datastore__ instanceof ImmutableDatastore)
+			if ((datastore__ != null) && (datastore__ instanceof ImmutableDatastore))
 				datastore = (ImmutableDatastore) datastore__;
 			else
 				throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (datastore has wrong class `%s`)", EventLogServlet.datastoreParameterName, datastoreName, datastore_.getClass ().getName ())));

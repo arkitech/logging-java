@@ -33,7 +33,7 @@ public final class AmqpRawPublisher
 		loop : while (true) {
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (!this.shouldReconnect ())
 						break;
@@ -48,7 +48,7 @@ public final class AmqpRawPublisher
 			this.callbacks.handleLogEvent (Level.INFO, null, "amqp message publisher shoveling outbound messages to broker");
 			while (true) {
 				synchronized (this.monitor) {
-					if (this.shouldStopSoft ())
+					if (this.shouldStopSoft () || this.shouldStopHard ())
 						break loop;
 					if (this.shouldReconnect ())
 						break;

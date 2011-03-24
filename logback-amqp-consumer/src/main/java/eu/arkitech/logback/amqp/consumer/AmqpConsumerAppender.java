@@ -18,6 +18,7 @@ public class AmqpConsumerAppender
 	public AmqpConsumerAppender ()
 	{
 		super ();
+		this.startDelay = AmqpConsumerAppender.defaultStartDelay;
 	}
 	
 	public String getExchange ()
@@ -33,6 +34,11 @@ public class AmqpConsumerAppender
 	public String getRoutingKey ()
 	{
 		return (this.routingKey);
+	}
+	
+	public long getStartDelay ()
+	{
+		return (this.startDelay);
 	}
 	
 	@Override
@@ -66,6 +72,11 @@ public class AmqpConsumerAppender
 		this.routingKey = routingKey;
 	}
 	
+	public void setStartDelay (final long startDelay)
+	{
+		this.startDelay = startDelay;
+	}
+	
 	protected AmqpConsumerConfiguration buildConfiguration ()
 	{
 		return (new AmqpConsumerConfiguration (this.host, this.port, this.virtualHost, this.username, this.password, this.exchange, this.queue, this.routingKey, this.serializer, this.mutator, this.callbacks, null));
@@ -87,10 +98,10 @@ public class AmqpConsumerAppender
 					throw (new IllegalStateException ());
 				final AmqpConsumerConfiguration configuration = this.buildConfiguration ();
 				this.consumer = new AmqpConsumer (configuration);
-				boolean succeeded = this.consumer.start ();
+				final boolean succeeded = this.consumer.start ();
 				if (succeeded) {
 					this.pump = new SourceSinkPump (configuration, this.consumer, this);
-					succeeded = this.pump.start ();
+					this.pump.start (this.startDelay);
 				}
 				if (!succeeded) {
 					this.reallyStop ();
@@ -137,8 +148,10 @@ public class AmqpConsumerAppender
 	protected String exchange;
 	protected String queue;
 	protected String routingKey;
+	protected long startDelay;
 	private AmqpConsumer consumer;
 	private SourceSinkPump pump;
+	public static final long defaultStartDelay = 3000;
 	
 	public static final class CreateAction
 			extends AppenderNewInstanceAction<AmqpConsumerAppender>
@@ -148,13 +161,13 @@ public class AmqpConsumerAppender
 			this (CreateAction.defaultCollector, CreateAction.defaultAutoRegister, CreateAction.defaultAutoStart);
 		}
 		
-		public CreateAction (final List<AmqpConsumerAppender> collector, final boolean autoRegister, final boolean autoStart)
+		public CreateAction (final List<? super AmqpConsumerAppender> collector, final boolean autoRegister, final boolean autoStart)
 		{
 			super (AmqpConsumerAppender.class, collector, autoRegister, autoStart);
 		}
 		
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
-		public static List<AmqpConsumerAppender> defaultCollector = null;
+		public static List<? super AmqpConsumerAppender> defaultCollector = null;
 	}
 }

@@ -32,10 +32,12 @@ public final class SyncableDatastoreBackgroundWorker
 		else
 			this.syncWriteDatastore = null;
 		this.cancel = false;
+		this.gracefull = false;
 	}
 	
 	public final boolean cancel ()
 	{
+		this.gracefull = true;
 		if (this.isCurrentThread ()) {
 			this.cancel = true;
 			return (true);
@@ -46,13 +48,19 @@ public final class SyncableDatastoreBackgroundWorker
 	}
 	
 	@Override
-	protected void executeLoop ()
+	protected final void executeLoop ()
 	{
 		long lastSyncWriteTimestamp = System.currentTimeMillis ();
 		long lastSyncReadTimestamp = lastSyncWriteTimestamp;
 		while (true) {
-			if (this.shouldStopSoft ())
+			if (this.shouldStopHard ())
 				break;
+			if (this.shouldStopSoft ()) {
+				if (this.gracefull)
+					break;
+				else
+					this.callbacks.handleLogEvent (Level.WARN, null, "database background thread delayed...");
+			}
 			synchronized (this.monitor) {
 				final long currentTimestamp = System.currentTimeMillis ();
 				if (this.syncWriteDatastore != null) {
@@ -87,7 +95,7 @@ public final class SyncableDatastoreBackgroundWorker
 	}
 	
 	@Override
-	protected void finalizeLoop ()
+	protected final void finalizeLoop ()
 	{
 		synchronized (this.monitor) {
 			this.callbacks.handleLogEvent (Level.DEBUG, null, "datastore bagkground thread stopping");
@@ -102,7 +110,7 @@ public final class SyncableDatastoreBackgroundWorker
 	}
 	
 	@Override
-	protected void initializeLoop ()
+	protected final void initializeLoop ()
 	{
 		synchronized (this.monitor) {
 			this.callbacks.handleLogEvent (Level.DEBUG, null, "datastore background thread starting");
@@ -112,6 +120,7 @@ public final class SyncableDatastoreBackgroundWorker
 	
 	private boolean cancel;
 	private final Datastore datastore;
+	private boolean gracefull;
 	private final SyncableImmutableDatastore syncReadDatastore;
 	private final long syncReadTimeout;
 	private final SyncableMutableDatastore syncWriteDatastore;

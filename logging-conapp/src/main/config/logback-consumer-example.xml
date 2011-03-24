@@ -17,6 +17,7 @@
 		<exchange>${arkitech.logging.amqp.exchange:-logging}</exchange>
 		<queue>${arkitech.logging.amqp.queue:-logging.conapp}</queue>
 		<routingKey>${arkitech.logging.amqp.routingkey:-#}</routingKey>
+		<startDelay>${arkitech.logging.amqp.startDelay:-3000}</startDelay>
 	</amqpConsumer>
 	
 	<luceneDatastore name="LuceneDatastore">
