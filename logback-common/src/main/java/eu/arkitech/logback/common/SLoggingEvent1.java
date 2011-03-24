@@ -43,13 +43,11 @@ public class SLoggingEvent1
 				return false;
 		} else if (!this.message.equals (other.message))
 			return false;
-		
 		if (this.loggerName == null) {
 			if (other.loggerName != null)
 				return false;
 		} else if (!this.loggerName.equals (other.loggerName))
 			return false;
-		
 		if (this.threadName == null) {
 			if (other.threadName != null)
 				return false;
@@ -57,13 +55,11 @@ public class SLoggingEvent1
 			return false;
 		if (this.timeStamp != other.timeStamp)
 			return false;
-		
 		if (this.marker == null) {
 			if (other.marker != null)
 				return false;
 		} else if (!this.marker.equals (other.marker))
 			return false;
-		
 		if (this.mdcPropertyMap == null) {
 			if (other.mdcPropertyMap != null)
 				return false;
@@ -212,7 +208,6 @@ public class SLoggingEvent1
 		in.defaultReadObject ();
 		final int levelInt = in.readInt ();
 		this.level = Level.toLevel (levelInt);
-		
 		final int argArrayLen = in.readInt ();
 		if (argArrayLen != SLoggingEvent1.NULL_ARGUMENT_ARRAY) {
 			this.argumentArray = new String[argArrayLen];

@@ -7,6 +7,8 @@
 	<newRule pattern="/configuration/amqpPublisher" actionClass="eu.arkitech.logback.amqp.publisher.AmqpPublisherAppender$CreateAction" />
 	<newRule pattern="/configuration/randomGenerator" actionClass="eu.arkitech.logback.common.RandomGenerator$CreateAction" />
 	
+	<property file="${arkitech.logging.properties:-./src/main/config/logback-publisher-example.properties}" />
+	
 	<amqpPublisher name="AmqpPublisher">
 		<host>${arkitech.logging.amqp.host:-127.0.0.1}</host>
 		<port>${arkitech.logging.amqp.port:-5672}</port>
@@ -15,12 +17,18 @@
 		<password>${arkitech.logging.amqp.password:-guest}</password>
 		<exchangePattern>logging%nopex</exchangePattern>
 		<routingKeyPattern>logging.event.%level.%replace(%mdc{application}){'.','_'}.%replace(%mdc{component}){'.','_'}.%replace(%mdc{node}){'.','_'}%nopex</routingKeyPattern>
+		<mutator class="eu.arkitech.logback.common.DefaultLoggingEventMutator">
+			<application>${arkitech.logging.application:-}</application>
+			<component>${arkitech.logging.component:-}</component>
+			<node>${arkitech.logging.node:-}</node>
+		</mutator>
 	</amqpPublisher>
 	
 	<randomGenerator name="Generator">
-		<fqdn>__logging_tests__</fqdn>
-		<interval>1000</interval>
-		<count>3600</count>
+		<loggerName>${arkitech.logging.generator.logger:-example-logger}</loggerName>
+		<initialDelay>${arkitech.logging.generator.initialDelay:-1000}</initialDelay>
+		<loopDelay>${arkitech.logging.generator.loopDelay:-1000}</loopDelay>
+		<loopCount>${arkitech.logging.generator.loopCount:-360}</loopCount>
 	</randomGenerator>
 	
 	<root level="trace">

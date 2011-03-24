@@ -11,6 +11,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.spi.ContextAwareBase;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.slf4j.LoggerFactory;
 
 
@@ -19,39 +22,46 @@ public class RandomGenerator
 {
 	public RandomGenerator ()
 	{
-		this (RandomGenerator.class.getName (), null);
+		this (null, null);
 	}
 	
-	public RandomGenerator (final Object source)
+	public RandomGenerator (final Class<?> source)
 	{
-		this (source.getClass ().getName (), null);
+		this (null, source.getName ());
 	}
 	
-	public RandomGenerator (final String fqdn, final Logger logger)
+	public RandomGenerator (final Logger logger)
+	{
+		this (logger, null);
+	}
+	
+	public RandomGenerator (final Logger logger, final String loggerName)
 	{
 		super ();
 		this.random = new Random ();
-		this.fqdn = fqdn;
 		this.logger = logger;
-		this.count = RandomGenerator.defaultCount;
-		this.interval = RandomGenerator.defaultInterval;
+		this.loggerName = loggerName;
+		this.loopCount = RandomGenerator.defaultLoopCount;
+		this.initialDelay = RandomGenerator.defaultInitialDelay;
+		this.loopDelay = RandomGenerator.defaultLoopDelay;
+	}
+	
+	public RandomGenerator (final String loggerName)
+	{
+		this (null, loggerName);
 	}
 	
 	public void append ()
 	{
 		final ILoggingEvent event = this.generate ();
-		if (event != null)
-			((Logger) LoggerFactory.getLogger (event.getLoggerName ())).callAppenders (event);
+		final String loggerName = event.getLoggerName ();
+		final Logger logger = (Logger) LoggerFactory.getLogger (Objects.firstNonNull (loggerName, RandomGenerator.class.getName ()));
+		logger.callAppenders (event);
 	}
 	
 	public ILoggingEvent generate ()
 	{
-		final String fqdn = this.getFqdn ();
-		if (fqdn == null)
-			return (null);
-		final Logger logger = this.getLogger ();
-		if (logger == null)
-			return (null);
+		final Logger logger = this.resolveLogger ();
 		final float levelDice = this.random.nextFloat ();
 		final float exceptionDice = this.random.nextFloat ();
 		final float exception2Dice = this.random.nextFloat ();
@@ -77,57 +87,53 @@ public class RandomGenerator
 				exception = new Throwable (UUID.randomUUID ().toString ());
 		else
 			exception = null;
-		return (new LoggingEvent (fqdn, logger, level, message, exception, null));
+		return (new LoggingEvent (null, logger, level, message, exception, null));
 	}
 	
-	public long getCount ()
+	public long getInitialDelay ()
 	{
-		return (this.count);
-	}
-	
-	public String getFqdn ()
-	{
-		return (this.fqdn);
-	}
-	
-	public long getInterval ()
-	{
-		return (this.interval);
+		return (this.initialDelay);
 	}
 	
 	public Logger getLogger ()
 	{
-		final Logger logger_ = this.logger;
+		return (this.logger);
+	}
+	
+	public String getLoggerName ()
+	{
+		return (this.loggerName);
+	}
+	
+	public long getLoopCount ()
+	{
+		return (this.loopCount);
+	}
+	
+	public long getLoopDelay ()
+	{
+		return (this.loopDelay);
+	}
+	
+	public Logger resolveLogger ()
+	{
+		final Logger configuredLogger = this.logger;
+		final String configuredLoggerName = Strings.emptyToNull (this.loggerName);
 		final Logger logger;
-		if (logger_ != null)
-			logger = logger_;
-		else {
-			final String fqdn = this.getFqdn ();
-			if (fqdn != null)
-				try {
-					logger = (Logger) LoggerFactory.getLogger (fqdn);
-				} catch (final ClassCastException exception) {
-					return (null);
-				}
-			else
-				logger = null;
-		}
+		if (configuredLogger != null)
+			logger = configuredLogger;
+		else if (configuredLoggerName != null)
+			logger = (Logger) LoggerFactory.getLogger (configuredLoggerName);
+		else
+			logger = (Logger) LoggerFactory.getLogger (RandomGenerator.class);
+		if (logger == null)
+			throw (new IllegalStateException ());
 		return (logger);
 	}
 	
-	public void setCount (final long count)
+	public void setInitialDelay (final long delay)
 	{
-		this.count = count;
-	}
-	
-	public void setFqdn (final String fqdn)
-	{
-		this.fqdn = fqdn;
-	}
-	
-	public void setInterval (final long interval)
-	{
-		this.interval = interval;
+		this.initialDelay = delay;
 	}
 	
 	public void setLogger (final Logger logger)
@@ -135,41 +141,43 @@ public class RandomGenerator
 		this.logger = logger;
 	}
 	
-	public Thread start ()
+	public void setLoggerName (final String loggerName)
 	{
-		return (this.start (this.count, this.interval));
+		this.loggerName = loggerName;
 	}
 	
-	public Thread start (final long count, final long interval)
+	public void setLoopCount (final long count)
 	{
-		final Thread thread = new Thread () {
-			@Override
-			public void run ()
-			{
-				for (long index = 0; index < count; index++) {
-					RandomGenerator.this.append ();
-					try {
-						Thread.sleep (interval);
-					} catch (final InterruptedException exception) {
-						break;
-					}
-				}
-			}
-		};
-		thread.setName (String.format ("%s@%x@%x", this.getClass ().getName (), System.identityHashCode (this), System.identityHashCode (thread)));
-		thread.setDaemon (true);
+		this.loopCount = count;
+	}
+	
+	public void setLoopDelay (final long delay)
+	{
+		this.loopDelay = delay;
+	}
+	
+	public Thread start ()
+	{
+		return (this.start (this.loopCount, this.initialDelay, this.loopDelay));
+	}
+	
+	public RandomGeneratorThread start (final long loopCount, final long initialDelay, final long loopDelay)
+	{
+		final RandomGeneratorThread thread = new RandomGeneratorThread (this, loopCount, initialDelay, loopDelay);
 		thread.start ();
 		return (thread);
 	}
 	
-	protected long count;
-	protected String fqdn;
-	protected long interval;
+	protected long initialDelay;
 	protected Logger logger;
+	protected String loggerName;
+	protected long loopCount;
+	protected long loopDelay;
 	protected final Random random;
 	
-	public static final long defaultCount = 10 * 60 * 2;
-	public static final long defaultInterval = 500;
+	public static long defaultInitialDelay = RandomGenerator.defaultLoopDelay;
+	public static long defaultLoopCount = 360;
+	public static long defaultLoopDelay = 1000;
 	
 	public static final class CreateAction
 			extends ObjectNewInstanceAction<RandomGenerator>
@@ -193,5 +201,67 @@ public class RandomGenerator
 		public static boolean defaultAutoRegister = true;
 		public static boolean defaultAutoStart = true;
 		public static List<RandomGenerator> defaultCollector = null;
+	}
+	
+	public static final class RandomGeneratorThread
+			extends WorkerThread
+	{
+		public RandomGeneratorThread (final RandomGenerator generator, final long loopCount, final long initialDelay, final long loopDelay)
+		{
+			super (generator.getClass ().getSimpleName (), Thread.MIN_PRIORITY);
+			Preconditions.checkNotNull (generator);
+			Preconditions.checkArgument (loopCount >= 0);
+			Preconditions.checkArgument (initialDelay >= 0);
+			Preconditions.checkArgument (loopDelay >= 0);
+			this.generator = generator;
+			this.loopCount = loopCount;
+			this.initialDelay = initialDelay;
+			this.loopDelay = loopDelay;
+		}
+		
+		@Override
+		protected void executeLoop ()
+		{
+			try {
+				Thread.sleep (this.initialDelay);
+			} catch (final InterruptedException exception) {
+				return;
+			}
+			long index = 0;
+			while (true) {
+				if (this.shouldStopSoft ())
+					break;
+				if (index == this.loopCount)
+					break;
+				this.generator.append ();
+				index++;
+				if (index == this.loopCount)
+					break;
+				try {
+					Thread.sleep (this.loopDelay);
+				} catch (final InterruptedException exception) {
+					break;
+				}
+			}
+		}
+		
+		@Override
+		protected void finalizeLoop ()
+		{}
+		
+		@Override
+		protected void handleException (final Throwable exception)
+		{
+			exception.printStackTrace ();
+		}
+		
+		@Override
+		protected void initializeLoop ()
+		{}
+		
+		protected final RandomGenerator generator;
+		protected final long initialDelay;
+		protected final long loopCount;
+		protected final long loopDelay;
 	}
 }

@@ -6,7 +6,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 
+import com.google.common.base.Strings;
+
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.google.common.base.Objects;
 
 
 public class DefaultLoggingEventMutator
@@ -16,13 +19,9 @@ public class DefaultLoggingEventMutator
 	public DefaultLoggingEventMutator ()
 	{
 		this.sequence = 0;
-		this.application = System.getProperty ("application");
-		this.component = System.getProperty ("component");
-		try {
-			this.node = InetAddress.getLocalHost ().getHostName ();
-		} catch (final UnknownHostException exception) {
-			this.node = null;
-		}
+		this.application = null;
+		this.component = null;
+		this.node = null;
 	}
 	
 	public String getApplication ()
@@ -49,6 +48,9 @@ public class DefaultLoggingEventMutator
 	public void mutate (final ILoggingEvent event_)
 	{
 		final SLoggingEvent1 event = (SLoggingEvent1) event_;
+		final String application = Strings.emptyToNull (Objects.firstNonNull (this.application, DefaultLoggingEventMutator.defaultApplication));
+		final String component = Strings.emptyToNull (Objects.firstNonNull (this.component, DefaultLoggingEventMutator.defaultComponent));
+		final String node = Strings.emptyToNull (Objects.firstNonNull (this.node, DefaultLoggingEventMutator.defaultNode));
 		long sequence;
 		synchronized (this) {
 			sequence = this.sequence;
@@ -58,13 +60,13 @@ public class DefaultLoggingEventMutator
 			event.mdcPropertyMap = new HashMap<String, String> (3);
 		else
 			event.mdcPropertyMap = new HashMap<String, String> (event.mdcPropertyMap);
-		event.mdcPropertyMap.put (DefaultLoggingEventMutator.sequenceKey, Long.toString (sequence));
-		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.applicationKey))
-			event.mdcPropertyMap.put (DefaultLoggingEventMutator.applicationKey, this.application != null ? this.application : "unknown");
-		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.componentKey))
-			event.mdcPropertyMap.put (DefaultLoggingEventMutator.componentKey, this.component != null ? this.component : "unknown");
-		if (!event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.nodeKey))
-			event.mdcPropertyMap.put (DefaultLoggingEventMutator.nodeKey, this.node != null ? this.node : "unknown");
+		if ((application != null) && !event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.defaultApplicationMdcName))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultApplicationMdcName, application);
+		if ((component != null) && !event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.defaultComponentMdcName))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultComponentMdcName, component);
+		if ((node != null) && !event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.defaultNodeMdcName))
+			event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultNodeMdcName, node);
+		event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultSequenceMdcKey, Long.toString (sequence));
 	}
 	
 	public void setApplication (final String application)
@@ -87,8 +89,26 @@ public class DefaultLoggingEventMutator
 	protected String node;
 	protected long sequence;
 	
-	public static final String applicationKey = "application";
-	public static final String componentKey = "component";
-	public static final String nodeKey = "node";
-	public static final String sequenceKey = "sequence";
+	static {
+		DefaultLoggingEventMutator.defaultApplication = Strings.emptyToNull (System.getProperty (DefaultLoggingEventMutator.defaultApplicationPropertyName, DefaultLoggingEventMutator.defaultApplication));
+		DefaultLoggingEventMutator.defaultComponent = Strings.emptyToNull (System.getProperty (DefaultLoggingEventMutator.defaultComponentPropertyName, DefaultLoggingEventMutator.defaultComponent));
+		DefaultLoggingEventMutator.defaultNode = Strings.emptyToNull (System.getProperty (DefaultLoggingEventMutator.defaultNodePropertyName, DefaultLoggingEventMutator.defaultNode));
+		if (DefaultLoggingEventMutator.defaultNode == null)
+			try {
+				DefaultLoggingEventMutator.defaultNode = InetAddress.getLocalHost ().getHostName ();
+			} catch (final UnknownHostException exception) {
+				DefaultLoggingEventMutator.defaultNode = null;
+			}
+	}
+	
+	public static String defaultApplication = null;
+	public static final String defaultApplicationMdcName = "application";
+	public static final String defaultApplicationPropertyName = "arkitech.logging.application";
+	public static String defaultComponent = null;
+	public static final String defaultComponentMdcName = "component";
+	public static final String defaultComponentPropertyName = "arkitech.logging.component";
+	public static String defaultNode = null;
+	public static final String defaultNodeMdcName = "node";
+	public static final String defaultNodePropertyName = "arkitech.logging.node";
+	public static final String defaultSequenceMdcKey = "sequence";
 }

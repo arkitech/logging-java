@@ -32,12 +32,12 @@ public final class AmqpPublisherTests
 		testLogger.addAppender (appender);
 		testLogger.setAdditive (false);
 		
-		final RandomGenerator generator = new RandomGenerator (AmqpPublisherTests.class.getName (), testLogger);
+		final RandomGenerator generator = new RandomGenerator (testLogger);
 		realLogger.debug ("logging generated messages");
 		MDC.clear ();
 		for (int index = 0; index < AmqpPublisherTests.messageCount; index++) {
-			MDC.put (DefaultLoggingEventMutator.applicationKey, String.format ("app-%d", index % 3 + 1));
-			MDC.put (DefaultLoggingEventMutator.componentKey, String.format ("comp-%d", index % 2 + 1));
+			MDC.put (DefaultLoggingEventMutator.defaultApplicationMdcName, String.format ("app-%d", index % 3 + 1));
+			MDC.put (DefaultLoggingEventMutator.defaultComponentMdcName, String.format ("comp-%d", index % 2 + 1));
 			testLogger.callAppenders (generator.generate ());
 			MDC.clear ();
 		}
