@@ -32,16 +32,14 @@ public final class SyncableDatastoreBackgroundWorker
 		else
 			this.syncWriteDatastore = null;
 		this.cancel = false;
-		this.gracefull = false;
 	}
 	
 	public final boolean cancel ()
 	{
-		this.gracefull = true;
-		if (this.isCurrentThread ()) {
-			this.cancel = true;
+		this.cancel = true;
+		if (this.isCurrentThread ())
 			return (true);
-		} else {
+		else {
 			this.requestStop ();
 			return (this.awaitStop ());
 		}
@@ -56,7 +54,7 @@ public final class SyncableDatastoreBackgroundWorker
 			if (this.shouldStopHard ())
 				break;
 			if (this.shouldStopSoft ()) {
-				if (this.gracefull)
+				if (this.cancel)
 					break;
 				else
 					this.callbacks.handleLogEvent (Level.WARN, null, "database background thread delayed...");
@@ -100,7 +98,6 @@ public final class SyncableDatastoreBackgroundWorker
 		synchronized (this.monitor) {
 			this.callbacks.handleLogEvent (Level.DEBUG, null, "datastore bagkground thread stopping");
 			if (!this.cancel) {
-				this.cancel = true;
 				this.callbacks.handleLogEvent (Level.WARN, null, "datastore bagkground thread detected that the datastore is not closed; closing!");
 				if (!this.datastore.close ())
 					this.callbacks.handleLogEvent (Level.ERROR, null, "datastore background thread failed to close the datastore; ignoring!");
@@ -118,9 +115,8 @@ public final class SyncableDatastoreBackgroundWorker
 		}
 	}
 	
-	private boolean cancel;
 	private final Datastore datastore;
-	private boolean gracefull;
+	private boolean cancel;
 	private final SyncableImmutableDatastore syncReadDatastore;
 	private final long syncReadTimeout;
 	private final SyncableMutableDatastore syncWriteDatastore;
