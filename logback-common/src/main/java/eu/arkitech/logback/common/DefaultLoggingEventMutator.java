@@ -2,9 +2,11 @@
 package eu.arkitech.logback.common;
 
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.google.common.base.Objects;
@@ -55,6 +57,7 @@ public class DefaultLoggingEventMutator
 			sequence = this.sequence;
 			this.sequence++;
 		}
+		
 		if (event.mdcPropertyMap == null)
 			event.mdcPropertyMap = new HashMap<String, String> (3);
 		else
@@ -66,6 +69,19 @@ public class DefaultLoggingEventMutator
 		if ((node != null) && !event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.defaultNodeMdcName))
 			event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultNodeMdcName, node);
 		event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultSequenceMdcKey, Long.toString (sequence));
+		
+		final LinkedList<String> mdcInvalidKeys = new LinkedList<String> ();
+		for (final String mdcKey : event.mdcPropertyMap.keySet ()) {
+			final Object mdcValue = event.mdcPropertyMap.get (mdcKey);
+			if (!(mdcValue instanceof String))
+				mdcInvalidKeys.add (mdcKey);
+		}
+		for (final String mdcInvalidKey : mdcInvalidKeys)
+			event.mdcPropertyMap.remove (mdcInvalidKey);
+		if (event.argumentArray != null)
+			for (int index = 0; index < event.argumentArray.length; index++)
+				if ((event.argumentArray[index] != null) && !(event.argumentArray[index] instanceof Serializable))
+					event.argumentArray[index] = String.valueOf (event.argumentArray[index]);
 	}
 	
 	public void setApplication (final String application)
