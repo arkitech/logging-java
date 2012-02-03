@@ -20,18 +20,14 @@ public final class AmqpPublisherTests
 			throws Exception
 	{
 		final Logger realLogger = (Logger) LoggerFactory.getLogger (AmqpPublisherTests.class.getName ());
-		
 		final Logger testLogger = (Logger) LoggerFactory.getLogger (AmqpPublisherTests.testLoggerName);
-		
 		realLogger.debug ("initializing amqp appender");
 		final AmqpPublisherAppender appender = new AmqpPublisherAppender ();
 		appender.setName (String.format ("%s@%x", appender.getClass ().getName (), System.identityHashCode (appender)));
 		appender.setContext (testLogger.getLoggerContext ());
 		appender.start ();
-		
 		testLogger.addAppender (appender);
 		testLogger.setAdditive (false);
-		
 		final RandomGenerator generator = new RandomGenerator (testLogger);
 		realLogger.debug ("logging generated messages");
 		MDC.clear ();
@@ -41,21 +37,17 @@ public final class AmqpPublisherTests
 			testLogger.callAppenders (generator.generate ());
 			MDC.clear ();
 		}
-		
 		realLogger.debug ("waiting for message draining (i.e. until their all sent)");
 		for (int tries = 0; tries < AmqpPublisherTests.timeoutTries; tries++) {
 			if (appender.isDrained ())
 				break;
 			Thread.sleep (AmqpPublisherTests.timeout);
 		}
-		
 		realLogger.debug ("stopping and joining amqp appender");
 		appender.stop ();
-		
 		Assert.assertTrue (appender.isDrained ());
 		Assert.assertFalse (appender.isStarted ());
 		Assert.assertFalse (appender.isRunning ());
-		
 		testLogger.detachAppender (appender);
 	}
 	

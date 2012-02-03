@@ -231,6 +231,5 @@ public class EventLogLayout
 	protected Converter<ILoggingEvent> convertersHead;
 	protected String pattern;
 	protected boolean started;
-	
 	public static final String defaultPattern = "%mdc%date%level%logger%msg";
 }

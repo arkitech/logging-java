@@ -27,7 +27,6 @@ public final class LuceneTestsMain
 	{
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ());
-		
 		final boolean readOnly = true;
 		final int compressed = -1;
 		final int storeCount = 100;
@@ -39,9 +38,7 @@ public final class LuceneTestsMain
 		final int selectAfterCount = 10;
 		final int queryCount = 0;
 		final String queryString = "mdc_application:app-1 AND level:ERROR";
-		
 		final Logger logger = LoggerFactory.getLogger (LuceneTestsMain.class);
-		
 		logger.info ("opening");
 		final File path = new File ("/tmp/arkitech-logging-datastore");
 		final LuceneDatastore datastore = new LuceneDatastore (new LuceneDatastoreConfiguration (path, readOnly, compressed));
@@ -49,7 +46,6 @@ public final class LuceneTestsMain
 			logger.error ("open failed");
 			return;
 		}
-		
 		final LinkedList<String> keys;
 		if ((storeCount > 0) && !readOnly) {
 			logger.info ("storing");
@@ -69,7 +65,6 @@ public final class LuceneTestsMain
 				logger.error ("store sync read failed");
 		} else
 			keys = null;
-		
 		if ((keys != null) && (selectKeysCount > 0)) {
 			logger.info ("selecting keys");
 			int i = 0;
@@ -82,7 +77,6 @@ public final class LuceneTestsMain
 					break;
 			}
 		}
-		
 		if ((keys != null) && ((selectReferenceAfterCount > 0) || (selectReferenceBeforeCount > 0))) {
 			logger.info ("selecting reference event");
 			final ILoggingEvent referenceEvent = datastore.select (keys.get (keys.size () / 2));
@@ -99,7 +93,6 @@ public final class LuceneTestsMain
 					logger.error ("select around timestamp failed");
 			}
 		}
-		
 		if (selectAfterCount > 0) {
 			logger.info ("selecting after timestamp `{}`", selectAfterTimestamp);
 			final Iterable<ILoggingEvent> events = datastore.select (selectAfterTimestamp, selectAfterInterval, selectAfterCount, null);
@@ -110,7 +103,6 @@ public final class LuceneTestsMain
 			else
 				logger.error ("select after timestamp failed");
 		}
-		
 		if (queryCount > 0) {
 			logger.info ("querying `{}`", queryString);
 			Query query = null;
@@ -130,7 +122,6 @@ public final class LuceneTestsMain
 					logger.error ("query failed for `{}`", queryString);
 			}
 		}
-		
 		logger.info ("closing");
 		datastore.close ();
 	}

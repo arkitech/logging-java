@@ -115,8 +115,8 @@ public final class SyncableDatastoreBackgroundWorker
 		}
 	}
 	
-	private final Datastore datastore;
 	private boolean cancel;
+	private final Datastore datastore;
 	private final SyncableImmutableDatastore syncReadDatastore;
 	private final long syncReadTimeout;
 	private final SyncableMutableDatastore syncWriteDatastore;

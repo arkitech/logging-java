@@ -57,7 +57,6 @@ public class DefaultLoggingEventMutator
 			sequence = this.sequence;
 			this.sequence++;
 		}
-		
 		if (event.mdcPropertyMap == null)
 			event.mdcPropertyMap = new HashMap<String, String> (3);
 		else
@@ -69,7 +68,6 @@ public class DefaultLoggingEventMutator
 		if ((node != null) && !event.mdcPropertyMap.containsKey (DefaultLoggingEventMutator.defaultNodeMdcName))
 			event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultNodeMdcName, node);
 		event.mdcPropertyMap.put (DefaultLoggingEventMutator.defaultSequenceMdcKey, Long.toString (sequence));
-		
 		final LinkedList<String> mdcInvalidKeys = new LinkedList<String> ();
 		for (final String mdcKey : event.mdcPropertyMap.keySet ()) {
 			final Object mdcValue = event.mdcPropertyMap.get (mdcKey);
@@ -103,7 +101,6 @@ public class DefaultLoggingEventMutator
 	protected String component;
 	protected String node;
 	protected long sequence;
-	
 	static {
 		DefaultLoggingEventMutator.defaultApplication = Strings.emptyToNull (System.getProperty (DefaultLoggingEventMutator.defaultApplicationPropertyName, DefaultLoggingEventMutator.defaultApplication));
 		DefaultLoggingEventMutator.defaultComponent = Strings.emptyToNull (System.getProperty (DefaultLoggingEventMutator.defaultComponentPropertyName, DefaultLoggingEventMutator.defaultComponent));
@@ -115,7 +112,6 @@ public class DefaultLoggingEventMutator
 				DefaultLoggingEventMutator.defaultNode = null;
 			}
 	}
-	
 	public static String defaultApplication = null;
 	public static final String defaultApplicationMdcName = "application";
 	public static final String defaultApplicationPropertyName = "arkitech.logging.application";

@@ -39,7 +39,6 @@ public class SyncableDatastoreBackgroundWorkerConfiguration
 	public final Datastore datastore;
 	public final Long syncReadTimeout;
 	public final Long syncWriteTimeout;
-	
 	public static final long defaultSyncReadTimeout = 10 * 1000;
 	public static final long defaultSyncWriteTimeout = 10 * 1000;
 }

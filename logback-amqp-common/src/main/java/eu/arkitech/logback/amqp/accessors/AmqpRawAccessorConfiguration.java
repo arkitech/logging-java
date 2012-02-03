@@ -35,7 +35,6 @@ public abstract class AmqpRawAccessorConfiguration
 	public final Integer port;
 	public final String username;
 	public final String virtualHost;
-	
 	public static final String defaultHost = "127.0.0.1";
 	public static final String defaultPassword = "guest";
 	public static final Integer defaultPort = 5672;

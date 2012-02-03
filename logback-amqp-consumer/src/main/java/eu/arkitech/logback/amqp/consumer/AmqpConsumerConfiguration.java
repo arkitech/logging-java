@@ -43,7 +43,6 @@ public class AmqpConsumerConfiguration
 	
 	public final LoggingEventMutator mutator;
 	public final Serializer serializer;
-	
 	public static final LoggingEventMutator defaultMutator = AmqpAccessorConfiguration.defaultMutator;
 	public static final Serializer defaultSerializer = AmqpAccessorConfiguration.defaultSerializer;
 }

@@ -318,7 +318,6 @@ public abstract class WorkerThread
 	public static final long stopHardRequestTimeout = 30 * 1000;
 	private static long identifierCounter = 0;
 	private static final Object identifierCounterMonitor = new Object ();
-	
 	private static final HashSet<WorkerThread> instances = new HashSet<WorkerThread> ();
 	
 	public static enum State

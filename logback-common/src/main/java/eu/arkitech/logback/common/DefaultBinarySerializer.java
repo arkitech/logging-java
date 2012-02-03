@@ -110,7 +110,6 @@ public class DefaultBinarySerializer
 	protected int bufferSize;
 	protected String contentEncoding;
 	protected String contentType;
-	
 	public static final int defaultBufferSize = 2048;
 	public static final String defaultContentEncoding = "binary";
 	public static final String defaultContentType = "application/x-java-serialized-object";

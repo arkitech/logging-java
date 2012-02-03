@@ -713,7 +713,6 @@ public final class BdbDatastore
 	private final long syncTimeout;
 	private SyncableDatastoreBackgroundWorker syncWorker;
 	private final boolean syncWorkerEnabled;
-	
 	static {
 		hashAlgorithm = "MD5";
 		hashSize = 16;

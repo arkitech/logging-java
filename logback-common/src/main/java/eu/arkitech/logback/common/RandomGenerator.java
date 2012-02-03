@@ -174,7 +174,6 @@ public class RandomGenerator
 	protected long loopCount;
 	protected long loopDelay;
 	protected final Random random;
-	
 	public static long defaultInitialDelay = RandomGenerator.defaultLoopDelay;
 	public static long defaultLoopCount = 360;
 	public static long defaultLoopDelay = 1000;

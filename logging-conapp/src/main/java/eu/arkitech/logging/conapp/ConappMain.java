@@ -27,20 +27,15 @@ public final class ConappMain
 	{
 		if (arguments.length != 0)
 			throw (new IllegalArgumentException ("amqp consumer console application takes no arguments (use the logback system property `logback.configurationFile`); aborting!"));
-		
 		final List<AmqpAccessorAppender> amqpAppenders = Collections.synchronizedList (new LinkedList<AmqpAccessorAppender> ());
 		AmqpConsumerAppender.CreateAction.defaultCollector = amqpAppenders;
 		AmqpPublisherAppender.CreateAction.defaultCollector = amqpAppenders;
-		
 		final List<DatastoreAppender> datastoreAppenders = Collections.synchronizedList (new LinkedList<DatastoreAppender> ());
 		BdbDatastoreAppender.CreateAction.defaultCollector = datastoreAppenders;
 		LuceneDatastoreAppender.CreateAction.defaultCollector = datastoreAppenders;
-		
 		LoggerFactory.getILoggerFactory ();
-		
 		if (amqpAppenders.isEmpty ())
 			throw (new IllegalArgumentException ("no amqp accessors defined; aborting!"));
-		
 		while (true) {
 			boolean stillRunning = false;
 			for (final AmqpAccessorAppender accessor : amqpAppenders)
@@ -53,10 +48,8 @@ public final class ConappMain
 				break;
 			}
 		}
-		
 		for (final DatastoreAppender appender : datastoreAppenders)
 			appender.stop ();
-		
 		System.exit (1);
 	}
 	

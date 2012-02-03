@@ -47,7 +47,6 @@ public class AmqpPublisherConfiguration
 	public final LoggingEventMutator mutator;
 	public final AmqpRouter router;
 	public final Serializer serializer;
-	
 	public static final String defaultExchange = "logging";
 	public static final LoggingEventMutator defaultMutator = AmqpAccessorConfiguration.defaultMutator;
 	public static final String defaultRoutingKeyFormat = "logging.event.%s";

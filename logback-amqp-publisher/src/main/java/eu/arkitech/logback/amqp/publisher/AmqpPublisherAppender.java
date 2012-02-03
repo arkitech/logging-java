@@ -162,7 +162,6 @@ public class AmqpPublisherAppender
 	protected PatternLayout exchangeLayout;
 	protected PatternLayout routingKeyLayout;
 	private AmqpPublisher publisher;
-	
 	public static final String defaultExchangeKeyPattern = "logging%nopex";
 	public static final String defaultRoutingKeyPattern = "logging.event.%level%nopex";
 	

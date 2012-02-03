@@ -328,7 +328,6 @@ public final class LuceneIndex
 	private IndexSearcher searcher;
 	private State state;
 	private IndexWriter writer;
-	
 	public static final String blockDatabaseName = "lucene-blocks";
 	public static final String exceptionClassFieldName = "exception-class";
 	public static final String exceptionMessageFieldName = "exception-message";

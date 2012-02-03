@@ -33,7 +33,6 @@ public class AmqpRawConsumerConfiguration
 	public final String exchange;
 	public final String queue;
 	public final String routingKey;
-	
 	public static final String defaultExchange = "logging";
 	public static final String defaultRoutingKey = "#";
 }

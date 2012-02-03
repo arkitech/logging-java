@@ -30,6 +30,5 @@ public class WorkerConfiguration
 	
 	public final Callbacks callbacks;
 	public final Object monitor;
-	
 	public static final int defaultWaitTimeout = 1000;
 }

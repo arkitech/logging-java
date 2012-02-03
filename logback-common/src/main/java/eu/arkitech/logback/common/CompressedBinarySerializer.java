@@ -43,7 +43,6 @@ public class CompressedBinarySerializer
 	}
 	
 	protected int level;
-	
 	public static final int compressedBufferSize = 1024;
 	public static final String compressedContentEncoding = "binary";
 	public static final String compressedContentType = "application/x-java-serialized-object+zlib";

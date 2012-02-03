@@ -96,7 +96,6 @@ public final class AmqpConsumer
 	
 	public final BlockingQueue<ILoggingEvent> buffer;
 	private final BlockingQueue<AmqpRawMessage> rawBuffer;
-	
 	public static final String defaultExchange = "logging";
 	public static final String defaultRoutingKeyFormat = "logging.event.%s";
 }

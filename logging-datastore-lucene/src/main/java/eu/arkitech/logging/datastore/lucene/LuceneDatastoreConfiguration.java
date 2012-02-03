@@ -88,7 +88,6 @@ public class LuceneDatastoreConfiguration
 	public final LoggingEventMutator storeMutator;
 	public final Boolean syncEnabled;
 	public final Long syncTimeout;
-	
 	public static final File defaultEnvironmentPath = new File ("/tmp/logging-lucene-datastore");
 	public static final LoggingEventMutator defaultLoadMutator = BdbDatastoreConfiguration.defaultLoadMutator;
 	public static final Serializer defaultSerializer = BdbDatastoreConfiguration.defaultSerializer;

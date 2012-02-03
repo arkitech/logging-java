@@ -47,9 +47,7 @@ public class EventLogServlet
 		final String datastoreName = configuration.getInitParameter (EventLogServlet.datastoreParameterName);
 		final String eventPattern = configuration.getInitParameter (EventLogServlet.eventPatternParameterName);
 		final String htmlHeadResourceName = configuration.getInitParameter (EventLogServlet.htmlHeadResourceParameterName);
-		
 		this.context = (LoggerContext) LoggerFactory.getILoggerFactory ();
-		
 		if (Strings.isNullOrEmpty (datastoreName))
 			throw (new ServletException (String.format ("logback event viewer `%s` parameter is not set; aborting!", EventLogServlet.datastoreParameterName)));
 		final Object datastore_ = this.context.getObject (datastoreName);
@@ -66,7 +64,6 @@ public class EventLogServlet
 				throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (datastore has wrong class `%s`)", EventLogServlet.datastoreParameterName, datastoreName, datastore_.getClass ().getName ())));
 		} else
 			throw (new ServletException (String.format ("logback event viewer `%s` parameter value `%s` is wrong (datastore has wrong class `%s`)", EventLogServlet.datastoreParameterName, datastoreName, datastore_.getClass ().getName ())));
-		
 		final InputStream htmlHeadStream;
 		if (!Strings.isNullOrEmpty (htmlHeadResourceName)) {
 			htmlHeadStream = EventLogServlet.class.getClassLoader ().getResourceAsStream (htmlHeadResourceName);
@@ -97,17 +94,13 @@ public class EventLogServlet
 			}
 		} else
 			htmlHead = null;
-		
 		super.init ();
-		
 		this.datastore = (ImmutableDatastore) datastore;
-		
 		this.layout = new EventLogLayout ();
 		this.layout.setContext (this.context);
 		if (eventPattern != null)
 			this.layout.setPattern (eventPattern);
 		this.layout.start ();
-		
 		if (htmlHead != null)
 			this.htmlHead = htmlHead.toString ();
 	}
@@ -226,7 +219,6 @@ public class EventLogServlet
 	private ImmutableDatastore datastore;
 	private String htmlHead;
 	private EventLogLayout layout;
-	
 	public static final String datastoreParameterName = "datastore";
 	public static final String defaultHtmlHeadResource = "eu/arkitech/logback/webapp/event-log.html-head";
 	public static final String eventPatternParameterName = "event-pattern";

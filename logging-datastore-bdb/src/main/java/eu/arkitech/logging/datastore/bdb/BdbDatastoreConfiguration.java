@@ -87,7 +87,6 @@ public class BdbDatastoreConfiguration
 	public final LoggingEventMutator storeMutator;
 	public final Boolean syncEnabled;
 	public final Long syncTimeout;
-	
 	public static final File defaultEnvironmentPath = new File ("/tmp/logging-bdb-datastore");
 	public static final LoggingEventMutator defaultLoadMutator = null;
 	public static final Serializer defaultSerializer = new DefaultBinarySerializer ();
