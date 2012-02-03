@@ -141,19 +141,6 @@
 		<license.licenseName>apache_v2</license.licenseName>
 	</properties>
 	
-	<licenses>
-		<license>
-			<name>Apache 2</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
-	
-	<scm>
-		<connection>scm:git:git://github.com/arkitech/logging-java</connection>
-		<developerConnection>scm:git:ssh://git@github.com/arkitech/logging-java</developerConnection>
-	</scm>
-	
 	<organization>
 		<name>Arkitech</name>
 		<url>https://github.com/arkitech</url>
@@ -171,5 +158,18 @@
 			<timezone>+3</timezone>
 		</developer>
 	</developers>
+	
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git:git://github.com/arkitech/logging-java</connection>
+		<developerConnection>scm:git:ssh://git@github.com/arkitech/logging-java</developerConnection>
+	</scm>
 	
 </project>
