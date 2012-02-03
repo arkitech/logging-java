@@ -122,7 +122,7 @@
 	</build>
 	
 	<properties>
-		<versions.dependencies.amqp>2.7.1</versions.dependencies.amqp>
+		<versions.dependencies.amqp>2.2.0</versions.dependencies.amqp>
 		<versions.dependencies.bdb>3.2.76</versions.dependencies.bdb>
 		<versions.dependencies.guava>11.0</versions.dependencies.guava>
 		<versions.dependencies.junit>4.10</versions.dependencies.junit>
