@@ -1,23 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+<project
+			xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<parent>
 		<groupId>eu.arkitech</groupId>
 		<artifactId>logging-parent</artifactId>
 		<version>0.1.1-SNAPSHOT</version>
 	</parent>
+	
 	<artifactId>logback-amqp-common</artifactId>
+	<name>arkitech-logback-amqp-common</name>
+	
 	<dependencies>
-		<dependency>
-			<groupId>com.rabbitmq</groupId>
-			<artifactId>amqp-client</artifactId>
-			<version>2.2.0</version>
-		</dependency>
 		<dependency>
 			<groupId>eu.arkitech</groupId>
 			<artifactId>logback-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.rabbitmq</groupId>
+			<artifactId>amqp-client</artifactId>
+			<version>${versions.dependencies.amqp}</version>
+		</dependency>
 	</dependencies>
+	
 </project>

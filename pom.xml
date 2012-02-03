@@ -1,60 +1,175 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+<project
+			xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<groupId>eu.arkitech</groupId>
 	<artifactId>logging-parent</artifactId>
 	<version>0.1.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
+	
+	<name>arkitech-${project.artifactId}</name>
+	<url>https://github.com/arkitech/logging-java</url>
+	<inceptionYear>2011</inceptionYear>
+	
 	<modules>
-		<module>logback-common</module>
-		<module>logback-amqp-common</module>
-		<module>logback-amqp-publisher</module>
-		<module>logback-amqp-consumer</module>
-		<module>logging-datastore-common</module>
-		<module>logging-datastore-bdb</module>
-		<module>logging-datastore-lucene</module>
-		<module>logging-conapp</module>
-		<module>logging-webapp-common</module>
-		<module>logging-webapp</module>
+		<module>./logback-common</module>
+		<module>./logback-amqp-common</module>
+		<module>./logback-amqp-publisher</module>
+		<module>./logback-amqp-consumer</module>
+		<module>./logging-datastore-common</module>
+		<module>./logging-datastore-bdb</module>
+		<module>./logging-datastore-lucene</module>
+		<module>./logging-conapp</module>
+		<module>./logging-webapp-common</module>
+		<module>./logging-webapp</module>
 	</modules>
+	
 	<dependencies>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
-			<version>0.9.28</version>
+			<version>${versions.dependencies.logback}</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>0.9.28</version>
+			<version>${versions.dependencies.logback}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
-			<artifactId>guava-base</artifactId>
-			<version>r03</version>
+			<artifactId>guava</artifactId>
+			<version>${versions.dependencies.guava}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.1</version>
+			<version>${versions.dependencies.junit}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>${versions.plugins.compiler}</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${versions.java.compiler}</source>
+					<target>${versions.java.compiler}</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>${versions.plugins.eclipse}</version>
+				<configuration>
+					<projectNameTemplate>${project.name}</projectNameTemplate>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${versions.plugins.license}</version>
+				<executions>
+					<execution>
+						<phase>verify</phase>
+						<goals>
+							<goal>download-licenses</goal>
+							<goal>update-project-license</goal>
+							<goal>update-file-header</goal>
+						</goals>
+						<configuration>
+							<canUpdateDescription>true</canUpdateDescription>
+							<canUpdateCopyright>true</canUpdateCopyright>
+							<canUpdateLicense>true</canUpdateLicense>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>license-maven-plugin</artifactId>
+										<versionRange>[1.0,)</versionRange>
+										<goals>
+											<goal>update-project-license</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
+	
 	<properties>
+		<versions.dependencies.amqp>2.7.1</versions.dependencies.amqp>
+		<versions.dependencies.bdb>3.2.76</versions.dependencies.bdb>
+		<versions.dependencies.guava>11.0</versions.dependencies.guava>
+		<versions.dependencies.junit>4.10</versions.dependencies.junit>
+		<versions.dependencies.logback>1.0.0</versions.dependencies.logback>
+		<versions.dependencies.lucene>3.0.3</versions.dependencies.lucene>
+		<versions.dependencies.servlet>2.5</versions.dependencies.servlet>
+		<versions.dependencies.slf4j>1.6.4</versions.dependencies.slf4j>
+		<versions.plugins.assembly>2.2.2</versions.plugins.assembly>
+		<versions.plugins.compiler>2.3.2</versions.plugins.compiler>
+		<versions.plugins.eclipse>2.8</versions.plugins.eclipse>
+		<versions.plugins.license>1.0</versions.plugins.license>
+		<versions.plugins.war>2.1.1</versions.plugins.war>
+		<versions.plugins.winstone>1.2</versions.plugins.winstone>
+		<versions.java.compiler>1.6</versions.java.compiler>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<license.licenseName>apache_v2</license.licenseName>
 	</properties>
+	
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git:git://github.com/arkitech/logging-java</connection>
+		<developerConnection>scm:git:ssh://git@github.com/arkitech/logging-java</developerConnection>
+	</scm>
+	
+	<organization>
+		<name>Arkitech</name>
+		<url>https://github.com/arkitech</url>
+	</organization>
+	
+	<developers>
+		<developer>
+			<id>ccraciun</id>
+			<name>Ciprian Craciun</name>
+			<email>ciprian@volution.ro</email>
+			<roles>
+				<role>developer</role>
+				<role>architect</role>
+			</roles>
+			<timezone>+3</timezone>
+		</developer>
+	</developers>
+	
 </project>
