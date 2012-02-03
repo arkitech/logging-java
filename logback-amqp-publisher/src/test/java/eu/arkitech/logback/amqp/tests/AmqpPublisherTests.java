@@ -32,8 +32,8 @@ public final class AmqpPublisherTests
 		realLogger.debug ("logging generated messages");
 		MDC.clear ();
 		for (int index = 0; index < AmqpPublisherTests.messageCount; index++) {
-			MDC.put (DefaultLoggingEventMutator.defaultApplicationMdcName, String.format ("app-%d", index % 3 + 1));
-			MDC.put (DefaultLoggingEventMutator.defaultComponentMdcName, String.format ("comp-%d", index % 2 + 1));
+			MDC.put (DefaultLoggingEventMutator.defaultApplicationMdcName, String.format ("app-%d", (index % 3) + 1));
+			MDC.put (DefaultLoggingEventMutator.defaultComponentMdcName, String.format ("comp-%d", (index % 2) + 1));
 			testLogger.callAppenders (generator.generate ());
 			MDC.clear ();
 		}

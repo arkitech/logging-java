@@ -175,9 +175,9 @@ public class SLoggingEvent1
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.message == null) ? 0 : this.message.hashCode ());
-		result = prime * result + ((this.threadName == null) ? 0 : this.threadName.hashCode ());
-		result = prime * result + (int) (this.timeStamp ^ (this.timeStamp >>> 32));
+		result = (prime * result) + ((this.message == null) ? 0 : this.message.hashCode ());
+		result = (prime * result) + ((this.threadName == null) ? 0 : this.threadName.hashCode ());
+		result = (prime * result) + (int) (this.timeStamp ^ (this.timeStamp >>> 32));
 		return result;
 	}
 	
