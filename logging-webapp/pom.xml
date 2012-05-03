@@ -8,7 +8,7 @@
 	<parent>
 		<groupId>eu.arkitech</groupId>
 		<artifactId>logging-parent</artifactId>
-		<version>0.1.1-SNAPSHOT</version>
+		<version>0.1.1</version>
 	</parent>
 	
 	<artifactId>logging-webapp</artifactId>
